@@ -15,6 +15,9 @@ import {
     FileText,
     Settings,
     ChevronLeft,
+    Upload,
+    Package,
+    TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +38,16 @@ const navItems = [
         icon: Building2,
     },
     {
+        title: '打样包管理',
+        href: '/admin/proofing-packs',
+        icon: Package,
+    },
+    {
+        title: '购买意图',
+        href: '/admin/buy-intents',
+        icon: TrendingUp,
+    },
+    {
         title: '用户管理',
         href: '/admin/users',
         icon: Users,
@@ -43,6 +56,11 @@ const navItems = [
         title: '批次管理',
         href: '/admin/batches',
         icon: FileText,
+    },
+    {
+        title: '数据导入',
+        href: '/admin/import',
+        icon: Upload,
     },
     {
         title: '系统设置',

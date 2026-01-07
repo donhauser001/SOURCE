@@ -11,17 +11,16 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Beaker, ShieldCheck, Users } from 'lucide-react';
+import { Search, Filter, Beaker, ShieldCheck, Users, X, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { ColorSwatch } from './color-swatch';
 
 interface Color {
@@ -49,7 +48,16 @@ interface Props {
     paperTypeLabels: Record<string, string>;
     colorStatusLabels: Record<string, string>;
     auditStatusLabels: Record<string, string>;
+    recommendationLabels?: Record<string, string>;
 }
+
+// 推荐等级标签（默认值）
+const defaultRecommendationLabels: Record<string, string> = {
+    BEST: '最佳拍档',
+    GOOD: '表现良好',
+    CAUTION: '需注意',
+    AVOID: '建议慎用',
+};
 
 // 卡片尺寸类型
 type CardSize = '1x1' | '2x1' | '1x2' | '2x2';
@@ -120,10 +128,19 @@ function getGridStyle(size: CardSize): string {
     }
 }
 
-export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, auditStatusLabels }: Props) {
+export function ColorListClientB({
+    colors,
+    paperTypeLabels,
+    colorStatusLabels,
+    auditStatusLabels,
+    recommendationLabels = defaultRecommendationLabels
+}: Props) {
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [auditFilter, setAuditFilter] = useState<string>('all');
+    const [statusFilters, setStatusFilters] = useState<string[]>([]);
+    const [auditFilters, setAuditFilters] = useState<string[]>([]);
+    const [paperTypeFilters, setPaperTypeFilters] = useState<string[]>([]);
+    const [recommendationFilters, setRecommendationFilters] = useState<string[]>([]);
+    const [hasParticipants, setHasParticipants] = useState<boolean | null>(null);
     const [cellSize, setCellSize] = useState(100);
     const gridRef = useRef<HTMLDivElement>(null);
 
@@ -148,7 +165,7 @@ export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, a
         };
     }, []);
 
-    // 获取唯一的状态值
+    // 获取唯一的筛选值
     const uniqueStatuses = useMemo(() => {
         const statuses = new Set(colors.map(c => c.status));
         return Array.from(statuses);
@@ -158,6 +175,16 @@ export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, a
         const statuses = new Set(colors.map(c => c.auditStatus));
         return Array.from(statuses);
     }, [colors]);
+
+    const uniquePaperTypes = useMemo(() => {
+        const types = new Set<string>();
+        colors.forEach(c => {
+            if (c.bestPaper) types.add(c.bestPaper);
+        });
+        return Array.from(types);
+    }, [colors]);
+
+    const uniqueRecommendations = ['BEST', 'GOOD', 'CAUTION', 'AVOID'];
 
     // 为每个颜色分配语义化卡片大小，并按成熟度排序
     const semanticColors = useMemo(() => {
@@ -189,24 +216,63 @@ export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, a
             );
         }
 
-        if (statusFilter !== 'all') {
-            result = result.filter(c => c.status === statusFilter);
+        if (statusFilters.length > 0) {
+            result = result.filter(c => statusFilters.includes(c.status));
         }
 
-        if (auditFilter !== 'all') {
-            result = result.filter(c => c.auditStatus === auditFilter);
+        if (auditFilters.length > 0) {
+            result = result.filter(c => auditFilters.includes(c.auditStatus));
+        }
+
+        if (paperTypeFilters.length > 0) {
+            result = result.filter(c => c.bestPaper && paperTypeFilters.includes(c.bestPaper));
+        }
+
+        if (recommendationFilters.length > 0) {
+            // 这里需要根据 bestPaper 的推荐等级筛选
+            // 简化实现：筛选有 bestPaper 的颜色
+            result = result.filter(c => c.bestPaper);
+        }
+
+        if (hasParticipants !== null) {
+            result = result.filter(c => hasParticipants ? c.participantCount > 0 : c.participantCount === 0);
         }
 
         return result;
-    }, [semanticColors, search, statusFilter, auditFilter]);
+    }, [semanticColors, search, statusFilters, auditFilters, paperTypeFilters, recommendationFilters, hasParticipants]);
 
     const clearFilters = () => {
         setSearch('');
-        setStatusFilter('all');
-        setAuditFilter('all');
+        setStatusFilters([]);
+        setAuditFilters([]);
+        setPaperTypeFilters([]);
+        setRecommendationFilters([]);
+        setHasParticipants(null);
     };
 
-    const hasFilters = search || statusFilter !== 'all' || auditFilter !== 'all';
+    const hasFilters = search || statusFilters.length > 0 || auditFilters.length > 0 ||
+        paperTypeFilters.length > 0 || recommendationFilters.length > 0 || hasParticipants !== null;
+
+    const activeFilterCount = [
+        statusFilters.length > 0,
+        auditFilters.length > 0,
+        paperTypeFilters.length > 0,
+        recommendationFilters.length > 0,
+        hasParticipants !== null,
+    ].filter(Boolean).length;
+
+    // 筛选器切换函数
+    const toggleFilter = (
+        value: string,
+        current: string[],
+        setter: (v: string[]) => void
+    ) => {
+        if (current.includes(value)) {
+            setter(current.filter(v => v !== value));
+        } else {
+            setter([...current, value]);
+        }
+    };
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -237,38 +303,136 @@ export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, a
                     />
                 </div>
 
-                <div className="flex gap-2">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[120px] bg-white border-0 shadow-sm text-gray-700">
-                            <SelectValue placeholder="状态" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">全部状态</SelectItem>
-                            {uniqueStatuses.map(status => (
-                                <SelectItem key={status} value={status}>
-                                    {colorStatusLabels[status] || status}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="flex flex-wrap gap-2">
+                    {/* 状态筛选 */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="bg-white border-0 shadow-sm text-gray-700 gap-1">
+                                状态
+                                {statusFilters.length > 0 && (
+                                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                                        {statusFilters.length}
+                                    </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                            <div className="space-y-2">
+                                {uniqueStatuses.map(status => (
+                                    <label key={status} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                        <Checkbox
+                                            checked={statusFilters.includes(status)}
+                                            onCheckedChange={() => toggleFilter(status, statusFilters, setStatusFilters)}
+                                        />
+                                        <span className="text-sm">{colorStatusLabels[status] || status}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
 
-                    <Select value={auditFilter} onValueChange={setAuditFilter}>
-                        <SelectTrigger className="w-[120px] bg-white border-0 shadow-sm text-gray-700">
-                            <SelectValue placeholder="审计" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">全部审计</SelectItem>
-                            {uniqueAuditStatuses.map(status => (
-                                <SelectItem key={status} value={status}>
-                                    {auditStatusLabels[status] || status}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    {/* 审计状态筛选 */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="bg-white border-0 shadow-sm text-gray-700 gap-1">
+                                审计
+                                {auditFilters.length > 0 && (
+                                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                                        {auditFilters.length}
+                                    </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                            <div className="space-y-2">
+                                {uniqueAuditStatuses.map(status => (
+                                    <label key={status} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                        <Checkbox
+                                            checked={auditFilters.includes(status)}
+                                            onCheckedChange={() => toggleFilter(status, auditFilters, setAuditFilters)}
+                                        />
+                                        <span className="text-sm">{auditStatusLabels[status] || status}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
 
+                    {/* 纸张类型筛选 */}
+                    {uniquePaperTypes.length > 0 && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="bg-white border-0 shadow-sm text-gray-700 gap-1">
+                                    纸张
+                                    {paperTypeFilters.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                                            {paperTypeFilters.length}
+                                        </Badge>
+                                    )}
+                                    <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-2" align="start">
+                                <div className="space-y-2">
+                                    {uniquePaperTypes.map(type => (
+                                        <label key={type} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                            <Checkbox
+                                                checked={paperTypeFilters.includes(type)}
+                                                onCheckedChange={() => toggleFilter(type, paperTypeFilters, setPaperTypeFilters)}
+                                            />
+                                            <span className="text-sm">{paperTypeLabels[type] || type}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    )}
+
+                    {/* 参与者筛选 */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="bg-white border-0 shadow-sm text-gray-700 gap-1">
+                                参与者
+                                {hasParticipants !== null && (
+                                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                                        1
+                                    </Badge>
+                                )}
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="start">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                    <Checkbox
+                                        checked={hasParticipants === true}
+                                        onCheckedChange={() => setHasParticipants(hasParticipants === true ? null : true)}
+                                    />
+                                    <span className="text-sm">有参与者</span>
+                                </label>
+                                <label className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                    <Checkbox
+                                        checked={hasParticipants === false}
+                                        onCheckedChange={() => setHasParticipants(hasParticipants === false ? null : false)}
+                                    />
+                                    <span className="text-sm">无参与者</span>
+                                </label>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* 清除筛选 */}
                     {hasFilters && (
-                        <Button variant="ghost" size="icon" onClick={clearFilters} className="shrink-0 text-gray-500 hover:text-gray-700">
-                            <Filter className="h-4 w-4" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearFilters}
+                            className="text-gray-500 hover:text-gray-700 gap-1"
+                        >
+                            <X className="h-4 w-4" />
+                            清除 ({activeFilterCount})
                         </Button>
                     )}
                 </div>
@@ -296,6 +460,7 @@ export function ColorListClientB({ colors, paperTypeLabels, colorStatusLabels, a
                             size={color.size}
                             paperTypeLabels={paperTypeLabels}
                             getStatusVariant={getStatusVariant}
+                            searchQuery={search}
                         />
                     ))}
                 </div>
@@ -364,36 +529,36 @@ function getSoftBackgroundColor(labL: number, labA: number, labB: number): strin
     const softL = Math.min(94, Math.max(82, labL * 0.4 + 55)); // 明度在 82-94 之间，更浅
     const softA = labA * 0.45; // 适度保留饱和度
     const softB = labB * 0.45;
-    
+
     // Lab to RGB 近似转换
     const y = (softL + 16) / 116;
     const x = softA / 500 + y;
     const z = y - softB / 200;
-    
+
     const x3 = x * x * x;
     const y3 = y * y * y;
     const z3 = z * z * z;
-    
+
     const xn = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
     const yn = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
     const zn = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
-    
+
     const xr = xn * 95.047;
     const yr = yn * 100.0;
     const zr = zn * 108.883;
-    
+
     let r = xr * 3.2406 + yr * -1.5372 + zr * -0.4986;
     let g = xr * -0.9689 + yr * 1.8758 + zr * 0.0415;
     let b = xr * 0.0557 + yr * -0.2040 + zr * 1.0570;
-    
+
     r = r > 0.0031308 ? 1.055 * Math.pow(r / 100, 1 / 2.4) - 0.055 : 12.92 * r / 100;
     g = g > 0.0031308 ? 1.055 * Math.pow(g / 100, 1 / 2.4) - 0.055 : 12.92 * g / 100;
     b = b > 0.0031308 ? 1.055 * Math.pow(b / 100, 1 / 2.4) - 0.055 : 12.92 * b / 100;
-    
+
     r = Math.min(255, Math.max(0, Math.round(r * 255)));
     g = Math.min(255, Math.max(0, Math.round(g * 255)));
     b = Math.min(255, Math.max(0, Math.round(b * 255)));
-    
+
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -403,36 +568,71 @@ function getContrastTextColor(labL: number, labA: number, labB: number): string 
     const darkL = Math.max(25, labL * 0.4);
     const darkA = labA * 1.2;
     const darkB = labB * 1.2;
-    
+
     const y = (darkL + 16) / 116;
     const x = darkA / 500 + y;
     const z = y - darkB / 200;
-    
+
     const x3 = x * x * x;
     const y3 = y * y * y;
     const z3 = z * z * z;
-    
+
     const xn = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
     const yn = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
     const zn = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
-    
+
     const xr = xn * 95.047;
     const yr = yn * 100.0;
     const zr = zn * 108.883;
-    
+
     let r = xr * 3.2406 + yr * -1.5372 + zr * -0.4986;
     let g = xr * -0.9689 + yr * 1.8758 + zr * 0.0415;
     let b = xr * 0.0557 + yr * -0.2040 + zr * 1.0570;
-    
+
     r = r > 0.0031308 ? 1.055 * Math.pow(r / 100, 1 / 2.4) - 0.055 : 12.92 * r / 100;
     g = g > 0.0031308 ? 1.055 * Math.pow(g / 100, 1 / 2.4) - 0.055 : 12.92 * g / 100;
     b = b > 0.0031308 ? 1.055 * Math.pow(b / 100, 1 / 2.4) - 0.055 : 12.92 * b / 100;
-    
+
     r = Math.min(255, Math.max(0, Math.round(r * 255)));
     g = Math.min(255, Math.max(0, Math.round(g * 255)));
     b = Math.min(255, Math.max(0, Math.round(b * 255)));
-    
+
     return `rgb(${r}, ${g}, ${b})`;
+}
+
+// 搜索高亮组件
+function HighlightText({
+    text,
+    query,
+    className
+}: {
+    text: string;
+    query: string;
+    className?: string;
+}) {
+    if (!query.trim()) {
+        return <span className={className}>{text}</span>;
+    }
+
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const index = lowerText.indexOf(lowerQuery);
+
+    if (index === -1) {
+        return <span className={className}>{text}</span>;
+    }
+
+    const before = text.slice(0, index);
+    const match = text.slice(index, index + query.length);
+    const after = text.slice(index + query.length);
+
+    return (
+        <span className={className}>
+            {before}
+            <mark className="bg-yellow-300/80 text-inherit rounded px-0.5">{match}</mark>
+            {after}
+        </span>
+    );
 }
 
 // Lab 转 RGB（用于原始色彩背景）
@@ -440,31 +640,31 @@ function labToRgb(labL: number, labA: number, labB: number): string {
     const y = (labL + 16) / 116;
     const x = labA / 500 + y;
     const z = y - labB / 200;
-    
+
     const x3 = x * x * x;
     const y3 = y * y * y;
     const z3 = z * z * z;
-    
+
     const xn = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
     const yn = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
     const zn = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
-    
+
     const xr = xn * 95.047;
     const yr = yn * 100.0;
     const zr = zn * 108.883;
-    
+
     let r = xr * 3.2406 + yr * -1.5372 + zr * -0.4986;
     let g = xr * -0.9689 + yr * 1.8758 + zr * 0.0415;
     let b = xr * 0.0557 + yr * -0.2040 + zr * 1.0570;
-    
+
     r = r > 0.0031308 ? 1.055 * Math.pow(r / 100, 1 / 2.4) - 0.055 : 12.92 * r / 100;
     g = g > 0.0031308 ? 1.055 * Math.pow(g / 100, 1 / 2.4) - 0.055 : 12.92 * g / 100;
     b = b > 0.0031308 ? 1.055 * Math.pow(b / 100, 1 / 2.4) - 0.055 : 12.92 * b / 100;
-    
+
     r = Math.min(255, Math.max(0, Math.round(r * 255)));
     g = Math.min(255, Math.max(0, Math.round(g * 255)));
     b = Math.min(255, Math.max(0, Math.round(b * 255)));
-    
+
     return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -473,20 +673,22 @@ function ColorCardB({
     color,
     size,
     paperTypeLabels,
-    getStatusVariant
+    getStatusVariant,
+    searchQuery = ''
 }: {
     color: Color & { size: CardSize };
     size: CardSize;
     paperTypeLabels: Record<string, string>;
     getStatusVariant: (status: string) => string;
+    searchQuery?: string;
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    
+
     // Coolors 风格：柔和背景 + 深色对比文字
     const softBg = getSoftBackgroundColor(color.labL, color.labA, color.labB);
     const originalBg = labToRgb(color.labL, color.labA, color.labB);
     const textColor = getContrastTextColor(color.labL, color.labA, color.labB);
-    
+
     // Hover 时根据明度决定文字颜色（白或黑）
     const hoverTextColor = color.labL > 58 ? '#000000' : '#ffffff';
 
@@ -497,7 +699,7 @@ function ColorCardB({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            <div 
+            <div
                 className="relative overflow-hidden rounded-2xl p-6 aspect-[4/3] flex flex-col transition-all duration-300 hover:scale-[1.02]"
                 style={{ backgroundColor: isHovered ? originalBg : softBg }}
             >
@@ -505,12 +707,12 @@ function ColorCardB({
                 <div style={{ color: isHovered ? hoverTextColor : textColor }} className="transition-colors duration-300">
                     {/* 名称 - 大标题 */}
                     <h3 className="font-bold leading-tight text-2xl">
-                        {color.name}
+                        <HighlightText text={color.name} query={searchQuery} />
                     </h3>
-                    
+
                     {/* 描述/状态信息 */}
                     <p className="text-sm opacity-70 mt-1">
-                        {color.status === 'EXPERIMENTAL' 
+                        {color.status === 'EXPERIMENTAL'
                             ? '实验中的色彩，数据待验证'
                             : color.auditStatus === 'VERIFIED'
                                 ? '已通过验证的标准色彩'
@@ -518,9 +720,9 @@ function ColorCardB({
                         }
                     </p>
                 </div>
-                
+
                 {/* 中间：Lab 值 - 在上下内容之间垂直居中，上下间距一致 */}
-                <div 
+                <div
                     className="text-base font-bold uppercase tracking-wider space-y-0.5 opacity-80 transition-colors duration-300 my-auto"
                     style={{ color: isHovered ? hoverTextColor : textColor }}
                 >
@@ -531,31 +733,31 @@ function ColorCardB({
 
                 {/* 底部：CTA 链接 */}
                 <div className="flex items-center justify-between mt-4">
-                    <span 
+                    <span
                         className="text-xs font-bold uppercase tracking-wider flex items-center gap-2 group-hover:gap-3 transition-all duration-300"
                         style={{ color: isHovered ? hoverTextColor : textColor }}
                     >
-                        {color.colorId}
+                        <HighlightText text={color.colorId} query={searchQuery} />
                         <span className="transition-transform group-hover:translate-x-1">→</span>
                     </span>
-                    
+
                     {/* 元数据徽章 */}
                     <div className="flex items-center gap-1.5">
                         {color.auditStatus === 'VERIFIED' && (
-                            <span 
+                            <span
                                 className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-300"
                                 style={{ backgroundColor: isHovered ? (color.labL > 58 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.5)' }}
                             >
-                                <ShieldCheck 
-                                    className="h-3.5 w-3.5 transition-colors duration-300" 
+                                <ShieldCheck
+                                    className="h-3.5 w-3.5 transition-colors duration-300"
                                     style={{ color: isHovered ? hoverTextColor : '#16a34a' }}
                                 />
                             </span>
                         )}
                         {color.recipeCount > 0 && (
-                            <span 
+                            <span
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors duration-300"
-                                style={{ 
+                                style={{
                                     backgroundColor: isHovered ? (color.labL > 58 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)') : 'rgba(255,255,255,0.5)',
                                     color: isHovered ? hoverTextColor : '#4b5563'
                                 }}
@@ -567,7 +769,7 @@ function ColorCardB({
                 </div>
 
                 {/* 明度变化色块组 - hover 时隐藏 */}
-                <div 
+                <div
                     className="absolute top-4 right-4 transition-opacity duration-300"
                     style={{ opacity: isHovered ? 0 : 1 }}
                 >

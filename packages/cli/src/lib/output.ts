@@ -52,6 +52,13 @@ export const output = {
     },
 
     /**
+     * 检查是否为 JSON 模式
+     */
+    isJsonMode(): boolean {
+        return options.jsonMode;
+    },
+
+    /**
      * 输出成功结果
      */
     success<T>(data: T, citations?: Citation[]): void {

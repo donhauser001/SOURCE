@@ -9,12 +9,16 @@ import { colorRouter } from './color';
 import { batchRouter } from './batch';
 import { userRouter } from './user';
 import { apikeyRouter } from './apikey';
+import { proofingPackRouter } from './proofing-pack';
+import { buyIntentRouter } from './buy-intent';
 
 export const appRouter = createTRPCRouter({
     color: colorRouter,
     batch: batchRouter,
     user: userRouter,
     apikey: apikeyRouter,
+    proofingPack: proofingPackRouter,
+    buyIntent: buyIntentRouter,
 });
 
 export type AppRouter = typeof appRouter;

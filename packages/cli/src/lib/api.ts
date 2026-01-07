@@ -2,10 +2,20 @@
  * API 客户端
  *
  * 与 SOURCE 服务器通信
+ * 
+ * 审计功能：
+ * - 发送 X-CLI-Version 头标识 CLI 版本
+ * - 发送 X-CLI-Command 头标识当前命令
  */
 
 import { config } from './config.js';
 import { output } from './output.js';
+
+// CLI 版本（与 index.ts 保持同步）
+const CLI_VERSION = '0.1.4';
+
+// 当前执行的命令（全局跟踪）
+let currentCommand = 'unknown';
 
 interface ApiResponse<T> {
     ok: boolean;
@@ -31,7 +41,33 @@ class ApiClient {
     }
 
     /**
-     * 获取认证头
+     * 设置当前命令（用于审计）
+     */
+    setCurrentCommand(command: string): void {
+        currentCommand = command;
+    }
+
+    /**
+     * 获取基础请求头
+     */
+    private getBaseHeaders(): Record<string, string> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-CLI-Version': CLI_VERSION,
+            'X-CLI-Command': currentCommand,
+        };
+
+        const apiKey = config.getApiKey();
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        return headers;
+    }
+
+    /**
+     * 获取认证头（兼容旧代码）
+     * @deprecated 使用 getBaseHeaders() 代替
      */
     private getAuthHeader(): Record<string, string> {
         const apiKey = config.getApiKey();
@@ -59,20 +95,18 @@ class ApiClient {
         try {
             const response = await fetch(url.toString(), {
                 method: 'GET',
-                headers: {
-                    ...this.getAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getBaseHeaders(),
             });
 
             const data = await response.json();
             return data as ApiResponse<T>;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '网络请求失败';
             return {
                 ok: false,
                 error: {
                     code: 'ERR_NETWORK',
-                    message: error.message || '网络请求失败',
+                    message,
                 },
                 timestamp: new Date().toISOString(),
             };
@@ -88,21 +122,19 @@ class ApiClient {
         try {
             const response = await fetch(url.toString(), {
                 method: 'POST',
-                headers: {
-                    ...this.getAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getBaseHeaders(),
                 body: body ? JSON.stringify(body) : undefined,
             });
 
             const data = await response.json();
             return data as ApiResponse<T>;
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '网络请求失败';
             return {
                 ok: false,
                 error: {
                     code: 'ERR_NETWORK',
-                    message: error.message || '网络请求失败',
+                    message,
                 },
                 timestamp: new Date().toISOString(),
             };
@@ -124,19 +156,25 @@ class ApiClient {
     /**
      * 获取工具列表
      */
-    async getTools(): Promise<ApiResponse<any>> {
-        // tools 端点不需要认证
+    async getTools(): Promise<ApiResponse<unknown>> {
+        // tools 端点不需要认证，但仍发送审计头
         const url = new URL('/api/v1/tools', this.baseUrl);
         try {
-            const response = await fetch(url.toString());
+            const response = await fetch(url.toString(), {
+                headers: {
+                    'X-CLI-Version': CLI_VERSION,
+                    'X-CLI-Command': currentCommand,
+                },
+            });
             const data = await response.json();
             return { ok: true, data, timestamp: new Date().toISOString() };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '网络请求失败';
             return {
                 ok: false,
                 error: {
                     code: 'ERR_NETWORK',
-                    message: error.message || '网络请求失败',
+                    message,
                 },
                 timestamp: new Date().toISOString(),
             };

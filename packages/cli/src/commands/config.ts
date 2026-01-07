@@ -135,11 +135,12 @@ configCommand
             process.exit(1);
         }
 
-        const tools = response.data?.tools || [];
+        const data = response.data as { tools?: Array<{ name: string; description: string; scope: string }> } | undefined;
+        const tools = data?.tools || [];
 
         output.table(
             ['命令', '说明', '权限'],
-            tools.map((t: any) => [t.name, t.description, t.scope])
+            tools.map((t) => [t.name, t.description, t.scope])
         );
     });
 

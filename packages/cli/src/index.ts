@@ -18,8 +18,10 @@ import { output } from './lib/output.js';
 import { colorCommand } from './commands/color.js';
 import { searchCommand } from './commands/search.js';
 import { configCommand } from './commands/config.js';
+import { citeCommand } from './commands/cite.js';
+import { costCommand } from './commands/cost.js';
 
-const VERSION = '0.1.4';
+const VERSION = '0.3.2';
 
 const program = new Command();
 
@@ -40,6 +42,8 @@ program
 program.addCommand(colorCommand);
 program.addCommand(searchCommand);
 program.addCommand(configCommand);
+program.addCommand(citeCommand);
+program.addCommand(costCommand);
 
 // 全局错误处理
 program.exitOverride((err) => {
