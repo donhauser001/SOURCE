@@ -1,0 +1,119 @@
+/**
+ * tRPC 服务端配置
+ *
+ * 这是 tRPC 的核心配置文件，定义了：
+ * - Context 创建
+ * - Router 初始化
+ * - Procedure 构建器（公开/受保护）
+ */
+
+import { initTRPC, TRPCError } from '@trpc/server';
+import { type CreateNextContextOptions } from '@trpc/server/adapters/next';
+import superjson from 'superjson';
+import { ZodError } from 'zod';
+import { prisma } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import type { Session } from 'next-auth';
+
+/**
+ * Context 类型定义
+ */
+interface CreateContextOptions {
+    session: Session | null;
+}
+
+/**
+ * 创建内部 Context（用于测试或服务端调用）
+ */
+export const createInnerTRPCContext = (opts: CreateContextOptions) => {
+    return {
+        session: opts.session,
+        prisma,
+    };
+};
+
+/**
+ * 创建 API Context
+ */
+export const createTRPCContext = async (_opts: CreateNextContextOptions) => {
+    const session = await auth();
+
+    return createInnerTRPCContext({
+        session: session as Session | null,
+    });
+};
+
+/**
+ * tRPC 初始化
+ */
+const t = initTRPC.context<typeof createTRPCContext>().create({
+    transformer: superjson,
+    errorFormatter({ shape, error }) {
+        return {
+            ...shape,
+            data: {
+                ...shape.data,
+                zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+            },
+        };
+    },
+});
+
+/**
+ * Router 创建器
+ */
+export const createTRPCRouter = t.router;
+
+/**
+ * 公开 Procedure（无需认证）
+ */
+export const publicProcedure = t.procedure;
+
+/**
+ * 受保护 Procedure（需要登录）
+ */
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+    if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: '请先登录',
+        });
+    }
+    return next({
+        ctx: {
+            ...ctx,
+            session: { ...ctx.session, user: ctx.session.user },
+        },
+    });
+});
+
+/**
+ * 管理员 Procedure（需要管理员权限）
+ */
+export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
+    if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: '请先登录',
+        });
+    }
+
+    const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.session.user.id },
+        select: { role: true },
+    });
+
+    if (user?.role !== 'ADMIN') {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: '需要管理员权限',
+        });
+    }
+
+    return next({
+        ctx: {
+            ...ctx,
+            session: { ...ctx.session, user: ctx.session.user },
+        },
+    });
+});

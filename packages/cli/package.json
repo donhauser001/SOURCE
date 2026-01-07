@@ -1,0 +1,40 @@
+{
+    "name": "@source/cli",
+    "version": "0.1.4",
+    "description": "SOURCE CLI - 实体印刷色彩实操体系命令行工具",
+    "type": "module",
+    "bin": {
+        "source": "./dist/index.js"
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts --clean",
+        "dev": "tsup src/index.ts --format esm --watch",
+        "start": "node dist/index.js",
+        "test": "vitest",
+        "test:run": "vitest run",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "chalk": "^5.3.0",
+        "commander": "^12.1.0",
+        "conf": "^13.0.1",
+        "ora": "^8.0.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "tsup": "^8.0.1",
+        "typescript": "^5.3.3",
+        "vitest": "^4.0.16"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "keywords": [
+        "source",
+        "cli",
+        "color",
+        "printing"
+    ],
+    "author": "SOURCE Team",
+    "license": "MIT"
+}

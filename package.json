@@ -1,0 +1,29 @@
+{
+    "name": "source",
+    "version": "0.1.0",
+    "private": true,
+    "description": "实体印刷色彩实操体系",
+    "scripts": {
+        "dev": "pnpm --filter @source/web dev",
+        "build": "pnpm --filter @source/web build",
+        "build:cli": "pnpm --filter @source/cli build",
+        "lint": "pnpm -r lint",
+        "test": "pnpm -r test:run",
+        "test:web": "pnpm --filter @source/web test:run",
+        "test:cli": "pnpm --filter @source/cli test:run",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+        "db:push": "pnpm --filter @source/web db:push",
+        "db:seed": "pnpm --filter @source/web db:seed",
+        "db:studio": "pnpm --filter @source/web db:studio",
+        "cli": "node packages/cli/dist/index.js"
+    },
+    "devDependencies": {
+        "prettier": "^3.2.5",
+        "prettier-plugin-tailwindcss": "^0.5.11",
+        "turbo": "^2.0.0"
+    },
+    "packageManager": "pnpm@9.0.0",
+    "engines": {
+        "node": ">=20.0.0"
+    }
+}
