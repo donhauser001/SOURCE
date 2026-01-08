@@ -141,7 +141,6 @@ export default function SettingsPage() {
                                 </div>
                                 {session?.user.tier === 'FREE' && (
                                     <Button variant="outline" size="sm" asChild>
-                                        {/* @ts-expect-error - Next.js 15 strict route types */}
                                         <Link href="/activate">激活账户</Link>
                                     </Button>
                                 )}

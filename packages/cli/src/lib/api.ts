@@ -12,7 +12,17 @@ import { config } from './config.js';
 import { output } from './output.js';
 
 // CLI 版本（与 index.ts 保持同步）
-const CLI_VERSION = '0.1.4';
+const CLI_VERSION = '0.4.2';
+
+// 错误码到友好消息的映射
+const ERROR_MESSAGES: Record<string, string> = {
+    'UNAUTHORIZED': '认证失败：请检查 API Key 是否正确配置',
+    'FORBIDDEN': '权限不足：您的 API Key 没有执行此操作的权限',
+    'INSUFFICIENT_SCOPE': '权限不足：缺少必要的访问范围',
+    'RATE_LIMIT_EXCEEDED': '请求过于频繁：请稍后再试',
+    'NOT_FOUND': '资源不存在',
+    'INVALID_API_KEY': 'API Key 无效或已过期',
+};
 
 // 当前执行的命令（全局跟踪）
 let currentCommand = 'unknown';
@@ -99,6 +109,12 @@ class ApiClient {
             });
 
             const data = await response.json();
+            
+            // 处理 HTTP 错误状态码
+            if (!response.ok) {
+                return this.handleHttpError(response.status, data);
+            }
+            
             return data as ApiResponse<T>;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '网络请求失败';
@@ -127,6 +143,12 @@ class ApiClient {
             });
 
             const data = await response.json();
+            
+            // 处理 HTTP 错误状态码
+            if (!response.ok) {
+                return this.handleHttpError(response.status, data);
+            }
+            
             return data as ApiResponse<T>;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '网络请求失败';
@@ -138,6 +160,42 @@ class ApiClient {
                 },
                 timestamp: new Date().toISOString(),
             };
+        }
+    }
+
+    /**
+     * 处理 HTTP 错误状态码
+     */
+    private handleHttpError<T>(status: number, data: unknown): ApiResponse<T> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorData = data as any;
+        const errorCode = errorData?.error?.code || this.getErrorCodeFromStatus(status);
+        const originalMessage = errorData?.error?.message || '';
+        
+        // 获取友好的错误消息
+        const friendlyMessage = ERROR_MESSAGES[errorCode] || originalMessage;
+        
+        return {
+            ok: false,
+            error: {
+                code: errorCode,
+                message: friendlyMessage,
+                details: errorData?.error?.details,
+            },
+            timestamp: new Date().toISOString(),
+        };
+    }
+
+    /**
+     * 根据 HTTP 状态码获取错误代码
+     */
+    private getErrorCodeFromStatus(status: number): string {
+        switch (status) {
+            case 401: return 'UNAUTHORIZED';
+            case 403: return 'FORBIDDEN';
+            case 404: return 'NOT_FOUND';
+            case 429: return 'RATE_LIMIT_EXCEEDED';
+            default: return `HTTP_${status}`;
         }
     }
 

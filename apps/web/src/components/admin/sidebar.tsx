@@ -18,6 +18,7 @@ import {
     Upload,
     Package,
     TrendingUp,
+    Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -46,6 +47,11 @@ const navItems = [
         title: '购买意图',
         href: '/admin/buy-intents',
         icon: TrendingUp,
+    },
+    {
+        title: '激活码管理',
+        href: '/admin/activation-codes',
+        icon: Key,
     },
     {
         title: '用户管理',

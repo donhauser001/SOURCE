@@ -100,6 +100,44 @@ export function checkRateLimit(apiKeyId: string, limit: number, windowMs: number
 }
 
 /**
+ * 获取限流详细信息（用于响应头）
+ */
+export function getRateLimitInfo(
+    apiKeyId: string,
+    limit: number,
+    windowMs: number = 60000
+): { allowed: boolean; remaining: number; resetAt: number } {
+    const now = Date.now();
+    const key = `${apiKeyId}:${Math.floor(now / windowMs)}`;
+
+    const record = rateLimitStore.get(key);
+
+    if (!record || record.resetAt < now) {
+        rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+        return {
+            allowed: true,
+            remaining: limit - 1,
+            resetAt: now + windowMs,
+        };
+    }
+
+    if (record.count >= limit) {
+        return {
+            allowed: false,
+            remaining: 0,
+            resetAt: record.resetAt,
+        };
+    }
+
+    record.count++;
+    return {
+        allowed: true,
+        remaining: limit - record.count,
+        resetAt: record.resetAt,
+    };
+}
+
+/**
  * 清理过期的限流记录
  */
 export function cleanupRateLimitStore(): void {
