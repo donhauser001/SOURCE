@@ -78,7 +78,7 @@ export type CheckCodeInput = z.infer<typeof checkCodeSchema>;
 export function generateActivationCode(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const segments: string[] = [];
-    
+
     for (let i = 0; i < 3; i++) {
         let segment = '';
         for (let j = 0; j < 4; j++) {
@@ -86,7 +86,7 @@ export function generateActivationCode(): string {
         }
         segments.push(segment);
     }
-    
+
     return `SOURCE-${segments.join('-')}`;
 }
 
@@ -95,11 +95,11 @@ export function generateActivationCode(): string {
  */
 export function generateActivationCodes(count: number): string[] {
     const codes = new Set<string>();
-    
+
     while (codes.size < count) {
         codes.add(generateActivationCode());
     }
-    
+
     return Array.from(codes);
 }
 
@@ -113,11 +113,11 @@ export function getCodeStatus(code: {
     if (code.usedAt) {
         return 'used';
     }
-    
+
     if (code.expiresAt && code.expiresAt < new Date()) {
         return 'expired';
     }
-    
+
     return 'unused';
 }
 

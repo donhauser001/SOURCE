@@ -1,118 +1,393 @@
+'use client';
+
 /**
- * 色彩管理列表页
+ * 色彩管理列表页（增强版）
+ * 
+ * v0.5.1 - Admin 阶段
+ * 
+ * 功能：
+ * - 搜索和筛选
+ * - 批量选择和操作
+ * - CSV/JSON 导出
  */
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { prisma } from '@/lib/db';
+import { 
+    Plus, Edit, Eye, Search, Filter, Download, Trash2, 
+    CheckSquare, Square, MoreHorizontal, FileJson, FileSpreadsheet 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Eye } from 'lucide-react';
-import { ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { trpc } from '@/lib/trpc';
 
-async function getColors() {
-    return prisma.color.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-            _count: {
-                select: {
-                    recipes: true,
-                    paperProfiles: true,
-                    participations: true,
-                },
-            },
+// 状态标签
+const STATUS_LABELS: Record<string, string> = {
+    ACTIVE: '已发布',
+    EXPERIMENTAL: '实验中',
+    DEPRECATED: '已弃用',
+    DRAFT: '草稿',
+};
+
+const AUDIT_STATUS_LABELS: Record<string, string> = {
+    PENDING: '待审核',
+    VERIFIED: '已验证',
+};
+
+export default function AdminColorsPage() {
+    // 状态
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [auditFilter, setAuditFilter] = useState<string>('all');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // 数据查询
+    const { data, isLoading, refetch } = trpc.color.adminList.useQuery({
+        limit: 100,
+    });
+
+    // 批量删除 mutation
+    const deleteMutation = trpc.color.adminBatchDelete.useMutation({
+        onSuccess: () => {
+            setSelectedIds(new Set());
+            refetch();
         },
     });
-}
 
-export default async function AdminColorsPage() {
-    const colors = await getColors();
+    // 筛选后的数据
+    const filteredColors = useMemo(() => {
+        if (!data?.items) return [];
 
+        return data.items.filter((color) => {
+            // 搜索
+            if (search) {
+                const searchLower = search.toLowerCase();
+                const matchesSearch =
+                    color.colorId.toLowerCase().includes(searchLower) ||
+                    color.name.toLowerCase().includes(searchLower);
+                if (!matchesSearch) return false;
+            }
+
+            // 状态筛选
+            if (statusFilter !== 'all' && color.status !== statusFilter) {
+                return false;
+            }
+
+            // 审计状态筛选
+            if (auditFilter !== 'all' && color.auditStatus !== auditFilter) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [data?.items, search, statusFilter, auditFilter]);
+
+    // 全选/取消全选
+    const handleSelectAll = () => {
+        if (selectedIds.size === filteredColors.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredColors.map((c) => c.id)));
+        }
+    };
+
+    // 单选/取消单选
+    const handleSelect = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setSelectedIds(newSet);
+    };
+
+    // 导出 CSV
+    const handleExportCSV = () => {
+        const colorsToExport = selectedIds.size > 0
+            ? filteredColors.filter((c) => selectedIds.has(c.id))
+            : filteredColors;
+
+        const headers = ['colorId', 'name', 'labL', 'labA', 'labB', 'status', 'auditStatus', 'createdAt'];
+        const rows = colorsToExport.map((c) => [
+            c.colorId,
+            c.name,
+            c.labL,
+            c.labA,
+            c.labB,
+            c.status,
+            c.auditStatus,
+            new Date(c.createdAt).toISOString(),
+        ]);
+
+        const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        downloadFile(csv, 'colors.csv', 'text/csv');
+    };
+
+    // 导出 JSON
+    const handleExportJSON = () => {
+        const colorsToExport = selectedIds.size > 0
+            ? filteredColors.filter((c) => selectedIds.has(c.id))
+            : filteredColors;
+
+        const json = JSON.stringify(colorsToExport, null, 2);
+        downloadFile(json, 'colors.json', 'application/json');
+    };
+
+    // 下载文件
+    const downloadFile = (content: string, filename: string, type: string) => {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // 批量删除
+    const handleBatchDelete = () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`确定要删除选中的 ${selectedIds.size} 条记录吗？此操作不可撤销。`)) return;
+
+        deleteMutation.mutate({ ids: Array.from(selectedIds) });
+    };
+
+    // 状态 Badge 样式
     const getStatusVariant = (status: string) => {
         switch (status) {
             case 'ACTIVE':
-            case 'VERIFIED':
-                return 'success';
+                return 'default';
             case 'EXPERIMENTAL':
-                return 'warning';
+                return 'secondary';
             case 'DEPRECATED':
                 return 'destructive';
             default:
-                return 'secondary';
+                return 'outline';
         }
     };
 
     const getAuditVariant = (status: string) => {
-        return status === 'VERIFIED' ? 'success' : 'warning';
+        return status === 'VERIFIED' ? 'default' : 'secondary';
     };
 
     return (
-        <div className="p-8">
-            <header className="flex items-center justify-between mb-8">
+        <div className="space-y-6">
+            {/* 页面头部 */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">色彩管理</h1>
-                    <p className="text-muted-foreground mt-1">管理色彩身份证数据</p>
+                    <h1 className="text-2xl font-bold">色彩管理</h1>
+                    <p className="text-muted-foreground">管理色彩身份证数据</p>
                 </div>
-                <Button asChild>
+                <div className="flex gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-2">
+                                <Download className="h-4 w-4" />
+                                导出
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
+                                <FileSpreadsheet className="h-4 w-4" />
+                                导出 CSV
+                                {selectedIds.size > 0 && (
+                                    <Badge variant="secondary" className="ml-auto">
+                                        {selectedIds.size} 条
+                                    </Badge>
+                                )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleExportJSON} className="gap-2">
+                                <FileJson className="h-4 w-4" />
+                                导出 JSON
+                                {selectedIds.size > 0 && (
+                                    <Badge variant="secondary" className="ml-auto">
+                                        {selectedIds.size} 条
+                                    </Badge>
+                                )}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Link href="/admin/colors/new">
-                        <Plus className="h-4 w-4 mr-2" />
-                        添加色彩
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            添加色彩
+                        </Button>
                     </Link>
-                </Button>
-            </header>
+                </div>
+            </div>
 
+            {/* 搜索和筛选 */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="搜索色彩编号或名称..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-32">
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    <SelectValue placeholder="状态" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">全部状态</SelectItem>
+                                    <SelectItem value="ACTIVE">已发布</SelectItem>
+                                    <SelectItem value="EXPERIMENTAL">实验中</SelectItem>
+                                    <SelectItem value="DEPRECATED">已弃用</SelectItem>
+                                    <SelectItem value="DRAFT">草稿</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={auditFilter} onValueChange={setAuditFilter}>
+                                <SelectTrigger className="w-32">
+                                    <SelectValue placeholder="审计状态" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">全部审计</SelectItem>
+                                    <SelectItem value="VERIFIED">已验证</SelectItem>
+                                    <SelectItem value="PENDING">待审核</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 批量操作栏 */}
+            {selectedIds.size > 0 && (
+                <Card className="bg-muted/50">
+                    <CardContent className="py-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm">
+                                已选择 <strong>{selectedIds.size}</strong> 条记录
+                            </span>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSelectedIds(new Set())}
+                                >
+                                    取消选择
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleBatchDelete}
+                                    disabled={deleteMutation.isPending}
+                                    className="gap-2"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    删除选中
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* 数据表格 */}
             <Card>
                 <CardHeader>
                     <CardTitle>色彩列表</CardTitle>
-                    <CardDescription>共 {colors.length} 条记录</CardDescription>
+                    <CardDescription>
+                        {isLoading ? '加载中...' : `共 ${filteredColors.length} 条记录`}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b">
+                                    <th className="text-left py-3 px-4 font-medium w-10">
+                                        <button
+                                            onClick={handleSelectAll}
+                                            className="hover:text-foreground text-muted-foreground"
+                                        >
+                                            {selectedIds.size === filteredColors.length && filteredColors.length > 0 ? (
+                                                <CheckSquare className="h-4 w-4" />
+                                            ) : (
+                                                <Square className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </th>
                                     <th className="text-left py-3 px-4 font-medium">编号</th>
                                     <th className="text-left py-3 px-4 font-medium">名称</th>
-                                    <th className="text-left py-3 px-4 font-medium">Lab 值</th>
+                                    <th className="text-left py-3 px-4 font-medium">Lab</th>
                                     <th className="text-left py-3 px-4 font-medium">状态</th>
                                     <th className="text-left py-3 px-4 font-medium">审计</th>
                                     <th className="text-left py-3 px-4 font-medium">配方</th>
-                                    <th className="text-left py-3 px-4 font-medium">纸张</th>
-                                    <th className="text-left py-3 px-4 font-medium">参与者</th>
                                     <th className="text-left py-3 px-4 font-medium">创建时间</th>
                                     <th className="text-right py-3 px-4 font-medium">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {colors.map((color) => (
+                                {filteredColors.map((color) => (
                                     <tr key={color.id} className="border-b hover:bg-muted/50">
+                                        <td className="py-3 px-4">
+                                            <button
+                                                onClick={() => handleSelect(color.id)}
+                                                className="hover:text-foreground text-muted-foreground"
+                                            >
+                                                {selectedIds.has(color.id) ? (
+                                                    <CheckSquare className="h-4 w-4 text-primary" />
+                                                ) : (
+                                                    <Square className="h-4 w-4" />
+                                                )}
+                                            </button>
+                                        </td>
                                         <td className="py-3 px-4">
                                             <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                                                 {color.colorId}
                                             </code>
                                         </td>
-                                        <td className="py-3 px-4 font-medium">{color.name}</td>
+                                        <td className="py-3 px-4">
+                                            <span className="font-medium">{color.name}</span>
+                                        </td>
                                         <td className="py-3 px-4 font-mono text-xs">
                                             L*{color.labL.toFixed(1)} a*{color.labA.toFixed(1)} b*{color.labB.toFixed(1)}
                                         </td>
                                         <td className="py-3 px-4">
                                             <Badge variant={getStatusVariant(color.status)}>
-                                                {ColorStatusLabels[color.status] || color.status}
+                                                {STATUS_LABELS[color.status] || color.status}
                                             </Badge>
                                         </td>
                                         <td className="py-3 px-4">
                                             <Badge variant={getAuditVariant(color.auditStatus)}>
-                                                {AuditStatusLabels[color.auditStatus] || color.auditStatus}
+                                                {AUDIT_STATUS_LABELS[color.auditStatus] || color.auditStatus}
                                             </Badge>
                                         </td>
-                                        <td className="py-3 px-4 text-center">{color._count.recipes}</td>
-                                        <td className="py-3 px-4 text-center">{color._count.paperProfiles}</td>
-                                        <td className="py-3 px-4 text-center">{color._count.participations}</td>
+                                        <td className="py-3 px-4 text-center">
+                                            {color._count.recipes}
+                                        </td>
                                         <td className="py-3 px-4 text-muted-foreground">
                                             {new Date(color.createdAt).toLocaleDateString('zh-CN')}
                                         </td>
                                         <td className="py-3 px-4">
-                                            <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-1">
                                                 <Button variant="ghost" size="icon" asChild>
                                                     <Link href={`/color/${color.colorId}`}>
                                                         <Eye className="h-4 w-4" />
@@ -123,14 +398,42 @@ export default async function AdminColorsPage() {
                                                         <Edit className="h-4 w-4" />
                                                     </Link>
                                                 </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem asChild>
+                                                            {/* @ts-expect-error - Next.js 15 strict route types */}
+                                                            <Link href={`/admin/colors/${color.id}/audit-notes`}>
+                                                                审计注记
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="text-destructive"
+                                                            onClick={() => {
+                                                                if (confirm('确定要删除此色彩吗？')) {
+                                                                    deleteMutation.mutate({ ids: [color.id] });
+                                                                }
+                                                            }}
+                                                        >
+                                                            删除
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
-                                {colors.length === 0 && (
+                                {filteredColors.length === 0 && !isLoading && (
                                     <tr>
-                                        <td colSpan={10} className="py-8 text-center text-muted-foreground">
-                                            暂无数据，点击右上角添加色彩
+                                        <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                            {search || statusFilter !== 'all' || auditFilter !== 'all'
+                                                ? '没有匹配的记录'
+                                                : '暂无数据，点击右上角添加色彩'}
                                         </td>
                                     </tr>
                                 )}
@@ -142,4 +445,3 @@ export default async function AdminColorsPage() {
         </div>
     );
 }
-

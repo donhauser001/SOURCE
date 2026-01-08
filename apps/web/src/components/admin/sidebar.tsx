@@ -19,6 +19,8 @@ import {
     Package,
     TrendingUp,
     Key,
+    ClipboardCheck,
+    KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -54,9 +56,19 @@ const navItems = [
         icon: Key,
     },
     {
+        title: '审计注记',
+        href: '/admin/audit-notes',
+        icon: ClipboardCheck,
+    },
+    {
         title: '用户管理',
         href: '/admin/users',
         icon: Users,
+    },
+    {
+        title: 'API 密钥',
+        href: '/admin/api-keys',
+        icon: KeyRound,
     },
     {
         title: '批次管理',

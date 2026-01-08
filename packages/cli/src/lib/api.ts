@@ -109,12 +109,12 @@ class ApiClient {
             });
 
             const data = await response.json();
-            
+
             // 处理 HTTP 错误状态码
             if (!response.ok) {
                 return this.handleHttpError(response.status, data);
             }
-            
+
             return data as ApiResponse<T>;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '网络请求失败';
@@ -143,12 +143,12 @@ class ApiClient {
             });
 
             const data = await response.json();
-            
+
             // 处理 HTTP 错误状态码
             if (!response.ok) {
                 return this.handleHttpError(response.status, data);
             }
-            
+
             return data as ApiResponse<T>;
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '网络请求失败';
@@ -171,10 +171,10 @@ class ApiClient {
         const errorData = data as any;
         const errorCode = errorData?.error?.code || this.getErrorCodeFromStatus(status);
         const originalMessage = errorData?.error?.message || '';
-        
+
         // 获取友好的错误消息
         const friendlyMessage = ERROR_MESSAGES[errorCode] || originalMessage;
-        
+
         return {
             ok: false,
             error: {

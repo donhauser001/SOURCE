@@ -443,6 +443,102 @@ export const colorRouter = createTRPCRouter({
     }),
 
     // ============================================================================
+    // 管理员查询
+    // ============================================================================
+
+    /**
+     * 管理员：获取色彩列表（含更多信息）
+     */
+    adminList: adminProcedure
+        .input(
+            z.object({
+                limit: z.number().min(1).max(200).default(50),
+                cursor: z.string().optional(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const items = await ctx.prisma.color.findMany({
+                take: limit + 1,
+                cursor: cursor ? { id: cursor } : undefined,
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    colorId: true,
+                    name: true,
+                    slug: true,
+                    labL: true,
+                    labA: true,
+                    labB: true,
+                    status: true,
+                    auditStatus: true,
+                    createdAt: true,
+                    _count: {
+                        select: {
+                            recipes: true,
+                            paperProfiles: true,
+                            participations: true,
+                        },
+                    },
+                },
+            });
+
+            let nextCursor: string | undefined;
+            if (items.length > limit) {
+                const nextItem = items.pop();
+                nextCursor = nextItem?.id;
+            }
+
+            return {
+                items,
+                nextCursor,
+            };
+        }),
+
+    /**
+     * 管理员：批量删除色彩
+     */
+    adminBatchDelete: adminProcedure
+        .input(z.object({ ids: z.array(z.string()).min(1) }))
+        .mutation(async ({ ctx, input }) => {
+            const { ids } = input;
+
+            // 检查是否有关联数据
+            const colorsWithDeps = await ctx.prisma.color.findMany({
+                where: { id: { in: ids } },
+                include: {
+                    _count: {
+                        select: {
+                            proofingPacks: true,
+                            recipes: true,
+                        },
+                    },
+                },
+            });
+
+            const hasProofingPacks = colorsWithDeps.some((c) => c._count.proofingPacks > 0);
+            if (hasProofingPacks) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: '部分色彩有关联的打样包，无法删除',
+                });
+            }
+
+            // 删除关联的 paperProfiles
+            await ctx.prisma.paperProfile.deleteMany({
+                where: { colorId: { in: ids } },
+            });
+
+            // 删除色彩
+            const result = await ctx.prisma.color.deleteMany({
+                where: { id: { in: ids } },
+            });
+
+            return { deleted: result.count };
+        }),
+
+    // ============================================================================
     // 创建 / 更新 / 删除（需要管理员权限）
     // ============================================================================
 

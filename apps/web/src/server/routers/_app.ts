@@ -12,6 +12,7 @@ import { apikeyRouter } from './apikey';
 import { proofingPackRouter } from './proofing-pack';
 import { buyIntentRouter } from './buy-intent';
 import { activationCodeRouter } from './activation-code';
+import { auditNoteRouter } from './audit-note';
 
 export const appRouter = createTRPCRouter({
     color: colorRouter,
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
     proofingPack: proofingPackRouter,
     buyIntent: buyIntentRouter,
     activationCode: activationCodeRouter,
+    auditNote: auditNoteRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -46,20 +46,20 @@ describe('激活码格式验证', () => {
 describe('激活码生成', () => {
     it('应该生成正确格式的激活码', () => {
         const code = generateActivationCode();
-        
+
         expect(code).toMatch(/^SOURCE-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
     });
 
     it('应该生成唯一的激活码', () => {
         const codes = generateActivationCodes(100);
         const uniqueCodes = new Set(codes);
-        
+
         expect(uniqueCodes.size).toBe(100);
     });
 
     it('每个生成的激活码都应该是有效格式', () => {
         const codes = generateActivationCodes(50);
-        
+
         for (const code of codes) {
             const result = activationCodeFormat.safeParse(code);
             expect(result.success).toBe(true);
@@ -73,7 +73,7 @@ describe('激活码状态判断', () => {
             usedAt: null,
             expiresAt: null,
         };
-        
+
         expect(getCodeStatus(code)).toBe('unused');
     });
 
@@ -82,7 +82,7 @@ describe('激活码状态判断', () => {
             usedAt: new Date(),
             expiresAt: null,
         };
-        
+
         expect(getCodeStatus(code)).toBe('used');
     });
 
@@ -91,7 +91,7 @@ describe('激活码状态判断', () => {
             usedAt: null,
             expiresAt: new Date(Date.now() - 1000), // 过去的时间
         };
-        
+
         expect(getCodeStatus(code)).toBe('expired');
     });
 
@@ -100,7 +100,7 @@ describe('激活码状态判断', () => {
             usedAt: null,
             expiresAt: new Date(Date.now() + 86400000), // 明天
         };
-        
+
         expect(getCodeStatus(code)).toBe('unused');
     });
 
@@ -109,7 +109,7 @@ describe('激活码状态判断', () => {
             usedAt: new Date(Date.now() - 86400000), // 昨天使用
             expiresAt: new Date(Date.now() - 3600000), // 一小时前过期
         };
-        
+
         expect(getCodeStatus(code)).toBe('used');
     });
 });
