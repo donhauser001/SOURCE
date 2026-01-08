@@ -1,20 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+/**
+ * 登录页面
+ * 
+ * 根据用户角色自动跳转：
+ * - 管理员 (ADMIN/OPERATOR) → /admin
+ * - 普通用户 → /
+ */
+
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Palette, ArrowLeft, Mail, Loader2 } from 'lucide-react';
+import { Palette, ArrowLeft, Mail, Loader2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { data: session, status } = useSession();
+    
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isDevLoading, setIsDevLoading] = useState(false);
+    const [isAdminDevLoading, setIsAdminDevLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+
+    // 已登录用户根据角色跳转
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user) {
+            const callbackUrl = searchParams.get('callbackUrl');
+            const role = session.user.role;
+            const isAdmin = role === 'ADMIN' || role === 'OPERATOR';
+
+            if (callbackUrl) {
+                // 有明确的回调 URL，直接跳转
+                window.location.href = callbackUrl;
+            } else {
+                // 根据角色跳转
+                window.location.href = isAdmin ? '/admin' : '/';
+            }
+        }
+    }, [status, session, router, searchParams]);
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,7 +56,7 @@ export default function LoginPage() {
             const result = await signIn('email', {
                 email,
                 redirect: false,
-                callbackUrl: '/',
+                callbackUrl: searchParams.get('callbackUrl') || '/',
             });
 
             if (result?.error) {
@@ -40,15 +71,18 @@ export default function LoginPage() {
         }
     };
 
+    // 开发环境：普通用户登录
     const handleDevLogin = async () => {
         setIsDevLoading(true);
         setError('');
 
         try {
             await signIn('dev-credentials', {
-                email: email || 'dev@source.ink',
-                callbackUrl: '/',
+                email: email || 'user@source.ink',
+                redirect: false,
             });
+            // signIn 完成后 useEffect 会处理跳转
+            router.refresh();
         } catch {
             setError('登录失败');
         } finally {
@@ -56,6 +90,35 @@ export default function LoginPage() {
         }
     };
 
+    // 开发环境：管理员登录
+    const handleAdminDevLogin = async () => {
+        setIsAdminDevLoading(true);
+        setError('');
+
+        try {
+            await signIn('dev-credentials', {
+                email: 'admin@source.ink',
+                redirect: false,
+            });
+            // signIn 完成后 useEffect 会处理跳转
+            router.refresh();
+        } catch {
+            setError('登录失败');
+        } finally {
+            setIsAdminDevLoading(false);
+        }
+    };
+
+    // 加载中
+    if (status === 'loading') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-muted/30">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    // 邮件发送成功
     if (success) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -134,21 +197,44 @@ export default function LoginPage() {
                                     开发环境
                                 </span>
                             </div>
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={handleDevLogin}
-                                disabled={isDevLoading}
-                            >
-                                {isDevLoading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        登录中...
-                                    </>
-                                ) : (
-                                    '快速登录（开发模式）'
-                                )}
-                            </Button>
+                            <div className="space-y-2">
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={handleDevLogin}
+                                    disabled={isDevLoading || isAdminDevLoading}
+                                >
+                                    {isDevLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            登录中...
+                                        </>
+                                    ) : (
+                                        '普通用户登录'
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    className="w-full"
+                                    onClick={handleAdminDevLogin}
+                                    disabled={isDevLoading || isAdminDevLoading}
+                                >
+                                    {isAdminDevLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            登录中...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Shield className="mr-2 h-4 w-4" />
+                                            管理员登录
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center mt-2">
+                                管理员账号需先在数据库中设置 role = ADMIN
+                            </p>
                         </>
                     )}
 
@@ -172,4 +258,3 @@ export default function LoginPage() {
         </div>
     );
 }
-
