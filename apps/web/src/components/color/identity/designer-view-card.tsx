@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react';
-import { AlertTriangle, ExternalLink, ChevronDown } from 'lucide-react';
+import { ExternalLink, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useViewMode } from './view-mode-context';
@@ -114,13 +114,11 @@ export function DesignerViewCard({
     const bestPaper = sortedProfiles[0];
     const tolerance = trueSource.deltaETolerance;
 
-    // 分离白名单和黑名单
-    const whitelistRecommendations = paperRecommendations.filter(r => r.recommendationType === 'WHITELIST');
-    const blacklistRecommendations = paperRecommendations.filter(r => r.recommendationType === 'BLACKLIST');
-
-    // 创建纸张名称到推荐理由的映射
+    // 创建纸张名称到推荐理由的映射（白名单）
     const whitelistReasonMap = new Map(
-        whitelistRecommendations.map(r => [r.paperName, r.reason])
+        paperRecommendations
+            .filter(r => r.recommendationType === 'WHITELIST')
+            .map(r => [r.paperName, r.reason])
     );
 
     // 创建纸张类型到打样包的映射
@@ -217,51 +215,6 @@ export function DesignerViewCard({
                     )}>
                         购买单色打样包，体验该颜色真实印刷效果
                     </p>
-                )}
-
-                {/* 黑名单警示 - 简洁单色设计 */}
-                {blacklistRecommendations.length > 0 && (
-                    <>
-                        <div className={cn(
-                            "h-px",
-                            isDark ? "bg-white/10" : "bg-black/10"
-                        )} />
-                        <div className="space-y-3">
-                            <div className={cn(
-                                "flex items-center gap-2 text-sm",
-                                isDark ? "text-white/50" : "text-black/50"
-                            )}>
-                                <AlertTriangle className="h-3.5 w-3.5" />
-                                <span>不建议使用</span>
-                            </div>
-                            <div className="space-y-2">
-                                {blacklistRecommendations.map((rec) => (
-                                    <div
-                                        key={rec.id}
-                                        className={cn(
-                                            "py-3 px-4 rounded-xl -mx-4",
-                                            isDark 
-                                                ? "bg-white/[0.03]" 
-                                                : "bg-black/[0.02]"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "text-base",
-                                            isDark ? "text-white/70" : "text-black/70"
-                                        )}>
-                                            {rec.paperName}
-                                        </div>
-                                        <p className={cn(
-                                            "text-sm mt-1",
-                                            isDark ? "text-white/40" : "text-black/50"
-                                        )}>
-                                            {rec.reason}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </>
                 )}
 
                 {/* 底部说明 */}
