@@ -1,6 +1,6 @@
 'use client';
 
-import { ShieldCheck, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Crosshair, Package, Gift, ShoppingCart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { InkRecipeDisplay } from '../../ink-recipe-display';
@@ -118,9 +118,12 @@ function TrueSourceCard({
             <CardContent className="p-6 space-y-5">
                 {/* 标题区 */}
                 <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
-                        真源数据
-                    </h3>
+                    <div className="flex items-center gap-2">
+                        <Crosshair className="h-4 w-4 text-black/70" />
+                        <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                            真源数据
+                        </h3>
+                    </div>
                     <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
                         真源
                     </span>
@@ -199,7 +202,7 @@ function AuditCard({
             <CardContent className="p-6 space-y-5">
                 {/* 标题区 */}
                 <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <ShieldCheck className="h-4 w-4 text-black/70" />
                     <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
                         审计与溯源
                     </h3>
@@ -248,13 +251,41 @@ function ProofingPacksCard({ proofingPacks }: { proofingPacks: ColorData['proofi
             <CardContent className="p-6 space-y-5">
                 {/* 标题区 */}
                 <div>
-                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
-                        单色打样包
-                    </h3>
+                    <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-black/70" />
+                        <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                            单色打样包
+                        </h3>
+                    </div>
                     <p className="text-xs text-black/40 mt-1">
-                        不确定效果？花 10 块钱买张卡片看看
+                        购买该色打样包，看真实纸张表现
                     </p>
                 </div>
+
+                {/* 全家桶 */}
+                {proofingPacks.length > 1 && (
+                    <div className="flex items-center justify-between p-4 rounded-xl border-2 bg-gradient-to-r from-black/[0.03] to-black/[0.01] border-black/10">
+                        <div>
+                            <div className="font-bold text-black flex items-center gap-2">
+                                <Gift className="h-4 w-4" />
+                                <span>全家桶</span>
+                                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-black/10 text-black/60">
+                                    {proofingPacks.length} 张纸型
+                                </span>
+                            </div>
+                            <div className="text-sm text-black/60 mt-1">
+                                ¥{(proofingPacks.reduce((sum, p) => sum + p.price, 0) / 100).toFixed(0)}
+                                <span className="text-xs text-black/40 ml-1">全套体验</span>
+                            </div>
+                        </div>
+                        <Button size="sm" className="bg-black hover:bg-black/80 text-white rounded-full" asChild>
+                            <a href={proofingPacks[0]?.externalUrl || '#'} target="_blank" rel="noopener noreferrer" className="gap-1">
+                                购买全套
+                                <ShoppingCart className="h-3 w-3" />
+                            </a>
+                        </Button>
+                    </div>
+                )}
 
                 {/* 打样包列表 */}
                 <div className="space-y-3">
@@ -265,10 +296,10 @@ function ProofingPacksCard({ proofingPacks }: { proofingPacks: ColorData['proofi
                                 <div className="text-sm text-black/60">¥{(pack.price / 100).toFixed(0)}</div>
                             </div>
                             {pack.externalUrl && (
-                                <Button size="sm" className="bg-black hover:bg-black/80 text-white" asChild>
+                                <Button size="sm" className="bg-black hover:bg-black/80 text-white rounded-full" asChild>
                                     <a href={pack.externalUrl} target="_blank" rel="noopener noreferrer" className="gap-1">
                                         购买
-                                        <ExternalLink className="h-3 w-3" />
+                                        <ShoppingCart className="h-3 w-3" />
                                     </a>
                                 </Button>
                             )}
