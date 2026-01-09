@@ -90,14 +90,66 @@ SOURCE/
 - pnpm 9+
 - Docker & Docker Compose
 
-### 1. 启动数据库（Docker）
+### 一键启动（推荐）
 
 ```bash
-# 启动 PostgreSQL 容器
-docker compose up -d
+# 首次启动（自动完成所有配置）
+./scripts/dev.sh
 
-# 查看容器状态
-docker compose ps
+# 或使用 pnpm
+pnpm start
+```
+
+脚本会自动：
+- ✅ 检查 Node.js/pnpm 版本
+- ✅ 启动数据库容器
+- ✅ 安装依赖
+- ✅ 生成 Prisma Client
+- ✅ 创建环境变量文件
+- ✅ 启动开发服务器
+- ✅ 打开浏览器
+
+### 启动脚本选项
+
+```bash
+./scripts/dev.sh              # 正常启动
+./scripts/dev.sh --fresh      # 完全重新安装依赖
+./scripts/dev.sh --skip-db    # 跳过数据库检查
+./scripts/dev.sh --no-open    # 不自动打开浏览器
+```
+
+### Docker 容器管理
+
+```bash
+# 容器生命周期
+pnpm docker:start     # 启动容器
+pnpm docker:stop      # 停止容器
+pnpm docker:restart   # 重启容器
+pnpm docker:status    # 查看状态
+
+# 容器维护
+pnpm docker:rebuild   # 重建容器（保留数据）
+pnpm docker:reset     # 完全重置（删除数据）⚠️
+pnpm docker:clean     # 清理缓存和悬空镜像
+
+# 数据库操作
+pnpm docker:logs      # 查看实时日志
+pnpm docker:shell     # 进入 psql 命令行
+pnpm docker:backup    # 备份数据库
+
+# 恢复数据库
+./scripts/docker.sh restore backups/source_backup_xxx.sql.gz
+```
+
+### 手动配置（可选）
+
+<details>
+<summary>展开手动配置步骤</summary>
+
+#### 1. 启动数据库
+
+```bash
+docker compose up -d
 ```
 
 数据库配置：
@@ -106,58 +158,43 @@ docker compose ps
 - 密码：`source_dev_password`
 - 数据库：`source`
 
-### 2. 配置环境变量
+#### 2. 配置环境变量
 
 ```bash
 cd apps/web
 
-# 创建 .env 文件
-cat > .env << 'EOF'
+cat > .env.local << 'EOF'
 DATABASE_URL="postgresql://source:source_dev_password@localhost:5434/source"
 NEXTAUTH_SECRET="dev-secret-do-not-use-in-production"
 NEXTAUTH_URL="http://localhost:3000"
 EOF
 ```
 
-### 3. 安装依赖并初始化数据库
+#### 3. 安装依赖
 
 ```bash
-# 回到项目根目录
 cd ../..
-
-# 安装依赖
 pnpm install
-
-# 生成 Prisma Client
 pnpm --filter @source/web db:generate
-
-# 推送数据库 Schema
 pnpm --filter @source/web db:push
-
-# 填充种子数据
 pnpm --filter @source/web db:seed
 ```
 
-### 4. 启动开发服务器
+#### 4. 启动开发服务器
 
 ```bash
-# 启动 Next.js（支持热更新）
-pnpm --filter @source/web dev
+pnpm dev
 ```
 
-访问 http://localhost:3000
+</details>
 
 ### 数据库管理
 
 ```bash
-# 打开 Prisma Studio（可视化数据库管理）
-pnpm --filter @source/web db:studio
-
-# 重置数据库（清空并重新填充）
-pnpm --filter @source/web db:reset
-
-# 创建数据库迁移
-pnpm --filter @source/web db:migrate
+pnpm db:studio    # 打开 Prisma Studio（可视化管理）
+pnpm db:push      # 同步数据库结构
+pnpm db:seed      # 填充种子数据
+pnpm db:reset     # 重置数据库（清空并重新填充）
 ```
 
 ---
