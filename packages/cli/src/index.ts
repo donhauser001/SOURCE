@@ -21,8 +21,9 @@ import { configCommand } from './commands/config.js';
 import { citeCommand } from './commands/cite.js';
 import { costCommand } from './commands/cost.js';
 import { auditCommand } from './commands/audit.js';
+import { analyzeCommand } from './commands/analyze.js';
 
-const VERSION = '0.4.2';
+const VERSION = '0.6.3';
 
 const program = new Command();
 
@@ -46,6 +47,7 @@ program.addCommand(configCommand);
 program.addCommand(citeCommand);
 program.addCommand(costCommand);
 program.addCommand(auditCommand);
+program.addCommand(analyzeCommand);
 
 // 全局错误处理
 program.exitOverride((err) => {

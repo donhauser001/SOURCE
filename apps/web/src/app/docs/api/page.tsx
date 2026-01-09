@@ -72,6 +72,86 @@ export default function ApiDocPage() {
                 <pre><code>{`curl -H "Authorization: Bearer sk_xxx" \\
   "https://source.ink/api/v1/colors/CN-Song-04"`}</code></pre>
 
+                <h2>分析 API</h2>
+
+                <h3>POST /api/analyze</h3>
+                <p>完整分析 SourcePack，生成报告（包含风险识别、纸张推荐）。</p>
+                <pre><code>{`curl -X POST -H "Authorization: Bearer sk_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d @project.sourcepack.json \\
+  "https://source.ink/api/analyze"`}</code></pre>
+                <p><strong>请求体</strong>：SourcePack JSON（见下方格式）</p>
+                <p><strong>响应</strong>：</p>
+                <pre><code>{`{
+  "success": true,
+  "data": {
+    "id": "report-id",
+    "summary": { ... },
+    "risks": [ ... ],
+    "recommendations": [ ... ],
+    "expiresAt": "2026-02-08T00:00:00.000Z"
+  }
+}`}</code></pre>
+
+                <h3>POST /api/analyze/parse</h3>
+                <p>快速解析 SourcePack，仅返回颜色映射结果（不生成报告）。</p>
+                <pre><code>{`curl -X POST -H "Content-Type: application/json" \\
+  -d @project.sourcepack.json \\
+  "https://source.ink/api/analyze/parse"`}</code></pre>
+
+                <h3>GET /api/analyze/:reportId</h3>
+                <p>获取分析报告详情。</p>
+                <pre><code>{`curl -H "Authorization: Bearer sk_xxx" \\
+  "https://source.ink/api/analyze/cmk4xxx"`}</code></pre>
+
+                <h2>插件 API</h2>
+
+                <h3>POST /api/plugin/verify</h3>
+                <p>验证插件授权状态。</p>
+                <pre><code>{`curl -X POST -H "Authorization: Bearer sk_plugin_xxx" \\
+  "https://source.ink/api/plugin/verify"`}</code></pre>
+                <p><strong>响应</strong>：</p>
+                <pre><code>{`{
+  "ok": true,
+  "data": {
+    "valid": true,
+    "tier": "PLUGIN_PAID",
+    "scopes": ["read:color", "search:color"],
+    "rateLimit": { "remaining": 59, "reset": 1704700000 }
+  }
+}`}</code></pre>
+
+                <h3>GET /api/plugin/colors</h3>
+                <p>获取插件可用的颜色数据。</p>
+                <pre><code>{`curl -H "Authorization: Bearer sk_plugin_xxx" \\
+  "https://source.ink/api/plugin/colors?q=烟雨"`}</code></pre>
+
+                <h2>SourcePack 格式</h2>
+                <p>SourcePack 是工程色彩包的标准 JSON 格式：</p>
+                <pre><code>{`{
+  "version": "1.0",
+  "docInfo": {
+    "name": "品牌画册",
+    "source": "Adobe InDesign",
+    "pageCount": 12
+  },
+  "printIntent": {
+    "printType": "offset",
+    "quantity": 3000,
+    "specialProcesses": ["varnish"]
+  },
+  "colors": [
+    {
+      "colorId": "CN-Song-04",
+      "name": "烟雨青",
+      "lab": { "L": 65.2, "a": -12.3, "b": -8.5 },
+      "usage": ["fill", "background"],
+      "riskTags": ["large_area"],
+      "coveragePercent": 30
+    }
+  ]
+}`}</code></pre>
+
                 <h2>响应格式</h2>
 
                 <h3>成功响应</h3>

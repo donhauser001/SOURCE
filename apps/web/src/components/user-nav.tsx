@@ -15,6 +15,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+import { cn } from '@/lib/utils';
+
 const tierLabels: Record<string, string> = {
     FREE: '免费用户',
     VERIFIED: '已验证',
@@ -22,18 +24,24 @@ const tierLabels: Record<string, string> = {
     ADMIN: '管理员',
 };
 
-export function UserNav() {
+export function UserNav({ isDark = false }: { isDark?: boolean }) {
     const { data: session, status } = useSession();
 
     if (status === 'loading') {
         return (
-            <div className="h-8 w-8 rounded-full bg-foreground/5 animate-pulse" />
+            <div className={cn(
+                "h-8 w-8 rounded-full animate-pulse",
+                isDark ? "bg-white/10" : "bg-foreground/5"
+            )} />
         );
     }
 
     if (!session) {
         return (
-            <Button asChild size="sm" className="h-8">
+            <Button asChild size="sm" className={cn(
+                "h-8 transition-all",
+                isDark ? "bg-white/20 hover:bg-white/30 text-white border-0" : ""
+            )}>
                 <Link href="/login">登录</Link>
             </Button>
         );
@@ -51,10 +59,16 @@ export function UserNav() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="relative h-8 w-8 rounded-full transition-opacity hover:opacity-80">
-                    <Avatar className="h-8 w-8">
+                <button className="relative h-8 w-8 rounded-full transition-opacity hover:opacity-80 outline-none">
+                    <Avatar className={cn(
+                        "h-8 w-8",
+                        isDark ? "border border-white/20" : ""
+                    )}>
                         <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                        <AvatarFallback className="bg-foreground/5 text-foreground/60 text-xs">
+                        <AvatarFallback className={cn(
+                            "text-xs",
+                            isDark ? "bg-white/10 text-white/60" : "bg-foreground/5 text-foreground/60"
+                        )}>
                             {initials}
                         </AvatarFallback>
                     </Avatar>

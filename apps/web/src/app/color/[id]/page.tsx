@@ -382,10 +382,12 @@ export default async function ColorPage({ params }: Props) {
         })),
     };
 
+    const isDark = color.labL < 50;
+
     return (
         <>
-            <SiteHeader />
-            <main className="min-h-screen pt-16 bg-background">
+            <SiteHeader isDark={isDark} />
+            <main className="min-h-screen">
                 <ColorIdentityCard color={colorData} />
             </main>
         </>

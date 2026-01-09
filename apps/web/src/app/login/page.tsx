@@ -22,7 +22,7 @@ export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
-    
+
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isDevLoading, setIsDevLoading] = useState(false);

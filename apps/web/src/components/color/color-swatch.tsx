@@ -20,7 +20,7 @@ interface Props {
  * Lab 转 RGB（简化版）
  * 注意：这只是近似转换，真实印刷效果需以实体打样为准
  */
-function labToRgb(L: number, a: number, b: number): { r: number; g: number; b: number } {
+export function labToRgb(L: number, a: number, b: number): { r: number; g: number; b: number } {
     // Lab to XYZ
     let y = (L + 16) / 116;
     let x = a / 500 + y;

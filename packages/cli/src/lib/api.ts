@@ -12,7 +12,7 @@ import { config } from './config.js';
 import { output } from './output.js';
 
 // CLI 版本（与 index.ts 保持同步）
-const CLI_VERSION = '0.4.2';
+const CLI_VERSION = '0.6.3';
 
 // 错误码到友好消息的映射
 const ERROR_MESSAGES: Record<string, string> = {

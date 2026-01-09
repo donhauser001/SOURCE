@@ -5,9 +5,11 @@
  */
 
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface Props {
     recipe: Record<string, number>;
+    isDark?: boolean;
 }
 
 // 油墨颜色映射（用于视觉区分）
@@ -23,12 +25,12 @@ const inkColors: Record<string, string> = {
     黄: 'bg-yellow-500',
 };
 
-export function InkRecipeDisplay({ recipe }: Props) {
+export function InkRecipeDisplay({ recipe, isDark = false }: Props) {
     const entries = Object.entries(recipe).sort((a, b) => b[1] - a[1]);
 
     if (entries.length === 0) {
         return (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className={cn("text-sm text-center py-4", isDark ? "text-white/40" : "text-black/40")}>
                 暂无配方数据
             </p>
         );
@@ -40,7 +42,10 @@ export function InkRecipeDisplay({ recipe }: Props) {
     return (
         <div className="space-y-4">
             {/* 配方条形图 */}
-            <div className="h-8 w-full rounded-lg overflow-hidden flex">
+            <div className={cn(
+                "h-8 w-full rounded-lg overflow-hidden flex border",
+                isDark ? "border-white/10" : "border-black/5"
+            )}>
                 {entries.map(([name, value], index) => {
                     const percentage = (value / total) * 100;
                     const bgColor = inkColors[name] || 'bg-gray-400';
@@ -62,11 +67,15 @@ export function InkRecipeDisplay({ recipe }: Props) {
                         <div className="flex items-center justify-between text-sm">
                             <div className="flex items-center gap-2">
                                 <span
-                                    className={`w-3 h-3 rounded-full ${inkColors[name] || 'bg-gray-400'}`}
+                                    className={cn(
+                                        "w-3 h-3 rounded-full",
+                                        inkColors[name] || 'bg-gray-400',
+                                        name === '白' && !isDark && "border border-gray-200"
+                                    )}
                                 />
-                                <span>{name}</span>
+                                <span className={isDark ? "text-white/90" : "text-black/90"}>{name}</span>
                             </div>
-                            <span className="font-mono font-medium">{value}%</span>
+                            <span className={cn("font-mono font-medium", isDark ? "text-white/90" : "text-black/90")}>{value}%</span>
                         </div>
                         <Progress value={value} className="h-1.5" />
                     </div>
@@ -74,9 +83,12 @@ export function InkRecipeDisplay({ recipe }: Props) {
             </div>
 
             {/* 总计 */}
-            <div className="pt-3 border-t flex justify-between text-sm">
-                <span className="text-muted-foreground">总计</span>
-                <span className="font-mono font-medium">{total}%</span>
+            <div className={cn(
+                "pt-3 border-t flex justify-between text-sm",
+                isDark ? "border-white/10" : "border-black/10"
+            )}>
+                <span className={isDark ? "text-white/40" : "text-black/40"}>总计</span>
+                <span className={cn("font-mono font-medium", isDark ? "text-white/90" : "text-black/90")}>{total}%</span>
             </div>
         </div>
     );
