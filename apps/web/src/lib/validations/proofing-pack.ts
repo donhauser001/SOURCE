@@ -28,7 +28,7 @@ export const ProofingPackStatusLabels = {
 
 export const createProofingPackSchema = z.object({
     colorId: z.string().min(1, '请选择色彩'),
-    paperType: PaperTypeEnum,
+    paperTypeId: z.string().min(1, '请选择纸型'),  // 改为 paperTypeId
     price: z.number().int().min(0, '价格不能为负数'),  // 单位：分
     externalUrl: z.string().url('请输入有效的URL').optional().nullable(),
     isActive: z.boolean().default(true),
@@ -51,7 +51,7 @@ export const updateProofingPackSchema = z.object({
 
 export const listProofingPacksSchema = z.object({
     colorId: z.string().optional(),
-    paperType: PaperTypeEnum.optional(),
+    paperTypeId: z.string().optional(),  // 改为 paperTypeId
     isActive: z.boolean().optional(),
     limit: z.number().min(1).max(100).default(50),
     cursor: z.string().optional(),

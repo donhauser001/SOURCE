@@ -73,12 +73,8 @@ export default function AdminBatchesPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">批次管理</h1>
-                    <p className="text-muted-foreground">管理测量、扫描、印刷和审计批次</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <Button asChild>
                     <Link href="/admin/batches/new">
                         <Plus className="h-4 w-4 mr-2" />

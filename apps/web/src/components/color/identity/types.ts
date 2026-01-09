@@ -137,6 +137,18 @@ export interface ProofingPack {
     externalUrl: string | null;
 }
 
+export interface ColorBookInfo {
+    id: string;
+    bookId: string;
+    name: string;
+    slug: string;
+    shortDesc: string | null;
+    coverImageUrl: string | null;
+    category: string;
+    pageNumber: string | null;
+    sectionName: string | null;
+}
+
 export interface ColorData {
     colorId: string;
     name: string;
@@ -162,4 +174,5 @@ export interface ColorData {
     testReports?: RecipeTestReport[];
     risks?: ColorRisk[];
     participations?: Participation[];
+    colorBooks?: ColorBookInfo[];
 }

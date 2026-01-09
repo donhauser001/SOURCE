@@ -132,14 +132,9 @@ export default async function AdminDashboard() {
     ];
 
     return (
-        <div className="p-8">
-            <header className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">仪表盘</h1>
-                <p className="text-muted-foreground mt-1">SOURCE 数据管理后台</p>
-            </header>
-
+        <div className="space-y-6">
             {/* 统计卡片 */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {statCards.map((card) => (
                     <Link
                         key={card.title}

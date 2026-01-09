@@ -92,15 +92,6 @@ export default function NewProofingPackPage() {
                 返回列表
             </Link>
 
-            {/* 页面标题 */}
-            <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Package className="h-6 w-6" />
-                    新增打样包
-                </h1>
-                <p className="text-muted-foreground mt-1">为色彩创建新的打样包 SKU</p>
-            </div>
-
             {/* 表单 */}
             <Card>
                 <CardHeader>

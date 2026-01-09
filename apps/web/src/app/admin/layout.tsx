@@ -1,12 +1,13 @@
 /**
  * 后台管理布局
  * 
- * 包含侧边栏导航和权限检查
+ * 包含侧边栏导航、顶部栏和权限检查
  */
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { AdminSidebar } from '@/components/admin/sidebar';
+import { AdminHeader } from '@/components/admin/header';
 
 interface Props {
     children: React.ReactNode;
@@ -30,10 +31,12 @@ export default async function AdminLayout({ children }: Props) {
     return (
         <div className="flex min-h-screen">
             <AdminSidebar />
-            <main className="flex-1 bg-muted/30">
-                {children}
-            </main>
+            <div className="flex-1 flex flex-col">
+                <AdminHeader />
+                <main className="flex-1 bg-muted/30 p-6">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }
-

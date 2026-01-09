@@ -133,23 +133,12 @@ export default function EditProofingPackPage() {
 
     return (
         <div className="space-y-6">
-            {/* 返回按钮 */}
-            <Link href="/admin/proofing-packs" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                <ArrowLeft className="h-4 w-4" />
-                返回列表
-            </Link>
-
-            {/* 页面标题 */}
+            {/* 返回按钮和操作 */}
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Package className="h-6 w-6" />
-                        编辑打样包
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {pack.color.colorId} / {PAPER_TYPE_LABELS[pack.paperType] || pack.paperType}
-                    </p>
-                </div>
+                <Link href="/admin/proofing-packs" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <ArrowLeft className="h-4 w-4" />
+                    返回列表
+                </Link>
                 <Button
                     variant="destructive"
                     size="sm"

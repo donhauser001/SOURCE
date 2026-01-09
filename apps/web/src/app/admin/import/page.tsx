@@ -15,13 +15,6 @@ import { FileSpreadsheet, FileJson, Palette, FileText, ArrowRight } from 'lucide
 export default function ImportPage() {
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold">数据导入</h1>
-                <p className="text-muted-foreground mt-2">
-                    批量导入色彩数据和纸张表现数据
-                </p>
-            </div>
-
             {/* 导入类型选择 */}
             <div className="grid gap-6 md:grid-cols-2">
                 {/* 色彩导入 */}

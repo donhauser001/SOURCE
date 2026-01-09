@@ -99,14 +99,6 @@ export default function ApiKeysPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">API 密钥管理</h1>
-                    <p className="text-muted-foreground">管理所有用户的 API 密钥</p>
-                </div>
-            </div>
-
             {/* 统计卡片 */}
             <div className="grid gap-4 md:grid-cols-4">
                 <Card>

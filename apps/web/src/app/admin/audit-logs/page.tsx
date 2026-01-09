@@ -111,12 +111,6 @@ export default function AdminAuditLogsPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div>
-                <h1 className="text-2xl font-bold">操作审计日志</h1>
-                <p className="text-muted-foreground">查看所有管理员操作记录</p>
-            </div>
-
             {/* 统计卡片 */}
             {stats && (
                 <div className="grid gap-4 md:grid-cols-4">

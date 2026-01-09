@@ -122,14 +122,6 @@ export default function UsersPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">用户管理</h1>
-                    <p className="text-muted-foreground">管理系统用户和权限</p>
-                </div>
-            </div>
-
             {/* 统计卡片 */}
             {stats && (
                 <div className="grid gap-4 md:grid-cols-4">

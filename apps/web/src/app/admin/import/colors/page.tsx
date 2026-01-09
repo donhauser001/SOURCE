@@ -256,17 +256,13 @@ export default function ImportColorsPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center gap-4">
+            {/* 返回按钮 */}
+            <div className="flex items-center">
                 <Link href="/admin/import">
                     <Button variant="ghost" size="icon">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
-                <div>
-                    <h1 className="text-2xl font-bold">色彩数据导入</h1>
-                    <p className="text-muted-foreground">支持 CSV 和 JSON 格式</p>
-                </div>
             </div>
 
             {/* 状态提示 */}

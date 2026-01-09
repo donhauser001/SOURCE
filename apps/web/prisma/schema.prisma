@@ -139,6 +139,10 @@ model Partner {
   colorParticipations ColorParticipation[]
   batches       Batch[]           // 执行的批次
   testReports   RecipeTestReport[] // 执行的测试报告
+  
+  // 供应关联（多对多）
+  suppliedPaperTypes  PaperTypeOption[]  @relation("PaperTypeSuppliers")  // 供应的纸型（对 PAPER_VENDOR 有意义）
+  suppliedInks        InkOption[]        @relation("InkSuppliers")        // 供应的油墨（对 INK_VENDOR 有意义）
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -313,6 +317,9 @@ model Color {
 
   // 关联 - 合作者参与记录
   participations       ColorParticipation[]
+  
+  // 关联 - 色彩簿
+  colorBookEntries     ColorBookEntry[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -343,6 +350,137 @@ enum AuditStatus {
 }
 
 // =============================================================================
+// 色彩簿（ColorBook）
+// =============================================================================
+
+model ColorBook {
+  id            String   @id @default(cuid())
+  bookId        String   @unique  // 色彩簿编号
+  name          String            // 名称
+  slug          String   @unique  // URL 标识
+  
+  // 描述信息
+  description   String?           // 详细描述
+  shortDesc     String?           // 简短描述
+  coverImageUrl String?           // 封面图
+  
+  // 出版信息
+  publisher     String?           // 出版商
+  publishedYear Int?              // 出版年份
+  edition       String?           // 版本
+  isbn          String?           // ISBN
+  
+  // 分类
+  colorSystem   ColorSystem?      // 色彩系统
+  categoryId    String            // 分类 ID
+  category      ColorBookCategoryOption @relation(fields: [categoryId], references: [id])
+  tags          String[]          // 标签
+  
+  // 统计
+  totalColors   Int      @default(0)  // 色彩总数
+  
+  // 状态
+  status        ColorBookStatus @default(DRAFT)
+  
+  // 关联
+  entries       ColorBookEntry[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([bookId])
+  @@index([slug])
+  @@index([status])
+  @@index([categoryId])
+}
+
+model ColorBookCategoryOption {
+  id        String      @id @default(cuid())
+  name      String      @unique  // 分类名称
+  order     Int         @default(0)
+  isDefault Boolean     @default(false)
+  
+  // 关联
+  colorBooks ColorBook[]
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  @@index([order])
+}
+
+model ColorBookEntry {
+  id          String    @id @default(cuid())
+  colorBookId String
+  colorBook   ColorBook @relation(fields: [colorBookId], references: [id], onDelete: Cascade)
+  
+  colorId     String
+  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  
+  // 附加信息
+  order       Int       @default(0)  // 排序
+  pageNumber  String?                // 页码
+  sectionName String?                // 章节名
+  note        String?                // 备注
+  
+  createdAt   DateTime  @default(now())
+  
+  @@unique([colorBookId, colorId])
+  @@index([colorBookId, order])
+  @@index([colorId])
+}
+
+enum ColorSystem {
+  PANTONE       // 潘通
+  RAL           // RAL
+  NCS           // NCS
+  MUNSELL       // 孟塞尔
+  CMYK          // CMYK
+  SOURCE        // SOURCE 原创
+  OTHER         // 其他
+}
+
+enum ColorBookStatus {
+  DRAFT         // 草稿
+  ACTIVE        // 已发布
+  ARCHIVED      // 已归档
+}
+
+// =============================================================================
+// 纸型选项（动态管理）
+// =============================================================================
+
+model PaperTypeOption {
+  id              String   @id @default(cuid())
+  code            String   @unique  // 英文标识符，如 PREMIUM_MATTE
+  name            String            // 中文名称，如 高阶映画
+  description     String?           // 详细描述
+  
+  // 纸张特性参数
+  category        PaperCategory     // 涂布类型：COATED/UNCOATED/SPECIALTY
+  gramWeightMin   Int?              // 最小克重 (g/m²)
+  gramWeightMax   Int?              // 最大克重 (g/m²)
+  surfaceFinish   String?           // 表面处理：光面/哑面/压纹等
+  suitableFor     Json?             // 适用场景 JSON 数组
+  
+  // 管理字段
+  order           Int      @default(0)  // 排序
+  isActive        Boolean  @default(true) // 软删除标记
+  
+  // 关联
+  paperProfiles   PaperProfile[]
+  proofingPacks   ProofingPack[]
+  suppliers       Partner[]  @relation("PaperTypeSuppliers")  // 供应该纸型的纸商（多对多）
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([code])
+  @@index([isActive])
+  @@index([order])
+}
+
+// =============================================================================
 // 纸张表现数据
 // =============================================================================
 
@@ -351,7 +489,9 @@ model PaperProfile {
   colorId       String
   color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
-  paperType     PaperType         // 纸张类型枚举
+  // 纸型关联（外键）
+  paperTypeId   String
+  paperType     PaperTypeOption @relation(fields: [paperTypeId], references: [id])
 
   // 该纸张上的实测 Lab
   labL          Float
@@ -380,17 +520,9 @@ model PaperProfile {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([colorId, paperType])
-  @@index([paperType])
+  @@unique([colorId, paperTypeId])
+  @@index([paperTypeId])
   @@index([recommendation])
-}
-
-enum PaperType {
-  PREMIUM_MATTE      // 高阶映画
-  UNCOATED           // 纯质纸
-  COATED             // 铜版纸
-  OFFSET             // 双胶纸
-  LIGHTWEIGHT        // 轻型纸
 }
 
 enum Recommendation {
@@ -511,6 +643,54 @@ enum CostLevel {
 }
 
 // =============================================================================
+// 油墨选项（动态管理）
+// =============================================================================
+
+model InkOption {
+  id              String   @id @default(cuid())
+  code            String   @unique  // 英文标识符，如 PANTONE-485-C
+  name            String            // 油墨名称，如 潘通 485C
+  brand           String?           // 品牌，如 Pantone、DIC、TOYO
+  colorSeries     String?           // 颜色系列，如 红色系、蓝色系
+  colorCode       String?           // 色号
+  
+  // 油墨类型
+  inkType         InkType           // BASE/SPOT/EXTENDER
+  
+  // 物理特性
+  viscosity       Float?            // 粘度 (mPa·s)
+  dryingTime      Int?              // 干燥时间 (分钟)
+  colorStrength   Float?            // 色强度 (%)
+  lightfastness   Int?              // 耐光性等级 1-8
+  
+  // 价格范围（分为单位）
+  priceMin        Int?              // 最低价格
+  priceMax        Int?              // 最高价格
+  
+  // 管理字段
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  
+  // 关联
+  recipeIngredients RecipeIngredient[]  // 使用该油墨的配方成分
+  suppliers       Partner[]  @relation("InkSuppliers")  // 供应商（多对多）
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([code])
+  @@index([inkType])
+  @@index([isActive])
+  @@index([order])
+}
+
+enum InkType {
+  BASE          // 基础色
+  SPOT          // 专色
+  EXTENDER      // 冲淡剂
+}
+
+// =============================================================================
 // 油墨构成（Recipe Ingredient）
 // =============================================================================
 
@@ -519,20 +699,17 @@ model RecipeIngredient {
   recipeId      String
   recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  inkName       String            // 油墨名称
-  inkType       InkType           // 基础色 / 专色 / 冲淡剂
+  // 油墨关联（外键）
+  inkId         String
+  ink           InkOption @relation(fields: [inkId], references: [id])
+  
   percentage    Float             // 比例（%）
 
   // 排序顺序
   order         Int      @default(0)
 
   @@index([recipeId])
-}
-
-enum InkType {
-  BASE          // 基础色
-  SPOT          // 专色
-  EXTENDER      // 冲淡剂
+  @@index([inkId])
 }
 
 // =============================================================================
@@ -744,7 +921,10 @@ model ProofingPack {
   colorId       String
   color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
-  paperType     PaperType         // 一纸一包
+  // 纸型关联（外键）
+  paperTypeId   String
+  paperType     PaperTypeOption @relation(fields: [paperTypeId], references: [id])
+  
   price         Int               // 参考价格（分）
   externalUrl   String?           // 淘宝/外部履约链接
 
@@ -757,7 +937,8 @@ model ProofingPack {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([colorId, paperType])
+  @@unique([colorId, paperTypeId])
+  @@index([paperTypeId])
 }
 
 // =============================================================================
@@ -966,8 +1147,6 @@ model ActivationCode {
 
   @@index([code])
 }
-
-
 
 // =============================================================================
 // 管理员操作审计日志

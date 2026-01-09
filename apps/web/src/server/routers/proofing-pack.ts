@@ -139,6 +139,13 @@ export const proofingPackRouter = createTRPCRouter({
                         labB: true,
                     },
                 },
+                paperType: {
+                    select: {
+                        id: true,
+                        code: true,
+                        name: true,
+                    },
+                },
                 _count: {
                     select: { buyIntents: true },
                 },

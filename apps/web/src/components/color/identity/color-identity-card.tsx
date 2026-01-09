@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { labToRgb } from '../color-swatch';
 import { ViewModeProvider } from './view-mode-context';
 import { OverviewTab, RecipesTab, EvidenceTab, RisksTab, ParticipantsTab } from './tabs';
+import { ColorBooksBadge } from '@/components/color-book/color-books-badge';
 import type { ColorData } from './types';
 
 interface Props {
@@ -135,6 +136,14 @@ export function ColorIdentityCard({ color }: Props) {
                                                 </Badge>
                                             )}
                                         </div>
+
+                                        {/* 所属色彩簿 */}
+                                        {color.colorBooks && color.colorBooks.length > 0 && (
+                                            <ColorBooksBadge
+                                                colorBooks={color.colorBooks}
+                                                isDark={isDark}
+                                            />
+                                        )}
 
                                         {/* 真源说明 */}
                                         {color.trueSource.trueSourceNote && (

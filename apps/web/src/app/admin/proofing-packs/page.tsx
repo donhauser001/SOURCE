@@ -73,12 +73,8 @@ export default async function ProofingPacksPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">打样包管理</h1>
-                    <p className="text-muted-foreground">管理 SKU 和购买链接</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <Link href="/admin/proofing-packs/new">
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />

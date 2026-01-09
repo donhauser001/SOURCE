@@ -107,12 +107,8 @@ export default async function ActivationCodesPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">激活码管理</h1>
-                    <p className="text-muted-foreground">管理实体书激活码</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <Link href="/admin/activation-codes/generate">
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />

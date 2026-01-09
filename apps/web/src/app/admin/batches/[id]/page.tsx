@@ -78,21 +78,15 @@ export default async function BatchDetailPage({ params }: PageProps) {
     };
 
     return (
-        <div className="p-8 max-w-6xl space-y-6">
+        <div className="max-w-6xl space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" asChild>
-                        <Link href="/admin/batches">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            返回列表
-                        </Link>
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{batch.batchNo}</h1>
-                        <p className="text-muted-foreground mt-1">批次详细信息</p>
-                    </div>
-                </div>
+                <Button variant="ghost" asChild>
+                    <Link href="/admin/batches">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        返回列表
+                    </Link>
+                </Button>
                 <Button asChild>
                     <Link href={`/admin/batches/${batch.id}/edit`}>
                         <Edit className="mr-2 h-4 w-4" />

@@ -22,6 +22,9 @@ import {
     ClipboardCheck,
     KeyRound,
     ScrollText,
+    BookOpen,
+    Layers,
+    Droplets,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,9 +40,24 @@ const navItems = [
         icon: Palette,
     },
     {
+        title: '色彩簿管理',
+        href: '/admin/color-books',
+        icon: BookOpen,
+    },
+    {
         title: '合作者管理',
         href: '/admin/partners',
         icon: Building2,
+    },
+    {
+        title: '纸型管理',
+        href: '/admin/paper-types',
+        icon: Layers,
+    },
+    {
+        title: '油墨管理',
+        href: '/admin/inks',
+        icon: Droplets,
     },
     {
         title: '打样包管理',

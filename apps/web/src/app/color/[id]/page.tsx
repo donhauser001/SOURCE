@@ -211,6 +211,23 @@ export default async function ColorPage({ params }: Props) {
                 },
                 orderBy: { roleInColor: 'asc' },
             },
+            // 色彩簿关联
+            colorBookEntries: {
+                include: {
+                    colorBook: {
+                        select: {
+                            id: true,
+                            bookId: true,
+                            name: true,
+                            slug: true,
+                            shortDesc: true,
+                            coverImageUrl: true,
+                            category: true,
+                            status: true,
+                        },
+                    },
+                },
+            },
         },
     });
 
@@ -380,6 +397,21 @@ export default async function ColorPage({ params }: Props) {
             startAt: p.startAt?.toISOString() || null,
             endAt: p.endAt?.toISOString() || null,
         })),
+
+        // 所属色彩簿
+        colorBooks: color.colorBookEntries
+            .filter((entry) => entry.colorBook.status === 'ACTIVE')
+            .map((entry) => ({
+                id: entry.colorBook.id,
+                bookId: entry.colorBook.bookId,
+                name: entry.colorBook.name,
+                slug: entry.colorBook.slug,
+                shortDesc: entry.colorBook.shortDesc,
+                coverImageUrl: entry.colorBook.coverImageUrl,
+                category: entry.colorBook.category,
+                pageNumber: entry.pageNumber,
+                sectionName: entry.sectionName,
+            })),
     };
 
     const isDark = color.labL < 50;

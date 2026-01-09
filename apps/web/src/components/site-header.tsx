@@ -26,6 +26,7 @@ import { useSession } from 'next-auth/react';
 
 const navItems = [
     { href: '/colors', label: '色彩库' },
+    { href: '/color-books', label: '色彩簿' },
     { href: '/partners', label: '合作者' },
     { href: '/analyze', label: '分析' },
     { href: '/docs', label: '文档' },

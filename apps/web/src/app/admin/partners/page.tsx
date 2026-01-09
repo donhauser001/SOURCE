@@ -98,12 +98,8 @@ export default function AdminPartnersPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">合作者管理</h1>
-                    <p className="text-muted-foreground">管理印厂、纸商、油墨商等合作伙伴</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <Button asChild>
                     <Link href="/admin/partners/new">
                         <Plus className="h-4 w-4 mr-2" />

@@ -161,14 +161,6 @@ export default function GenerateActivationCodesPage() {
                 返回列表
             </Link>
 
-            <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Key className="h-6 w-6" />
-                    生成激活码
-                </h1>
-                <p className="text-muted-foreground mt-1">批量生成实体书激活码</p>
-            </div>
-
             <Card>
                 <CardHeader>
                     <CardTitle>生成设置</CardTitle>

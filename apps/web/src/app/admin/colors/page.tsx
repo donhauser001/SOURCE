@@ -182,12 +182,8 @@ export default function AdminColorsPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">色彩管理</h1>
-                    <p className="text-muted-foreground">管理色彩身份证数据</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <div className="flex gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

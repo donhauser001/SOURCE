@@ -136,12 +136,8 @@ export default function AuditNotesPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">审计注记</h1>
-                    <p className="text-muted-foreground">管理顾问团的审计注记</p>
-                </div>
+            {/* 操作按钮 */}
+            <div className="flex justify-end">
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
                         <Button className="gap-2">

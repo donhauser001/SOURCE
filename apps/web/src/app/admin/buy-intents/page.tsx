@@ -102,12 +102,6 @@ export default async function BuyIntentsPage() {
 
     return (
         <div className="space-y-6">
-            {/* 页面头部 */}
-            <div>
-                <h1 className="text-2xl font-bold">购买意图统计</h1>
-                <p className="text-muted-foreground">追踪用户购买行为和热门 SKU</p>
-            </div>
-
             {/* 统计卡片 */}
             <div className="grid gap-4 md:grid-cols-5">
                 <Card>
