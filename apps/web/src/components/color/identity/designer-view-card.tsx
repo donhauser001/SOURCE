@@ -29,6 +29,14 @@ const PAPER_TYPE_LABELS: Record<string, string> = {
     PURE: '纯质纸',
 };
 
+// 推荐等级标签
+const RECOMMENDATION_LABELS: Record<string, string> = {
+    BEST: '最佳拍档',
+    GOOD: '表现良好',
+    CAUTION: '建议慎用',
+    AVOID: '不推荐',
+};
+
 interface PaperProfile {
     paperType: string;
     paperTypeLabel?: string;
@@ -312,7 +320,7 @@ function PaperRow({
                 )}
                 onClick={hasDetails ? onToggle : undefined}
             >
-                {/* 纸张名称 */}
+                {/* 纸张名称 + 推荐标签 */}
                 <div className="flex-1 flex items-center gap-3">
                     <span className={cn(
                         "text-lg",
@@ -322,14 +330,15 @@ function PaperRow({
                     )}>
                         {paperName}
                     </span>
-                    {isFirst && (
+                    {/* 推荐等级标签 */}
+                    {profile.recommendation && (
                         <span className={cn(
-                            "text-xs uppercase tracking-wider px-2.5 py-1 rounded-full",
+                            "text-xs px-2.5 py-1 rounded-full",
                             isDark
-                                ? "bg-white/10 text-white/70"
-                                : "bg-black/5 text-black/70"
+                                ? "bg-white/10 text-white/60"
+                                : "bg-black/5 text-black/50"
                         )}>
-                            推荐
+                            {profile.recommendationLabel || RECOMMENDATION_LABELS[profile.recommendation] || profile.recommendation}
                         </span>
                     )}
                 </div>
