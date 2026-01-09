@@ -12,10 +12,9 @@
  */
 
 import { useState } from 'react';
-import { ExternalLink, ChevronDown } from 'lucide-react';
+import { ChevronDown, Star, ThumbsUp, AlertTriangle, Ban } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useViewMode } from './view-mode-context';
 import { ColorSwatch } from '../color-swatch';
 
 // 纸张类型中文标签
@@ -29,7 +28,15 @@ const PAPER_TYPE_LABELS: Record<string, string> = {
     PURE: '纯质纸',
 };
 
-// 推荐等级标签
+// 推荐等级配置（标签 + 图标）
+const RECOMMENDATION_CONFIG: Record<string, { label: string; icon: typeof Star }> = {
+    BEST: { label: '最佳拍档', icon: Star },
+    GOOD: { label: '表现良好', icon: ThumbsUp },
+    CAUTION: { label: '建议慎用', icon: AlertTriangle },
+    AVOID: { label: '不推荐', icon: Ban },
+};
+
+// 推荐等级标签（保持兼容）
 const RECOMMENDATION_LABELS: Record<string, string> = {
     BEST: '最佳拍档',
     GOOD: '表现良好',
@@ -101,7 +108,6 @@ export function DesignerViewCard({
     paperRecommendations = [],
     proofingPacks = [],
 }: DesignerViewCardProps) {
-    const { isDark } = useViewMode();
     const [expandedPaper, setExpandedPaper] = useState<string | null>(null);
 
     // 按还原度排序（ΔE 越小越好，null 值排最后）
@@ -133,9 +139,7 @@ export function DesignerViewCard({
 
     const cardStyle = cn(
         "backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl",
-        isDark
-            ? "bg-white/[0.03] border-white/[0.08]"
-            : "bg-black/[0.02] border-black/[0.05]",
+        "bg-white border-black/10",
         className
     );
 
@@ -144,10 +148,7 @@ export function DesignerViewCard({
             <CardContent className="p-8 space-y-8">
                 {/* 标题区 */}
                 <div className="flex items-baseline justify-between">
-                    <h3 className={cn(
-                        "text-sm font-bold uppercase tracking-[0.15em]",
-                        isDark ? "text-white/70" : "text-black/70"
-                    )}>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
                         色彩表现速览
                     </h3>
                 </div>
@@ -155,30 +156,21 @@ export function DesignerViewCard({
                 {/* 核心结论 */}
                 {bestPaper && (
                     <div className="space-y-3">
-                        <p className={cn(
-                            "text-2xl font-light leading-relaxed",
-                            isDark ? "text-white" : "text-black"
-                        )}>
+                        <p className="text-2xl font-light leading-relaxed text-black">
                             <span className="font-medium">{colorName}</span>
-                            <span className={isDark ? "text-white/60" : "text-black/60"}> 推荐使用 </span>
+                            <span className="text-black/60"> 推荐使用 </span>
                             <span className="font-medium">
                                 {bestPaper.paperTypeLabel || PAPER_TYPE_LABELS[bestPaper.paperType]}
                             </span>
                         </p>
-                        <p className={cn(
-                            "text-base",
-                            isDark ? "text-white/60" : "text-black/60"
-                        )}>
+                        <p className="text-base text-black/60">
                             {bestPaper.deltaE !== null ? getQualityStatement(bestPaper.deltaE, tolerance) : '色差数据缺失'}
                         </p>
                     </div>
                 )}
 
                 {/* 分隔线 */}
-                <div className={cn(
-                    "h-px",
-                    isDark ? "bg-white/10" : "bg-black/10"
-                )} />
+                <div className="h-px bg-black/10" />
 
                 {/* 纸张列表 */}
                 <div className="space-y-1">
@@ -196,7 +188,6 @@ export function DesignerViewCard({
                                 trueSource={trueSource}
                                 tolerance={tolerance}
                                 isFirst={index === 0}
-                                isDark={isDark}
                                 whitelistReason={whitelistReason}
                                 proofingPack={proofingPack}
                                 isExpanded={isExpanded}
@@ -207,21 +198,9 @@ export function DesignerViewCard({
                     })}
                 </div>
 
-                {/* 打样包说明 */}
-                {proofingPacks.length > 0 && (
-                    <p className={cn(
-                        "text-xs",
-                        isDark ? "text-white/40" : "text-black/40"
-                    )}>
-                        购买单色打样包，体验该颜色真实印刷效果
-                    </p>
-                )}
 
                 {/* 底部说明 */}
-                <p className={cn(
-                    "text-xs leading-relaxed",
-                    isDark ? "text-white/50" : "text-black/50"
-                )}>
+                <p className="text-xs leading-relaxed text-black/50">
                     评级基于色差值 ΔE，生产容差标准为 {tolerance.toFixed(1)}。数值越低，色彩还原越准确。
                 </p>
             </CardContent>
@@ -237,7 +216,6 @@ function PaperRow({
     trueSource,
     tolerance,
     isFirst,
-    isDark,
     whitelistReason,
     proofingPack,
     isExpanded,
@@ -248,7 +226,6 @@ function PaperRow({
     trueSource: { labL: number; labA: number; labB: number };
     tolerance: number;
     isFirst: boolean;
-    isDark: boolean;
     whitelistReason?: string;
     proofingPack?: ProofingPack;
     isExpanded: boolean;
@@ -261,9 +238,7 @@ function PaperRow({
     return (
         <div className={cn(
             "transition-colors rounded-xl px-4 -mx-4",
-            isExpanded
-                ? (isDark ? "bg-white/[0.05]" : "bg-black/[0.03]")
-                : (isDark ? "hover:bg-white/[0.03]" : "hover:bg-black/[0.02]")
+            isExpanded ? "bg-black/[0.03]" : "hover:bg-black/[0.02]"
         )}>
             {/* 主行 - 可点击展开 */}
             <div 
@@ -275,59 +250,33 @@ function PaperRow({
             >
                 {/* 纸张名称 + 推荐标签 */}
                 <div className="flex-1 flex items-center gap-3">
-                    <span className={cn(
-                        "text-lg",
-                        isFirst
-                            ? (isDark ? "text-white font-medium" : "text-black font-medium")
-                            : (isDark ? "text-white/80" : "text-black/80")
-                    )}>
+                    <span className="text-lg text-black font-medium">
                         {paperName}
                     </span>
                     {/* 推荐等级标签 */}
-                    {profile.recommendation && (
-                        <span className={cn(
-                            "text-xs px-2.5 py-1 rounded-full",
-                            isDark
-                                ? "bg-white/10 text-white/60"
-                                : "bg-black/5 text-black/50"
-                        )}>
-                            {profile.recommendationLabel || RECOMMENDATION_LABELS[profile.recommendation] || profile.recommendation}
-                        </span>
-                    )}
+                    {profile.recommendation && (() => {
+                        const config = RECOMMENDATION_CONFIG[profile.recommendation];
+                        const Icon = config?.icon;
+                        const label = profile.recommendationLabel || config?.label || profile.recommendation;
+                        return (
+                            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
+                                {Icon && <Icon className="w-3 h-3" />}
+                                {label}
+                            </span>
+                        );
+                    })()}
                 </div>
 
-                {/* 质量指示器 + 购买链接 + 展开箭头 */}
+                {/* 质量指示器 + 展开箭头 */}
                 <div className="flex items-center gap-4">
-                    <QualityIndicator quality={quality} isDark={isDark} />
-                    <span className={cn(
-                        "text-sm font-mono text-right tabular-nums",
-                        isDark ? "text-white/60" : "text-black/60"
-                    )}>
+                    <QualityIndicator quality={quality} />
+                    <span className="text-sm font-mono text-right tabular-nums text-black/60">
                         {profile.deltaE !== null ? `ΔE ${profile.deltaE.toFixed(1)}` : 'N/A'}
                     </span>
-                    {/* 购买链接 */}
-                    {proofingPack?.externalUrl && (
-                        <a
-                            href={proofingPack.externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                                "flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors",
-                                isDark
-                                    ? "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
-                                    : "bg-black/5 text-black/60 hover:bg-black/10 hover:text-black"
-                            )}
-                        >
-                            ¥{(proofingPack.price / 100).toFixed(0)}
-                            <ExternalLink className="h-3 w-3" />
-                        </a>
-                    )}
                     {/* 展开箭头 */}
                     {hasDetails && (
                         <ChevronDown className={cn(
-                            "h-4 w-4 transition-transform",
-                            isDark ? "text-white/40" : "text-black/40",
+                            "h-4 w-4 transition-transform text-black/40",
                             isExpanded && "rotate-180"
                         )} />
                     )}
@@ -336,20 +285,14 @@ function PaperRow({
 
             {/* 人工标注的推荐理由 */}
             {whitelistReason && !isExpanded && (
-                <p className={cn(
-                    "text-sm pb-3 pl-0.5",
-                    isDark ? "text-white/40" : "text-black/50"
-                )}>
+                <p className="text-sm pb-3 pl-0.5 text-black/50">
                     {whitelistReason}
                 </p>
             )}
 
             {/* 注意事项 */}
             {profile.cautionNote && !whitelistReason && !isExpanded && (
-                <p className={cn(
-                    "text-sm pb-3 pl-0.5",
-                    isDark ? "text-white/40" : "text-black/50"
-                )}>
+                <p className="text-sm pb-3 pl-0.5 text-black/50">
                     {profile.cautionNote}
                 </p>
             )}
@@ -359,7 +302,6 @@ function PaperRow({
                 <PaperDetails 
                     profile={profile} 
                     trueSource={trueSource}
-                    isDark={isDark} 
                     whitelistReason={whitelistReason}
                 />
             )}
@@ -373,25 +315,17 @@ function PaperRow({
 function PaperDetails({
     profile,
     trueSource,
-    isDark,
     whitelistReason,
 }: {
     profile: FullPaperProfile;
     trueSource: { labL: number; labA: number; labB: number };
-    isDark: boolean;
     whitelistReason?: string;
 }) {
     return (
-        <div className={cn(
-            "pb-5 pt-2 space-y-5 border-t",
-            isDark ? "border-white/10" : "border-black/10"
-        )}>
+        <div className="pb-5 pt-2 space-y-5 border-t border-black/10">
             {/* 推荐理由或注意事项 */}
             {(whitelistReason || profile.cautionNote) && (
-                <p className={cn(
-                    "text-sm",
-                    isDark ? "text-white/50" : "text-black/60"
-                )}>
+                <p className="text-sm text-black/60">
                     {whitelistReason || profile.cautionNote}
                 </p>
             )}
@@ -400,33 +334,30 @@ function PaperDetails({
             <div className="flex items-start gap-6">
                 {/* 真源色块 */}
                 <div className="space-y-2">
-                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                    <span className="text-xs text-black/40">
                         真源
                     </span>
                     <ColorSwatch labL={trueSource.labL} labA={trueSource.labA} labB={trueSource.labB} size="sm" />
                 </div>
                 {/* 当前纸张色块 */}
                 <div className="space-y-2">
-                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                    <span className="text-xs text-black/40">
                         {profile.paperTypeLabel || profile.paperType}
                     </span>
                     <ColorSwatch labL={profile.labL} labA={profile.labA} labB={profile.labB} size="sm" />
                 </div>
                 {/* Lab 数值 */}
-                <div className={cn(
-                    "flex-1 grid grid-cols-3 gap-4 text-sm font-mono",
-                    isDark ? "text-white/70" : "text-black/70"
-                )}>
+                <div className="flex-1 grid grid-cols-3 gap-4 text-sm font-mono text-black/70">
                     <div>
-                        <span className={isDark ? "text-white/40" : "text-black/40"}>L* </span>
+                        <span className="text-black/40">L* </span>
                         {profile.labL.toFixed(1)}
                     </div>
                     <div>
-                        <span className={isDark ? "text-white/40" : "text-black/40"}>a* </span>
+                        <span className="text-black/40">a* </span>
                         {profile.labA.toFixed(1)}
                     </div>
                     <div>
-                        <span className={isDark ? "text-white/40" : "text-black/40"}>b* </span>
+                        <span className="text-black/40">b* </span>
                         {profile.labB.toFixed(1)}
                     </div>
                 </div>
@@ -436,28 +367,22 @@ function PaperDetails({
             {(profile.glossiness !== undefined || profile.inkAbsorption !== undefined || profile.gamutCoverage !== undefined) && (
                 <div className="space-y-3">
                     {profile.glossiness !== undefined && (
-                        <MaterialBar label="光泽度" value={profile.glossiness} isDark={isDark} />
+                        <MaterialBar label="光泽度" value={profile.glossiness} />
                     )}
                     {profile.inkAbsorption !== undefined && (
-                        <MaterialBar label="吸墨率" value={profile.inkAbsorption} isDark={isDark} />
+                        <MaterialBar label="吸墨率" value={profile.inkAbsorption} />
                     )}
                     {profile.gamutCoverage !== undefined && (
-                        <MaterialBar label="色域覆盖" value={profile.gamutCoverage} isDark={isDark} />
+                        <MaterialBar label="色域覆盖" value={profile.gamutCoverage} />
                     )}
                 </div>
             )}
 
             {/* 验证批次 */}
             {profile.batchNo && (
-                <div className={cn(
-                    "flex items-center gap-2 text-sm",
-                    isDark ? "text-white/50" : "text-black/50"
-                )}>
+                <div className="flex items-center gap-2 text-sm text-black/50">
                     <span>验证批次</span>
-                    <code className={cn(
-                        "text-xs px-1.5 py-0.5 rounded font-mono",
-                        isDark ? "bg-white/10" : "bg-black/5"
-                    )}>
+                    <code className="text-xs px-1.5 py-0.5 rounded font-mono bg-black/5">
                         {profile.batchNo}
                     </code>
                 </div>
@@ -466,13 +391,10 @@ function PaperDetails({
             {/* 高清扫描图 */}
             {profile.scanImageUrl && (
                 <div className="space-y-2">
-                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                    <span className="text-xs text-black/40">
                         高清扫描
                     </span>
-                    <div className={cn(
-                        "relative aspect-[3/1] rounded-lg overflow-hidden",
-                        isDark ? "bg-white/5" : "bg-black/5"
-                    )}>
+                    <div className="relative aspect-[3/1] rounded-lg overflow-hidden bg-black/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={profile.scanImageUrl}
@@ -489,31 +411,19 @@ function PaperDetails({
 /**
  * 材质参数横条
  */
-function MaterialBar({ label, value, isDark }: { label: string; value: number; isDark: boolean }) {
+function MaterialBar({ label, value }: { label: string; value: number }) {
     return (
         <div className="flex items-center gap-3">
-            <span className={cn(
-                "text-xs w-16 shrink-0",
-                isDark ? "text-white/40" : "text-black/40"
-            )}>
+            <span className="text-xs w-16 shrink-0 text-black/40">
                 {label}
             </span>
-            <div className={cn(
-                "flex-1 h-1.5 rounded-full overflow-hidden",
-                isDark ? "bg-white/10" : "bg-black/10"
-            )}>
+            <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-black/10">
                 <div 
-                    className={cn(
-                        "h-full rounded-full transition-all",
-                        isDark ? "bg-white/50" : "bg-black/40"
-                    )}
+                    className="h-full rounded-full transition-all bg-black/40"
                     style={{ width: `${value}%` }}
                 />
             </div>
-            <span className={cn(
-                "text-xs font-mono w-10 text-right tabular-nums",
-                isDark ? "text-white/60" : "text-black/60"
-            )}>
+            <span className="text-xs font-mono w-10 text-right tabular-nums text-black/60">
                 {value}%
             </span>
         </div>
@@ -523,7 +433,7 @@ function MaterialBar({ label, value, isDark }: { label: string; value: number; i
 /**
  * 质量指示器 - 5个圆点
  */
-function QualityIndicator({ quality, isDark }: { quality: number; isDark: boolean }) {
+function QualityIndicator({ quality }: { quality: number }) {
     return (
         <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4, 5].map((level) => (
@@ -531,9 +441,7 @@ function QualityIndicator({ quality, isDark }: { quality: number; isDark: boolea
                     key={level}
                     className={cn(
                         "w-2 h-2 rounded-full transition-colors",
-                        level <= quality
-                            ? (isDark ? "bg-white/80" : "bg-black/70")
-                            : (isDark ? "bg-white/20" : "bg-black/15")
+                        level <= quality ? "bg-black/70" : "bg-black/15"
                     )}
                 />
             ))}

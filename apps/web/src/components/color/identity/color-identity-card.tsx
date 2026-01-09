@@ -82,7 +82,7 @@ export function ColorIdentityCard({ color }: Props) {
                                                 "px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase border",
                                                 isDark ? "text-white/40 border-white/20" : "text-black/40 border-black/20"
                                             )}>
-                                                身份编码
+                                                色彩编码
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className={cn("text-lg font-mono tracking-tighter", isDark ? "text-white/80" : "text-black/80")}>

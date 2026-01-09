@@ -1,17 +1,13 @@
 'use client';
 
-import { Info, ShieldCheck, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, ExternalLink } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { InkRecipeDisplay } from '../../ink-recipe-display';
 import { LabSpectrumCard } from '../../lab-spectrum-card';
 import { DesignerViewCard } from '../designer-view-card';
 import { ViewModeToggle } from '../view-mode-toggle';
 import { useViewMode } from '../view-mode-context';
-import { getAuditStatusVariant } from '../utils';
 import type { ColorData } from '../types';
 
 interface OverviewTabProps {
@@ -59,7 +55,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
             <div className="lg:col-span-2 space-y-6">
                 {/* 根据模式显示不同的卡片 */}
                 <div className="relative">
-                    {/* 模式切换按钮 - 手机端在上方，桌面端右上角覆盖 */}
+                    {/* 模式切换按钮 - 卡片内右上角 */}
                     <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-4 sm:right-4 sm:z-10">
                         <ViewModeToggle isDark={isDark} />
                     </div>
@@ -112,93 +108,78 @@ export function OverviewTab({ color }: OverviewTabProps) {
 function TrueSourceCard({
     trueSource,
     batch,
-    isDark,
 }: {
     trueSource: ColorData['trueSource'];
     batch: ColorData['batch'];
     isDark: boolean;
 }) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
     return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg flex items-center gap-2",
-                    isDark ? "text-white" : "text-black"
-                )}>
-                    真源数据
-                    <Badge variant="outline" className={cn(
-                        "text-[10px]",
-                        isDark ? "border-white/20 text-white/70" : "border-black/20 text-black/70"
-                    )}>真源</Badge>
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                    <span className={isDark ? "text-white/50" : "text-black/50"}>测量设备</span>
-                    <span className={isDark ? "text-white/90" : "text-black/90"}>{trueSource.measurementDevice}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span className={isDark ? "text-white/50" : "text-black/50"}>测量标准</span>
-                    <span className={isDark ? "text-white/90" : "text-black/90"}>{trueSource.measurementStandard}</span>
-                </div>
-                {trueSource.measurementCondition && (
-                    <div className="flex justify-between">
-                        <span className={isDark ? "text-white/50" : "text-black/50"}>测量条件</span>
-                        <span className={cn("text-right max-w-[60%]", isDark ? "text-white/90" : "text-black/90")}>{trueSource.measurementCondition}</span>
-                    </div>
-                )}
-                <div className="flex justify-between">
-                    <span className={isDark ? "text-white/50" : "text-black/50"}>测量时间</span>
-                    <span className={isDark ? "text-white/90" : "text-black/90"} suppressHydrationWarning>
-                        {new Date(trueSource.measuredAt).toLocaleDateString('zh-CN')}
+        <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+            <CardContent className="p-6 space-y-5">
+                {/* 标题区 */}
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                        真源数据
+                    </h3>
+                    <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
+                        真源
                     </span>
                 </div>
-                <div className="flex justify-between">
-                    <span className={isDark ? "text-white/50" : "text-black/50"}>生产容差</span>
-                    <span className={isDark ? "text-white/90" : "text-black/90"}>ΔE ≤ {trueSource.deltaETolerance.toFixed(1)}</span>
-                </div>
-                {batch && (
+
+                {/* 数据列表 */}
+                <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                        <span className={isDark ? "text-white/50" : "text-black/50"}>验证批次</span>
-                        <code className={cn(
-                            "text-xs px-1.5 py-0.5 rounded font-mono",
-                            isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-                        )}>{batch.batchNo}</code>
+                        <span className="text-black/50">测量设备</span>
+                        <span className="text-black/90">{trueSource.measurementDevice}</span>
                     </div>
-                )}
+                    <div className="flex justify-between">
+                        <span className="text-black/50">测量标准</span>
+                        <span className="text-black/90">{trueSource.measurementStandard}</span>
+                    </div>
+                    {trueSource.measurementCondition && (
+                        <div className="flex justify-between">
+                            <span className="text-black/50">测量条件</span>
+                            <span className="text-right max-w-[60%] text-black/90">{trueSource.measurementCondition}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between">
+                        <span className="text-black/50">测量时间</span>
+                        <span className="text-black/90" suppressHydrationWarning>
+                            {new Date(trueSource.measuredAt).toLocaleDateString('zh-CN')}
+                        </span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-black/50">生产容差</span>
+                        <span className="text-black/90">ΔE ≤ {trueSource.deltaETolerance.toFixed(1)}</span>
+                    </div>
+                    {batch && (
+                        <div className="flex justify-between">
+                            <span className="text-black/50">验证批次</span>
+                            <code className="text-xs px-1.5 py-0.5 rounded font-mono bg-black/5 text-black">
+                                {batch.batchNo}
+                            </code>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );
 }
 
 // 油墨配方卡片
-function InkRecipeCard({ inkRecipe, isDark }: { inkRecipe: Record<string, number>; isDark: boolean }) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
+function InkRecipeCard({ inkRecipe }: { inkRecipe: Record<string, number>; isDark: boolean }) {
     return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg flex items-center gap-2",
-                    isDark ? "text-white" : "text-black"
-                )}>
-                    油墨配方
-                    <Badge variant="outline" className={cn(
-                        "text-[10px]",
-                        isDark ? "border-white/20 text-white/70" : "border-black/20 text-black/70"
-                    )}>油墨配方</Badge>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <InkRecipeDisplay recipe={inkRecipe} isDark={isDark} />
+        <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+            <CardContent className="p-6 space-y-5">
+                {/* 标题区 */}
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                        油墨配方
+                    </h3>
+                </div>
+
+                {/* 配方内容 */}
+                <InkRecipeDisplay recipe={inkRecipe} isDark={false} />
             </CardContent>
         </Card>
     );
@@ -208,106 +189,92 @@ function InkRecipeCard({ inkRecipe, isDark }: { inkRecipe: Record<string, number
 function AuditCard({
     audit,
     lastVerifiedAt,
-    isDark,
 }: {
     audit: ColorData['audit'];
     lastVerifiedAt: string | null;
     isDark: boolean;
 }) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
     return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg flex items-center gap-2",
-                    isDark ? "text-white" : "text-black"
-                )}>
-                    <ShieldCheck className={cn("h-4 w-4", isDark ? "text-green-400" : "text-green-600")} />
-                    审计与溯源
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between items-center">
-                    <span className={isDark ? "text-white/50" : "text-black/50"}>审计状态</span>
-                    <Badge variant={getAuditStatusVariant(audit.auditStatus) as 'success' | 'warning'}>
-                        {audit.auditStatusLabel}
-                    </Badge>
+        <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+            <CardContent className="p-6 space-y-5">
+                {/* 标题区 */}
+                <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                        审计与溯源
+                    </h3>
                 </div>
-                {audit.auditors.length > 0 && (
-                    <div className="flex justify-between">
-                        <span className={isDark ? "text-white/50" : "text-black/50"}>审计人</span>
-                        <span className={cn("text-right max-w-[60%]", isDark ? "text-white/90" : "text-black/90")}>{audit.auditors.join('、')}</span>
-                    </div>
-                )}
-                {audit.lastAuditAt && (
-                    <div className="flex justify-between">
-                        <span className={isDark ? "text-white/50" : "text-black/50"}>审计时间</span>
-                        <span className={isDark ? "text-white/90" : "text-black/90"} suppressHydrationWarning>
-                            {new Date(audit.lastAuditAt).toLocaleDateString('zh-CN')}
+
+                {/* 数据列表 */}
+                <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                        <span className="text-black/50">审计状态</span>
+                        <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
+                            {audit.auditStatusLabel}
                         </span>
                     </div>
-                )}
-                {lastVerifiedAt && (
-                    <div className="flex justify-between">
-                        <span className={isDark ? "text-white/50" : "text-black/50"}>最近验证</span>
-                        <span className={isDark ? "text-white/90" : "text-black/90"} suppressHydrationWarning>
-                            {new Date(lastVerifiedAt).toLocaleDateString('zh-CN')}
-                        </span>
-                    </div>
-                )}
+                    {audit.auditors.length > 0 && (
+                        <div className="flex justify-between">
+                            <span className="text-black/50">审计人</span>
+                            <span className="text-right max-w-[60%] text-black/90">{audit.auditors.join('、')}</span>
+                        </div>
+                    )}
+                    {audit.lastAuditAt && (
+                        <div className="flex justify-between">
+                            <span className="text-black/50">审计时间</span>
+                            <span className="text-black/90" suppressHydrationWarning>
+                                {new Date(audit.lastAuditAt).toLocaleDateString('zh-CN')}
+                            </span>
+                        </div>
+                    )}
+                    {lastVerifiedAt && (
+                        <div className="flex justify-between">
+                            <span className="text-black/50">最近验证</span>
+                            <span className="text-black/90" suppressHydrationWarning>
+                                {new Date(lastVerifiedAt).toLocaleDateString('zh-CN')}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );
 }
 
 // 打样包卡片
-function ProofingPacksCard({ proofingPacks, isDark }: { proofingPacks: ColorData['proofingPacks']; isDark: boolean }) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none overflow-hidden",
-        isDark ? "bg-cyan-900/20 text-white border-cyan-800/20" : "bg-cyan-50 text-cyan-900 border-cyan-100"
-    );
-
+function ProofingPacksCard({ proofingPacks }: { proofingPacks: ColorData['proofingPacks']; isDark: boolean }) {
     return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg",
-                    isDark ? "text-white" : "text-cyan-900"
-                )}>单色打样包</CardTitle>
-                <p className={cn(
-                    "text-xs",
-                    isDark ? "text-white/40" : "text-cyan-700/60"
-                )}>不确定效果？花 10 块钱买张卡片看看</p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                {proofingPacks.map((pack) => (
-                    <div key={pack.id} className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border",
-                        isDark ? "bg-white/5 border-white/5" : "bg-white border-cyan-100/50"
-                    )}>
-                        <div>
-                            <div className="font-medium">{pack.paperTypeLabel}</div>
-                            <div className={cn(
-                                "text-sm",
-                                isDark ? "text-cyan-400" : "text-cyan-600"
-                            )}>¥{(pack.price / 100).toFixed(0)}</div>
+        <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+            <CardContent className="p-6 space-y-5">
+                {/* 标题区 */}
+                <div>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                        单色打样包
+                    </h3>
+                    <p className="text-xs text-black/40 mt-1">
+                        不确定效果？花 10 块钱买张卡片看看
+                    </p>
+                </div>
+
+                {/* 打样包列表 */}
+                <div className="space-y-3">
+                    {proofingPacks.map((pack) => (
+                        <div key={pack.id} className="flex items-center justify-between p-3 rounded-xl border bg-black/[0.02] border-black/5">
+                            <div>
+                                <div className="font-medium text-black">{pack.paperTypeLabel}</div>
+                                <div className="text-sm text-black/60">¥{(pack.price / 100).toFixed(0)}</div>
+                            </div>
+                            {pack.externalUrl && (
+                                <Button size="sm" className="bg-black hover:bg-black/80 text-white" asChild>
+                                    <a href={pack.externalUrl} target="_blank" rel="noopener noreferrer" className="gap-1">
+                                        购买
+                                        <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </Button>
+                            )}
                         </div>
-                        {pack.externalUrl && (
-                            <Button size="sm" className={cn(
-                                isDark ? "bg-cyan-600 hover:bg-cyan-500 text-white" : "bg-cyan-600 hover:bg-cyan-700 text-white"
-                            )} asChild>
-                                <a href={pack.externalUrl} target="_blank" rel="noopener noreferrer" className="gap-1">
-                                    购买
-                                    <ExternalLink className="h-3 w-3" />
-                                </a>
-                            </Button>
-                        )}
-                    </div>
-                ))}
+                    ))}
+                </div>
             </CardContent>
         </Card>
     );

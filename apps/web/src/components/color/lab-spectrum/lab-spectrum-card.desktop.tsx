@@ -12,7 +12,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Crosshair, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -125,10 +125,6 @@ export function LabSpectrumCardDesktop({
                             <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-white/70">
                                 色彩光谱分析
                             </h3>
-                            <div className="flex items-center gap-1 text-xs text-white/40">
-                                <Crosshair className="w-3.5 h-3.5" />
-                                <span>Lab 色度空间</span>
-                            </div>
                         </div>
 
                         {/* 工具栏 */}
