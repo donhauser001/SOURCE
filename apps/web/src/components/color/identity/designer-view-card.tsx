@@ -10,7 +10,7 @@
  * - 整合人工标注的推荐/排除理由
  */
 
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useViewMode } from './view-mode-context';
@@ -47,6 +47,14 @@ interface PaperRecommendation {
     reason: string;
 }
 
+interface ProofingPack {
+    id: string;
+    paperType: string;
+    paperTypeLabel: string;
+    price: number;
+    externalUrl: string | null;
+}
+
 interface DesignerViewCardProps {
     trueSource: {
         labL: number;
@@ -59,6 +67,8 @@ interface DesignerViewCardProps {
     className?: string;
     /** 人工标注的纸张推荐（白名单/黑名单） */
     paperRecommendations?: PaperRecommendation[];
+    /** 单色打样包 */
+    proofingPacks?: ProofingPack[];
 }
 
 export function DesignerViewCard({
@@ -67,6 +77,7 @@ export function DesignerViewCard({
     colorName,
     className,
     paperRecommendations = [],
+    proofingPacks = [],
 }: DesignerViewCardProps) {
     const { isDark } = useViewMode();
 
@@ -87,6 +98,11 @@ export function DesignerViewCard({
     // 创建纸张名称到推荐理由的映射
     const whitelistReasonMap = new Map(
         whitelistRecommendations.map(r => [r.paperName, r.reason])
+    );
+
+    // 创建纸张类型到打样包的映射
+    const proofingPackMap = new Map(
+        proofingPacks.map(p => [p.paperType, p])
     );
 
     const cardStyle = cn(
@@ -143,6 +159,7 @@ export function DesignerViewCard({
                     {sortedProfiles.map((profile, index) => {
                         const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
                         const whitelistReason = whitelistReasonMap.get(paperName);
+                        const proofingPack = proofingPackMap.get(profile.paperType);
                         
                         return (
                             <PaperRow
@@ -152,10 +169,21 @@ export function DesignerViewCard({
                                 isFirst={index === 0}
                                 isDark={isDark}
                                 whitelistReason={whitelistReason}
+                                proofingPack={proofingPack}
                             />
                         );
                     })}
                 </div>
+
+                {/* 打样包说明 */}
+                {proofingPacks.length > 0 && (
+                    <p className={cn(
+                        "text-xs",
+                        isDark ? "text-white/40" : "text-black/40"
+                    )}>
+                        购买单色打样包，体验该颜色真实印刷效果
+                    </p>
+                )}
 
                 {/* 黑名单警示 - 简洁单色设计 */}
                 {blacklistRecommendations.length > 0 && (
@@ -223,6 +251,7 @@ function PaperRow({
     isFirst,
     isDark,
     whitelistReason,
+    proofingPack,
 }: {
     profile: PaperProfile;
     tolerance: number;
@@ -230,6 +259,8 @@ function PaperRow({
     isDark: boolean;
     /** 人工标注的推荐理由（来自白名单） */
     whitelistReason?: string;
+    /** 对应的打样包 */
+    proofingPack?: ProofingPack;
 }) {
     const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
     const quality = profile.deltaE !== null ? getQualityLevel(profile.deltaE, tolerance) : 0;
@@ -265,7 +296,7 @@ function PaperRow({
                     )}
                 </div>
 
-                {/* 质量指示器 */}
+                {/* 质量指示器 + 购买链接 */}
                 <div className="flex items-center gap-4">
                     <QualityIndicator quality={quality} isDark={isDark} />
                     <span className={cn(
@@ -274,6 +305,23 @@ function PaperRow({
                     )}>
                         {profile.deltaE !== null ? `ΔE ${profile.deltaE.toFixed(1)}` : 'N/A'}
                     </span>
+                    {/* 购买链接 */}
+                    {proofingPack?.externalUrl && (
+                        <a
+                            href={proofingPack.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                                "flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors",
+                                isDark
+                                    ? "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                                    : "bg-black/5 text-black/60 hover:bg-black/10 hover:text-black"
+                            )}
+                        >
+                            ¥{(proofingPack.price / 100).toFixed(0)}
+                            <ExternalLink className="h-3 w-3" />
+                        </a>
+                    )}
                 </div>
             </div>
 

@@ -71,7 +71,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
                             deltaETolerance={color.trueSource.deltaETolerance}
                         />
                     ) : (
-                        /* 设计师模式：简化视图卡片（整合纸张推荐） */
+                        /* 设计师模式：简化视图卡片（整合纸张推荐 + 打样包） */
                         <DesignerViewCard
                             colorName={color.name}
                             trueSource={{
@@ -82,6 +82,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
                             }}
                             paperProfiles={paperProfilesForSpectrum}
                             paperRecommendations={color.paperRecommendations}
+                            proofingPacks={color.proofingPacks}
                         />
                     )}
                 </div>
