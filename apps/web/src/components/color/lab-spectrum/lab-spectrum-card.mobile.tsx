@@ -301,14 +301,14 @@ export function LabSpectrumCardMobile({
                         const minL = Math.max(0, trueSource.labL - visibleRange / 2);
                         const maxL = Math.min(100, trueSource.labL + visibleRange / 2);
                         const actualRange = maxL - minL;
-                        
+
                         // 将 L* 值转换为百分比位置
                         const toPercent = (l: number) => ((l - minL) / actualRange) * 100;
-                        
+
                         // 渐变停止点
                         const gradientStart = (minL / 100) * 100;
                         const gradientEnd = (maxL / 100) * 100;
-                        
+
                         return (
                             <div className="shrink-0 mt-3">
                                 <div className="flex items-center gap-2">
@@ -317,7 +317,7 @@ export function LabSpectrumCardMobile({
                                     </span>
                                     <div className="flex-1 relative h-4 overflow-hidden rounded-full">
                                         {/* 横向渐变条 */}
-                                        <div 
+                                        <div
                                             className="absolute inset-0"
                                             style={{
                                                 background: `linear-gradient(to right, hsl(0, 0%, ${gradientStart}%) 0%, hsl(0, 0%, ${gradientEnd}%) 100%)`,

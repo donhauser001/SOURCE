@@ -65,7 +65,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
                     <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-4 sm:right-4 sm:z-10">
                         <ViewModeToggle isDark={isDark} />
                     </div>
-                    
+
                     {isExpert ? (
                         /* 专家模式：Lab 光谱分析卡片 */
                         <LabSpectrumCard
@@ -276,8 +276,8 @@ function PaperPerformanceCard({
                                     value={profile.paperType}
                                     className={cn(
                                         "gap-2 transition-all",
-                                        isDark 
-                                            ? "text-white/50 data-[state=active]:bg-white/20 data-[state=active]:text-white" 
+                                        isDark
+                                            ? "text-white/50 data-[state=active]:bg-white/20 data-[state=active]:text-white"
                                             : "text-black/50 data-[state=active]:bg-black/10 data-[state=active]:text-black"
                                     )}
                                 >

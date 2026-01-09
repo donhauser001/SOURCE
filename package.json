@@ -5,6 +5,8 @@
     "description": "实体印刷色彩实操体系",
     "scripts": {
         "dev": "pnpm --filter @source/web dev",
+        "dev:fresh": "./scripts/dev.sh --fresh",
+        "start": "./scripts/dev.sh",
         "build": "pnpm --filter @source/web build",
         "build:cli": "pnpm --filter @source/cli build",
         "lint": "pnpm -r lint",
@@ -15,6 +17,17 @@
         "db:push": "pnpm --filter @source/web db:push",
         "db:seed": "pnpm --filter @source/web db:seed",
         "db:studio": "pnpm --filter @source/web db:studio",
+        "db:reset": "pnpm --filter @source/web db:reset",
+        "docker:start": "./scripts/docker.sh start",
+        "docker:stop": "./scripts/docker.sh stop",
+        "docker:restart": "./scripts/docker.sh restart",
+        "docker:rebuild": "./scripts/docker.sh rebuild",
+        "docker:reset": "./scripts/docker.sh reset",
+        "docker:clean": "./scripts/docker.sh clean",
+        "docker:logs": "./scripts/docker.sh logs -f",
+        "docker:status": "./scripts/docker.sh status",
+        "docker:shell": "./scripts/docker.sh shell",
+        "docker:backup": "./scripts/docker.sh backup",
         "cli": "node packages/cli/dist/index.js"
     },
     "devDependencies": {
