@@ -157,7 +157,7 @@ export function DesignerViewCard({
                     })}
                 </div>
 
-                {/* 黑名单警示 */}
+                {/* 黑名单警示 - 简洁单色设计 */}
                 {blacklistRecommendations.length > 0 && (
                     <>
                         <div className={cn(
@@ -166,10 +166,10 @@ export function DesignerViewCard({
                         )} />
                         <div className="space-y-3">
                             <div className={cn(
-                                "flex items-center gap-2 text-sm font-medium",
-                                isDark ? "text-red-400" : "text-red-600"
+                                "flex items-center gap-2 text-sm",
+                                isDark ? "text-white/50" : "text-black/50"
                             )}>
-                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTriangle className="h-3.5 w-3.5" />
                                 <span>不建议使用</span>
                             </div>
                             <div className="space-y-2">
@@ -177,21 +177,21 @@ export function DesignerViewCard({
                                     <div
                                         key={rec.id}
                                         className={cn(
-                                            "p-3 rounded-xl",
+                                            "py-3 px-4 rounded-xl -mx-4",
                                             isDark 
-                                                ? "bg-red-950/30 border border-red-900/30" 
-                                                : "bg-red-50 border border-red-200/50"
+                                                ? "bg-white/[0.03]" 
+                                                : "bg-black/[0.02]"
                                         )}
                                     >
                                         <div className={cn(
-                                            "font-medium text-sm",
-                                            isDark ? "text-white/90" : "text-red-900"
+                                            "text-base",
+                                            isDark ? "text-white/70" : "text-black/70"
                                         )}>
                                             {rec.paperName}
                                         </div>
                                         <p className={cn(
                                             "text-sm mt-1",
-                                            isDark ? "text-white/50" : "text-red-700/70"
+                                            isDark ? "text-white/40" : "text-black/50"
                                         )}>
                                             {rec.reason}
                                         </p>
@@ -281,7 +281,7 @@ function PaperRow({
             {whitelistReason && (
                 <p className={cn(
                     "text-sm pb-3 pl-0.5",
-                    isDark ? "text-green-400/70" : "text-green-700/80"
+                    isDark ? "text-white/40" : "text-black/50"
                 )}>
                     {whitelistReason}
                 </p>
@@ -291,7 +291,7 @@ function PaperRow({
             {profile.cautionNote && !whitelistReason && (
                 <p className={cn(
                     "text-sm pb-3 pl-0.5",
-                    isDark ? "text-amber-400/70" : "text-amber-700/80"
+                    isDark ? "text-white/40" : "text-black/50"
                 )}>
                     {profile.cautionNote}
                 </p>
