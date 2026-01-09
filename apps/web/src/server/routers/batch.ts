@@ -151,6 +151,111 @@ export const batchRouter = createTRPCRouter({
     }),
 
     // ============================================================================
+    // 管理员查询
+    // ============================================================================
+
+    /**
+     * 管理员批次列表（不分页，用于后台管理）
+     */
+    adminList: adminProcedure
+        .input(
+            z.object({
+                limit: z.number().min(1).max(500).optional().default(100),
+                type: z.enum(['MEASURE', 'SCAN', 'PRINT', 'AUDIT']).optional(),
+                search: z.string().optional(),
+                partnerId: z.string().optional(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { limit, type, search, partnerId } = input;
+
+            const where: any = {};
+
+            if (type) {
+                where.type = type;
+            }
+
+            if (partnerId) {
+                where.partnerId = partnerId;
+            }
+
+            if (search) {
+                where.OR = [
+                    { batchNo: { contains: search, mode: 'insensitive' } },
+                    { notes: { contains: search, mode: 'insensitive' } },
+                    { createdBy: { contains: search, mode: 'insensitive' } },
+                ];
+            }
+
+            const items = await ctx.prisma.batch.findMany({
+                where,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    partner: {
+                        select: {
+                            partnerId: true,
+                            name: true,
+                            shortName: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            colors: true,
+                            paperProfiles: true,
+                        },
+                    },
+                },
+            });
+
+            return { items };
+        }),
+
+    /**
+     * 管理员统计（详细）
+     */
+    adminStats: adminProcedure.query(async ({ ctx }) => {
+        const [total, byType, recentBatches] = await Promise.all([
+            // 总数
+            ctx.prisma.batch.count(),
+
+            // 按类型统计
+            ctx.prisma.batch.groupBy({
+                by: ['type'],
+                _count: true,
+            }),
+
+            // 最近批次
+            ctx.prisma.batch.findMany({
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    _count: {
+                        select: {
+                            colors: true,
+                            paperProfiles: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+
+        const typeStats = byType.reduce(
+            (acc, item) => {
+                acc[item.type] = item._count;
+                return acc;
+            },
+            {} as Record<string, number>
+        );
+
+        return {
+            total,
+            byType: typeStats,
+            recentBatches,
+        };
+    }),
+
+    // ============================================================================
     // 创建 / 更新 / 删除（需要管理员权限）
     // ============================================================================
 

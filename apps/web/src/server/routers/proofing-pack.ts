@@ -18,6 +18,7 @@ import {
     listProofingPacksSchema,
     getProofingPackSchema,
 } from '@/lib/validations/proofing-pack';
+import { logAdminAction, logAdminBatchAction, AUDIT_TARGET_TYPES } from '@/lib/admin-audit';
 
 export const proofingPackRouter = createTRPCRouter({
     // ============================================================================
@@ -239,6 +240,22 @@ export const proofingPackRouter = createTRPCRouter({
                 },
             });
 
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'CREATE',
+                targetType: AUDIT_TARGET_TYPES.PROOFING_PACK,
+                targetId: proofingPack.id,
+                changes: {
+                    after: {
+                        colorId: color.colorId,
+                        paperType: proofingPack.paperType,
+                        price: proofingPack.price,
+                    },
+                },
+            });
+
             return proofingPack;
         }),
 
@@ -253,6 +270,7 @@ export const proofingPackRouter = createTRPCRouter({
             // 验证存在
             const existing = await ctx.prisma.proofingPack.findUnique({
                 where: { id },
+                include: { color: { select: { colorId: true } } },
             });
 
             if (!existing) {
@@ -272,6 +290,19 @@ export const proofingPackRouter = createTRPCRouter({
                 },
             });
 
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'UPDATE',
+                targetType: AUDIT_TARGET_TYPES.PROOFING_PACK,
+                targetId: proofingPack.id,
+                changes: {
+                    before: { price: existing.price, isActive: existing.isActive },
+                    after: { price: proofingPack.price, isActive: proofingPack.isActive },
+                },
+            });
+
             return proofingPack;
         }),
 
@@ -284,6 +315,7 @@ export const proofingPackRouter = createTRPCRouter({
             // 验证存在
             const existing = await ctx.prisma.proofingPack.findUnique({
                 where: { id: input.id },
+                include: { color: { select: { colorId: true } } },
             });
 
             if (!existing) {
@@ -304,12 +336,39 @@ export const proofingPackRouter = createTRPCRouter({
                     where: { id: input.id },
                     data: { isActive: false },
                 });
+
+                // 记录审计日志
+                await logAdminAction({
+                    userId: ctx.session.user.id,
+                    userEmail: ctx.session.user.email ?? '',
+                    action: 'STATUS_CHANGE',
+                    targetType: AUDIT_TARGET_TYPES.PROOFING_PACK,
+                    targetId: input.id,
+                    changes: { before: { isActive: true }, after: { isActive: false } },
+                    metadata: { reason: '软删除（存在购买意图记录）' },
+                });
+
                 return { deleted: false, deactivated: true, message: '已标记为下架（存在购买意图记录）' };
             }
 
             // 硬删除
             await ctx.prisma.proofingPack.delete({
                 where: { id: input.id },
+            });
+
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'DELETE',
+                targetType: AUDIT_TARGET_TYPES.PROOFING_PACK,
+                targetId: input.id,
+                changes: {
+                    before: {
+                        colorId: existing.color.colorId,
+                        paperType: existing.paperType,
+                    },
+                },
             });
 
             return { deleted: true, deactivated: false };
@@ -327,6 +386,16 @@ export const proofingPackRouter = createTRPCRouter({
             const result = await ctx.prisma.proofingPack.updateMany({
                 where: { id: { in: input.ids } },
                 data: { isActive: input.isActive },
+            });
+
+            // 记录审计日志
+            await logAdminBatchAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'STATUS_CHANGE',
+                targetType: AUDIT_TARGET_TYPES.PROOFING_PACK,
+                targetIds: input.ids,
+                metadata: { isActive: input.isActive },
             });
 
             return { updated: result.count };

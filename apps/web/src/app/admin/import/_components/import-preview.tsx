@@ -44,7 +44,7 @@ const STATUS_LABELS: Record<string, string> = {
     DEPRECATED: '已废弃',
     DRAFT: '草稿',
     VERIFIED: '已验证',
-    UNDER_REVIEW: '审核中',
+    PENDING: '待审核',
     BEST: '最佳',
     GOOD: '良好',
     CAUTION: '注意',

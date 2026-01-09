@@ -24,6 +24,7 @@ import { CsvUploader } from '../_components/csv-uploader';
 import { JsonUploader } from '../_components/json-uploader';
 import { ImportPreview } from '../_components/import-preview';
 import { ValidationErrors } from '../_components/validation-errors';
+import { trpc } from '@/lib/trpc';
 
 // 导入状态
 type ImportStatus = 'idle' | 'validating' | 'previewing' | 'importing' | 'success' | 'error';
@@ -36,6 +37,10 @@ interface ValidationError {
     value?: unknown;
 }
 
+// 色彩状态类型
+type ColorStatusType = 'ACTIVE' | 'VERIFIED' | 'EXPERIMENTAL' | 'DEPRECATED' | 'DRAFT';
+type AuditStatusType = 'VERIFIED' | 'PENDING';
+
 // 色彩数据记录
 interface ColorRecord {
     colorId: string;
@@ -44,8 +49,8 @@ interface ColorRecord {
     labL: number;
     labA: number;
     labB: number;
-    status?: string;
-    auditStatus?: string;
+    status?: ColorStatusType;
+    auditStatus?: AuditStatusType;
     measurementDevice?: string;
     measurementStandard?: string;
     measuredAt?: string;
@@ -77,6 +82,9 @@ export default function ImportColorsPage() {
         failed: number;
         errors: string[];
     } | null>(null);
+
+    // tRPC mutation
+    const importMutation = trpc.color.adminImport.useMutation();
 
     // 处理 CSV 数据
     const handleCsvData = useCallback((records: Record<string, unknown>[]) => {
@@ -156,6 +164,9 @@ export default function ImportColorsPage() {
 
             // 如果没有致命错误，添加到数据
             if (record.colorId && record.name && !isNaN(labL) && !isNaN(labA) && !isNaN(labB)) {
+                const statusValue = record.status ? String(record.status).toUpperCase() : 'EXPERIMENTAL';
+                const auditStatusValue = record.auditStatus ? String(record.auditStatus).toUpperCase() : 'PENDING';
+                
                 validatedData.push({
                     colorId: String(record.colorId),
                     name: String(record.name),
@@ -163,8 +174,8 @@ export default function ImportColorsPage() {
                     labL,
                     labA,
                     labB,
-                    status: record.status ? String(record.status) : 'EXPERIMENTAL',
-                    auditStatus: record.auditStatus ? String(record.auditStatus) : 'UNDER_REVIEW',
+                    status: statusValue as ColorStatusType,
+                    auditStatus: auditStatusValue as AuditStatusType,
                     measurementDevice: record.measurementDevice ? String(record.measurementDevice) : undefined,
                     measurementStandard: record.measurementStandard ? String(record.measurementStandard) : undefined,
                     measuredAt: record.measuredAt ? String(record.measuredAt) : undefined,
@@ -184,40 +195,25 @@ export default function ImportColorsPage() {
         handleCsvData(records as Record<string, unknown>[]);
     }, [handleCsvData]);
 
-    // 执行导入
+    // 执行导入（使用 tRPC mutation）
     const handleImport = async () => {
         if (data.length === 0) return;
 
         setStatus('importing');
         try {
-            const response = await fetch('/api/admin/import/colors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ colors: data }),
+            const result = await importMutation.mutateAsync({ colors: data });
+            
+            setImportResult({
+                success: result.success,
+                failed: result.failed,
+                errors: result.errors,
             });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                setImportResult({
-                    success: result.success || data.length,
-                    failed: result.failed || 0,
-                    errors: result.errors || [],
-                });
-                setStatus('success');
-            } else {
-                setImportResult({
-                    success: 0,
-                    failed: data.length,
-                    errors: [result.error?.message || '导入失败'],
-                });
-                setStatus('error');
-            }
+            setStatus('success');
         } catch (error) {
             setImportResult({
                 success: 0,
                 failed: data.length,
-                errors: [error instanceof Error ? error.message : '网络错误'],
+                errors: [error instanceof Error ? error.message : '导入失败'],
             });
             setStatus('error');
         }
@@ -242,7 +238,7 @@ export default function ImportColorsPage() {
             '-8.5',
             '12.3',
             'EXPERIMENTAL',
-            'UNDER_REVIEW',
+            'PENDING',
             'X-Rite i1Pro 2',
             'D50/2°',
             '2026-01-08',

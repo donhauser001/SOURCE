@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { createTRPCRouter, protectedProcedure, adminProcedure } from '../trpc';
+import { logAdminAction, AUDIT_TARGET_TYPES } from '@/lib/admin-audit';
 
 export const userRouter = createTRPCRouter({
     /**
@@ -161,6 +162,19 @@ export const userRouter = createTRPCRouter({
                     name: true,
                     role: true,
                     tier: true,
+                },
+            });
+
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'UPDATE',
+                targetType: AUDIT_TARGET_TYPES.USER,
+                targetId: user.id,
+                changes: {
+                    before: { role: existing.role, tier: existing.tier },
+                    after: { role: user.role, tier: user.tier },
                 },
             });
 

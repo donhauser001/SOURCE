@@ -3,10 +3,10 @@
 /**
  * 色彩管理列表页（增强版）
  * 
- * v0.5.1 - Admin 阶段
+ * v0.5.2 - 服务端分页和筛选
  * 
  * 功能：
- * - 搜索和筛选
+ * - 服务端搜索和筛选（Cursor-based Pagination）
  * - 批量选择和操作
  * - CSV/JSON 导出
  */
@@ -15,7 +15,8 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
     Plus, Edit, Eye, Search, Filter, Download, Trash2, 
-    CheckSquare, Square, MoreHorizontal, FileJson, FileSpreadsheet 
+    CheckSquare, Square, MoreHorizontal, FileJson, FileSpreadsheet,
+    Loader2, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,31 +37,48 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { trpc } from '@/lib/trpc';
+import {
+    COLOR_STATUS_LABELS,
+    AUDIT_STATUS_LABELS,
+    getColorStatusVariant,
+    getAuditStatusVariant,
+    type ColorStatus,
+    type AuditStatus,
+} from '@/lib/labels';
 
-// 状态标签
-const STATUS_LABELS: Record<string, string> = {
-    ACTIVE: '已发布',
-    EXPERIMENTAL: '实验中',
-    DEPRECATED: '已弃用',
-    DRAFT: '草稿',
-};
-
-const AUDIT_STATUS_LABELS: Record<string, string> = {
-    PENDING: '待审核',
-    VERIFIED: '已验证',
-};
+// 每页显示条数
+const PAGE_SIZE = 20;
 
 export default function AdminColorsPage() {
-    // 状态
+    // 筛选状态
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [auditFilter, setAuditFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // 数据查询
-    const { data, isLoading, refetch } = trpc.color.adminList.useQuery({
-        limit: 100,
-    });
+    // 防抖搜索
+    const handleSearchChange = (value: string) => {
+        setSearch(value);
+        // 简单防抖
+        setTimeout(() => {
+            setDebouncedSearch(value);
+        }, 300);
+    };
+
+    // 数据查询（使用新的分页 API）
+    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+        trpc.color.adminListPaginated.useInfiniteQuery(
+            {
+                limit: PAGE_SIZE,
+                search: debouncedSearch || undefined,
+                status: statusFilter !== 'all' ? (statusFilter as ColorStatus) : undefined,
+                auditStatus: auditFilter !== 'all' ? (auditFilter as AuditStatus) : undefined,
+            },
+            {
+                getNextPageParam: (lastPage) => lastPage.nextCursor,
+            }
+        );
 
     // 批量删除 mutation
     const deleteMutation = trpc.color.adminBatchDelete.useMutation({
@@ -70,40 +88,21 @@ export default function AdminColorsPage() {
         },
     });
 
-    // 筛选后的数据
-    const filteredColors = useMemo(() => {
-        if (!data?.items) return [];
+    // 合并所有分页数据
+    const allColors = useMemo(() => {
+        if (!data?.pages) return [];
+        return data.pages.flatMap((page) => page.items);
+    }, [data]);
 
-        return data.items.filter((color) => {
-            // 搜索
-            if (search) {
-                const searchLower = search.toLowerCase();
-                const matchesSearch =
-                    color.colorId.toLowerCase().includes(searchLower) ||
-                    color.name.toLowerCase().includes(searchLower);
-                if (!matchesSearch) return false;
-            }
-
-            // 状态筛选
-            if (statusFilter !== 'all' && color.status !== statusFilter) {
-                return false;
-            }
-
-            // 审计状态筛选
-            if (auditFilter !== 'all' && color.auditStatus !== auditFilter) {
-                return false;
-            }
-
-            return true;
-        });
-    }, [data?.items, search, statusFilter, auditFilter]);
+    // 总数（从第一页获取）
+    const totalCount = data?.pages[0]?.totalCount ?? 0;
 
     // 全选/取消全选
     const handleSelectAll = () => {
-        if (selectedIds.size === filteredColors.length) {
+        if (selectedIds.size === allColors.length) {
             setSelectedIds(new Set());
         } else {
-            setSelectedIds(new Set(filteredColors.map((c) => c.id)));
+            setSelectedIds(new Set(allColors.map((c) => c.id)));
         }
     };
 
@@ -121,8 +120,8 @@ export default function AdminColorsPage() {
     // 导出 CSV
     const handleExportCSV = () => {
         const colorsToExport = selectedIds.size > 0
-            ? filteredColors.filter((c) => selectedIds.has(c.id))
-            : filteredColors;
+            ? allColors.filter((c) => selectedIds.has(c.id))
+            : allColors;
 
         const headers = ['colorId', 'name', 'labL', 'labA', 'labB', 'status', 'auditStatus', 'createdAt'];
         const rows = colorsToExport.map((c) => [
@@ -143,8 +142,8 @@ export default function AdminColorsPage() {
     // 导出 JSON
     const handleExportJSON = () => {
         const colorsToExport = selectedIds.size > 0
-            ? filteredColors.filter((c) => selectedIds.has(c.id))
-            : filteredColors;
+            ? allColors.filter((c) => selectedIds.has(c.id))
+            : allColors;
 
         const json = JSON.stringify(colorsToExport, null, 2);
         downloadFile(json, 'colors.json', 'application/json');
@@ -171,23 +170,15 @@ export default function AdminColorsPage() {
         deleteMutation.mutate({ ids: Array.from(selectedIds) });
     };
 
-    // 状态 Badge 样式
-    const getStatusVariant = (status: string) => {
-        switch (status) {
-            case 'ACTIVE':
-                return 'default';
-            case 'EXPERIMENTAL':
-                return 'secondary';
-            case 'DEPRECATED':
-                return 'destructive';
-            default:
-                return 'outline';
-        }
+    // 清除筛选
+    const handleClearFilters = () => {
+        setSearch('');
+        setDebouncedSearch('');
+        setStatusFilter('all');
+        setAuditFilter('all');
     };
 
-    const getAuditVariant = (status: string) => {
-        return status === 'VERIFIED' ? 'default' : 'secondary';
-    };
+    const hasFilters = debouncedSearch || statusFilter !== 'all' || auditFilter !== 'all';
 
     return (
         <div className="space-y-6">
@@ -244,7 +235,7 @@ export default function AdminColorsPage() {
                             <Input
                                 placeholder="搜索色彩编号或名称..."
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 className="pl-9"
                             />
                         </div>
@@ -256,10 +247,9 @@ export default function AdminColorsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">全部状态</SelectItem>
-                                    <SelectItem value="ACTIVE">已发布</SelectItem>
-                                    <SelectItem value="EXPERIMENTAL">实验中</SelectItem>
-                                    <SelectItem value="DEPRECATED">已弃用</SelectItem>
-                                    <SelectItem value="DRAFT">草稿</SelectItem>
+                                    {Object.entries(COLOR_STATUS_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <Select value={auditFilter} onValueChange={setAuditFilter}>
@@ -268,10 +258,16 @@ export default function AdminColorsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">全部审计</SelectItem>
-                                    <SelectItem value="VERIFIED">已验证</SelectItem>
-                                    <SelectItem value="PENDING">待审核</SelectItem>
+                                    {Object.entries(AUDIT_STATUS_LABELS).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
+                            {hasFilters && (
+                                <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                                    清除筛选
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -314,132 +310,171 @@ export default function AdminColorsPage() {
                 <CardHeader>
                     <CardTitle>色彩列表</CardTitle>
                     <CardDescription>
-                        {isLoading ? '加载中...' : `共 ${filteredColors.length} 条记录`}
+                        {isLoading ? '加载中...' : (
+                            <>
+                                共 {totalCount} 条记录
+                                {allColors.length < totalCount && (
+                                    <span className="text-muted-foreground">（已加载 {allColors.length} 条）</span>
+                                )}
+                            </>
+                        )}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-3 px-4 font-medium w-10">
-                                        <button
-                                            onClick={handleSelectAll}
-                                            className="hover:text-foreground text-muted-foreground"
-                                        >
-                                            {selectedIds.size === filteredColors.length && filteredColors.length > 0 ? (
-                                                <CheckSquare className="h-4 w-4" />
-                                            ) : (
-                                                <Square className="h-4 w-4" />
-                                            )}
-                                        </button>
-                                    </th>
-                                    <th className="text-left py-3 px-4 font-medium">编号</th>
-                                    <th className="text-left py-3 px-4 font-medium">名称</th>
-                                    <th className="text-left py-3 px-4 font-medium">Lab</th>
-                                    <th className="text-left py-3 px-4 font-medium">状态</th>
-                                    <th className="text-left py-3 px-4 font-medium">审计</th>
-                                    <th className="text-left py-3 px-4 font-medium">配方</th>
-                                    <th className="text-left py-3 px-4 font-medium">创建时间</th>
-                                    <th className="text-right py-3 px-4 font-medium">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredColors.map((color) => (
-                                    <tr key={color.id} className="border-b hover:bg-muted/50">
-                                        <td className="py-3 px-4">
-                                            <button
-                                                onClick={() => handleSelect(color.id)}
-                                                className="hover:text-foreground text-muted-foreground"
-                                            >
-                                                {selectedIds.has(color.id) ? (
-                                                    <CheckSquare className="h-4 w-4 text-primary" />
-                                                ) : (
-                                                    <Square className="h-4 w-4" />
-                                                )}
-                                            </button>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                                                {color.colorId}
-                                            </code>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className="font-medium">{color.name}</span>
-                                        </td>
-                                        <td className="py-3 px-4 font-mono text-xs">
-                                            L*{color.labL.toFixed(1)} a*{color.labA.toFixed(1)} b*{color.labB.toFixed(1)}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <Badge variant={getStatusVariant(color.status)}>
-                                                {STATUS_LABELS[color.status] || color.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <Badge variant={getAuditVariant(color.auditStatus)}>
-                                                {AUDIT_STATUS_LABELS[color.auditStatus] || color.auditStatus}
-                                            </Badge>
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            {color._count.recipes}
-                                        </td>
-                                        <td className="py-3 px-4 text-muted-foreground">
-                                            {new Date(color.createdAt).toLocaleDateString('zh-CN')}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex justify-end gap-1">
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <Link href={`/color/${color.colorId}`}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <Link href={`/admin/colors/${color.id}/edit`}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            {/* @ts-expect-error - Next.js 15 strict route types */}
-                                                            <Link href={`/admin/colors/${color.id}/audit-notes`}>
-                                                                审计注记
+                    {isLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="text-left py-3 px-4 font-medium w-10">
+                                                <button
+                                                    onClick={handleSelectAll}
+                                                    className="hover:text-foreground text-muted-foreground"
+                                                >
+                                                    {selectedIds.size === allColors.length && allColors.length > 0 ? (
+                                                        <CheckSquare className="h-4 w-4" />
+                                                    ) : (
+                                                        <Square className="h-4 w-4" />
+                                                    )}
+                                                </button>
+                                            </th>
+                                            <th className="text-left py-3 px-4 font-medium">编号</th>
+                                            <th className="text-left py-3 px-4 font-medium">名称</th>
+                                            <th className="text-left py-3 px-4 font-medium">Lab</th>
+                                            <th className="text-left py-3 px-4 font-medium">状态</th>
+                                            <th className="text-left py-3 px-4 font-medium">审计</th>
+                                            <th className="text-left py-3 px-4 font-medium">配方</th>
+                                            <th className="text-left py-3 px-4 font-medium">创建时间</th>
+                                            <th className="text-right py-3 px-4 font-medium">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {allColors.map((color) => (
+                                            <tr key={color.id} className="border-b hover:bg-muted/50">
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        onClick={() => handleSelect(color.id)}
+                                                        className="hover:text-foreground text-muted-foreground"
+                                                    >
+                                                        {selectedIds.has(color.id) ? (
+                                                            <CheckSquare className="h-4 w-4 text-primary" />
+                                                        ) : (
+                                                            <Square className="h-4 w-4" />
+                                                        )}
+                                                    </button>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                                        {color.colorId}
+                                                    </code>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="font-medium">{color.name}</span>
+                                                </td>
+                                                <td className="py-3 px-4 font-mono text-xs">
+                                                    L*{color.labL.toFixed(1)} a*{color.labA.toFixed(1)} b*{color.labB.toFixed(1)}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <Badge variant={getColorStatusVariant(color.status as ColorStatus)}>
+                                                        {COLOR_STATUS_LABELS[color.status as ColorStatus] || color.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <Badge variant={getAuditStatusVariant(color.auditStatus as AuditStatus)}>
+                                                        {AUDIT_STATUS_LABELS[color.auditStatus as AuditStatus] || color.auditStatus}
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    {color._count.recipes}
+                                                </td>
+                                                <td className="py-3 px-4 text-muted-foreground">
+                                                    {new Date(color.createdAt).toLocaleDateString('zh-CN')}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/color/${color.colorId}`}>
+                                                                <Eye className="h-4 w-4" />
                                                             </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            className="text-destructive"
-                                                            onClick={() => {
-                                                                if (confirm('确定要删除此色彩吗？')) {
-                                                                    deleteMutation.mutate({ ids: [color.id] });
-                                                                }
-                                                            }}
-                                                        >
-                                                            删除
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredColors.length === 0 && !isLoading && (
-                                    <tr>
-                                        <td colSpan={9} className="py-8 text-center text-muted-foreground">
-                                            {search || statusFilter !== 'all' || auditFilter !== 'all'
-                                                ? '没有匹配的记录'
-                                                : '暂无数据，点击右上角添加色彩'}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/admin/colors/${color.id}/edit`}>
+                                                                <Edit className="h-4 w-4" />
+                                                            </Link>
+                                                        </Button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem asChild>
+                                                                    {/* @ts-expect-error - Next.js 15 strict route types */}
+                                                                    <Link href={`/admin/colors/${color.id}/audit-notes`}>
+                                                                        审计注记
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive"
+                                                                    onClick={() => {
+                                                                        if (confirm('确定要删除此色彩吗？')) {
+                                                                            deleteMutation.mutate({ ids: [color.id] });
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    删除
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {allColors.length === 0 && (
+                                            <tr>
+                                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                                    {hasFilters
+                                                        ? '没有匹配的记录'
+                                                        : '暂无数据，点击右上角添加色彩'}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* 加载更多按钮 */}
+                            {hasNextPage && (
+                                <div className="flex justify-center pt-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => fetchNextPage()}
+                                        disabled={isFetchingNextPage}
+                                        className="gap-2"
+                                    >
+                                        {isFetchingNextPage ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                加载中...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ChevronDown className="h-4 w-4" />
+                                                加载更多
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </div>

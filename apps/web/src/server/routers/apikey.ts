@@ -8,6 +8,7 @@ import { TRPCError } from '@trpc/server';
 import { generateApiKey } from '@/lib/apikey';
 import { SCOPES, ROLE_SCOPES, type Scope } from '@/lib/scopes';
 import { ApiKeyRole } from '@prisma/client';
+import { logAdminAction, AUDIT_TARGET_TYPES } from '@/lib/admin-audit';
 
 // 前端角色名到数据库枚举的映射
 const ROLE_MAP: Record<string, ApiKeyRole> = {
@@ -239,6 +240,7 @@ export const apikeyRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             const apiKey = await ctx.prisma.apiKey.findUnique({
                 where: { id: input.id },
+                include: { ownerUser: { select: { email: true } } },
             });
 
             if (!apiKey) {
@@ -251,6 +253,20 @@ export const apikeyRouter = createTRPCRouter({
             await ctx.prisma.apiKey.update({
                 where: { id: input.id },
                 data: { revokedAt: new Date() },
+            });
+
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'STATUS_CHANGE',
+                targetType: AUDIT_TARGET_TYPES.API_KEY,
+                targetId: input.id,
+                changes: {
+                    before: { revokedAt: null },
+                    after: { revokedAt: new Date().toISOString() },
+                },
+                metadata: { keyPrefix: apiKey.keyPrefix, ownerEmail: apiKey.ownerUser?.email },
             });
 
             return { success: true };

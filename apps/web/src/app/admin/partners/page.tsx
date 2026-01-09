@@ -1,60 +1,81 @@
+'use client';
+
 /**
  * 合作者管理列表页
+ *
+ * v0.5.1 - Admin 阶段
+ * 使用 tRPC 统一架构
  */
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { prisma } from '@/lib/db';
+import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Plus, Edit, Eye, Search, Filter, Loader2 } from 'lucide-react';
+import { PartnerTypeLabels, PartnerStatusLabels } from '@/lib/validations/partner';
 
-// 合作者类型标签
-const partnerTypeLabels: Record<string, string> = {
-    PRINTER: '印厂',
-    PAPER_VENDOR: '纸商',
-    INK_VENDOR: '油墨商',
-    LAB: '实验室',
-    CONSULTANT: '顾问',
-};
+export default function AdminPartnersPage() {
+    // 状态
+    const [search, setSearch] = useState('');
+    const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
-// 状态标签
-const statusLabels: Record<string, string> = {
-    PENDING: '待审核',
-    ACTIVE: '活跃',
-    SUSPENDED: '暂停',
-    INACTIVE: '停止',
-};
-
-async function getPartners() {
-    return prisma.partner.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-            _count: {
-                select: {
-                    colorParticipations: true,
-                    users: true,
-                    batches: true,
-                },
-            },
-        },
+    // 数据查询
+    const { data, isLoading, refetch } = trpc.partner.adminList.useQuery({
+        limit: 100,
     });
-}
 
-export default async function AdminPartnersPage() {
-    const partners = await getPartners();
+    // 筛选后的数据
+    const filteredPartners = useMemo(() => {
+        if (!data?.items) return [];
+
+        return data.items.filter((partner) => {
+            // 搜索
+            if (search) {
+                const searchLower = search.toLowerCase();
+                const matchesSearch =
+                    partner.partnerId.toLowerCase().includes(searchLower) ||
+                    partner.name.toLowerCase().includes(searchLower) ||
+                    (partner.shortName?.toLowerCase().includes(searchLower)) ||
+                    (partner.contactEmail?.toLowerCase().includes(searchLower));
+                if (!matchesSearch) return false;
+            }
+
+            // 类型筛选
+            if (typeFilter !== 'all' && !partner.types.includes(typeFilter as 'PRINTER' | 'PAPER_VENDOR' | 'INK_VENDOR' | 'LAB' | 'CONSULTANT')) {
+                return false;
+            }
+
+            // 状态筛选
+            if (statusFilter !== 'all' && partner.status !== statusFilter) {
+                return false;
+            }
+
+            return true;
+        });
+    }, [data?.items, search, typeFilter, statusFilter]);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
             case 'ACTIVE':
                 return 'success';
             case 'PENDING':
-                return 'warning';
+                return 'secondary';
             case 'SUSPENDED':
             case 'INACTIVE':
                 return 'destructive';
             default:
-                return 'secondary';
+                return 'outline';
         }
     };
 
@@ -76,121 +97,175 @@ export default async function AdminPartnersPage() {
     };
 
     return (
-        <div className="p-8">
-            <header className="flex items-center justify-between mb-8">
+        <div className="space-y-6">
+            {/* 页面头部 */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">合作者管理</h1>
-                    <p className="text-muted-foreground mt-1">管理印厂、纸商、油墨商等合作伙伴</p>
+                    <h1 className="text-2xl font-bold">合作者管理</h1>
+                    <p className="text-muted-foreground">管理印厂、纸商、油墨商等合作伙伴</p>
                 </div>
                 <Button asChild>
-                    {/* @ts-expect-error - Next.js 15 strict route types */}
                     <Link href="/admin/partners/new">
                         <Plus className="h-4 w-4 mr-2" />
                         添加合作者
                     </Link>
                 </Button>
-            </header>
+            </div>
 
+            {/* 搜索和筛选 */}
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="搜索编号、名称、邮箱..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="w-32">
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    <SelectValue placeholder="类型" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">全部类型</SelectItem>
+                                    <SelectItem value="PRINTER">印厂</SelectItem>
+                                    <SelectItem value="PAPER_VENDOR">纸商</SelectItem>
+                                    <SelectItem value="INK_VENDOR">油墨商</SelectItem>
+                                    <SelectItem value="LAB">实验室</SelectItem>
+                                    <SelectItem value="CONSULTANT">顾问</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-32">
+                                    <SelectValue placeholder="状态" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">全部状态</SelectItem>
+                                    <SelectItem value="PENDING">待审核</SelectItem>
+                                    <SelectItem value="ACTIVE">正常</SelectItem>
+                                    <SelectItem value="SUSPENDED">暂停</SelectItem>
+                                    <SelectItem value="INACTIVE">停止</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 数据表格 */}
             <Card>
                 <CardHeader>
                     <CardTitle>合作者列表</CardTitle>
-                    <CardDescription>共 {partners.length} 条记录</CardDescription>
+                    <CardDescription>
+                        {isLoading ? '加载中...' : `共 ${filteredPartners.length} 条记录`}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-3 px-4 font-medium">编号</th>
-                                    <th className="text-left py-3 px-4 font-medium">名称</th>
-                                    <th className="text-left py-3 px-4 font-medium">类型</th>
-                                    <th className="text-left py-3 px-4 font-medium">状态</th>
-                                    <th className="text-left py-3 px-4 font-medium">参与颜色</th>
-                                    <th className="text-left py-3 px-4 font-medium">用户</th>
-                                    <th className="text-left py-3 px-4 font-medium">批次</th>
-                                    <th className="text-left py-3 px-4 font-medium">地区</th>
-                                    <th className="text-left py-3 px-4 font-medium">创建时间</th>
-                                    <th className="text-right py-3 px-4 font-medium">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {partners.map((partner) => (
-                                    <tr key={partner.id} className="border-b hover:bg-muted/50">
-                                        <td className="py-3 px-4">
-                                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                                                {partner.partnerId}
-                                            </code>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="font-medium">{partner.name}</div>
-                                            {partner.shortName && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    {partner.shortName}
+                    {isLoading ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left py-3 px-4 font-medium">编号</th>
+                                        <th className="text-left py-3 px-4 font-medium">名称</th>
+                                        <th className="text-left py-3 px-4 font-medium">类型</th>
+                                        <th className="text-left py-3 px-4 font-medium">状态</th>
+                                        <th className="text-left py-3 px-4 font-medium">参与颜色</th>
+                                        <th className="text-left py-3 px-4 font-medium">用户</th>
+                                        <th className="text-left py-3 px-4 font-medium">批次</th>
+                                        <th className="text-left py-3 px-4 font-medium">地区</th>
+                                        <th className="text-left py-3 px-4 font-medium">创建时间</th>
+                                        <th className="text-right py-3 px-4 font-medium">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredPartners.map((partner) => (
+                                        <tr key={partner.id} className="border-b hover:bg-muted/50">
+                                            <td className="py-3 px-4">
+                                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                                    {partner.partnerId}
+                                                </code>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="font-medium">{partner.name}</div>
+                                                {partner.shortName && (
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {partner.shortName}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {partner.types.map((type) => (
+                                                        <span
+                                                            key={type}
+                                                            className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeColor(type)}`}
+                                                        >
+                                                            {PartnerTypeLabels[type] || type}
+                                                        </span>
+                                                    ))}
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {partner.types.map((type) => (
-                                                    <span
-                                                        key={type}
-                                                        className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getTypeColor(type)}`}
-                                                    >
-                                                        {partnerTypeLabels[type] || type}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <Badge variant={getStatusVariant(partner.status)}>
-                                                {statusLabels[partner.status] || partner.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            {partner._count.colorParticipations}
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            {partner._count.users}
-                                        </td>
-                                        <td className="py-3 px-4 text-center">
-                                            {partner._count.batches}
-                                        </td>
-                                        <td className="py-3 px-4 text-muted-foreground">
-                                            {partner.region || '-'}
-                                        </td>
-                                        <td className="py-3 px-4 text-muted-foreground">
-                                            {new Date(partner.createdAt).toLocaleDateString('zh-CN')}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <Link href={`/partners/${partner.partnerId}`}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    {/* @ts-expect-error - Next.js 15 strict route types */}
-                                                    <Link href={`/admin/partners/${partner.id}/edit`}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Link>
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {partners.length === 0 && (
-                                    <tr>
-                                        <td colSpan={10} className="py-8 text-center text-muted-foreground">
-                                            暂无数据，点击右上角添加合作者
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <Badge variant={getStatusVariant(partner.status)}>
+                                                    {PartnerStatusLabels[partner.status] || partner.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                {partner._count.colorParticipations}
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                {partner._count.users}
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                {partner._count.batches}
+                                            </td>
+                                            <td className="py-3 px-4 text-muted-foreground">
+                                                {partner.region || '-'}
+                                            </td>
+                                            <td className="py-3 px-4 text-muted-foreground">
+                                                {new Date(partner.createdAt).toLocaleDateString('zh-CN')}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link href={`/partners/${partner.partnerId}`}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link href={`/admin/partners/${partner.id}/edit`}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPartners.length === 0 && (
+                                        <tr>
+                                            <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                                                {search || typeFilter !== 'all' || statusFilter !== 'all'
+                                                    ? '没有匹配的记录'
+                                                    : '暂无数据，点击右上角添加合作者'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
     );
 }
-

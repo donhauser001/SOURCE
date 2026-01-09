@@ -66,7 +66,7 @@ export function ColorForm({ initialData, mode }: Props) {
         measurementCondition: initialData?.measurementCondition || '',
         trueSourceNote: initialData?.trueSourceNote || '',
         status: initialData?.status || 'EXPERIMENTAL',
-        auditStatus: initialData?.auditStatus || 'UNDER_REVIEW',
+        auditStatus: initialData?.auditStatus || 'PENDING',
         auditors: initialData?.auditors || [],
         auditNotes: initialData?.auditNotes || '',
         version: initialData?.version || '1.0',

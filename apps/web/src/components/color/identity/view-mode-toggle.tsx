@@ -29,7 +29,7 @@ export function ViewModeToggle({ isDark = false, className }: ViewModeToggleProp
         <div
             className={cn(
                 'inline-flex p-1 rounded-full transition-colors duration-300',
-                isDesignerMode 
+                isDesignerMode
                     ? 'bg-black/5 border border-black/10'
                     : 'bg-white/10 border border-white/20',
                 className

@@ -131,7 +131,7 @@ const traditionalColors = [
         labB: -18.2,
         trueSourceNote: '乌鸦羽毛的深沉之色，古典而沉稳',
         status: ColorStatus.EXPERIMENTAL,
-        auditStatus: AuditStatus.UNDER_REVIEW,
+        auditStatus: AuditStatus.PENDING,
     },
     {
         colorId: 'CN-Tuo-01',
@@ -186,7 +186,7 @@ const traditionalColors = [
         labB: 28.5,
         trueSourceNote: '如檀木的温润之色，古雅而沉稳',
         status: ColorStatus.EXPERIMENTAL,
-        auditStatus: AuditStatus.UNDER_REVIEW,
+        auditStatus: AuditStatus.PENDING,
     },
     {
         colorId: 'CN-Shuang-01',
@@ -219,7 +219,7 @@ const traditionalColors = [
         labB: 38.5,
         trueSourceNote: '如雏鹅绒毛的娇嫩之色',
         status: ColorStatus.EXPERIMENTAL,
-        auditStatus: AuditStatus.UNDER_REVIEW,
+        auditStatus: AuditStatus.PENDING,
     },
     {
         colorId: 'CN-Tian-01',

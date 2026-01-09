@@ -21,6 +21,7 @@ import {
     Key,
     ClipboardCheck,
     KeyRound,
+    ScrollText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -69,6 +70,11 @@ const navItems = [
         title: 'API 密钥',
         href: '/admin/api-keys',
         icon: KeyRound,
+    },
+    {
+        title: '操作审计日志',
+        href: '/admin/audit-logs',
+        icon: ScrollText,
     },
     {
         title: '批次管理',

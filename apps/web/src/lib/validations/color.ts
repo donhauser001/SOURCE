@@ -12,7 +12,7 @@ import { z } from 'zod';
 // 颜色状态（更新为 v1.0 规范）
 export const ColorStatusEnum = z.enum(['ACTIVE', 'DEPRECATED', 'EXPERIMENTAL', 'DRAFT', 'VERIFIED']);
 export const SourceTypeEnum = z.enum(['MEASURE', 'CALCULATED', 'IMPORTED']);
-export const AuditStatusEnum = z.enum(['VERIFIED', 'UNDER_REVIEW']);
+export const AuditStatusEnum = z.enum(['VERIFIED', 'PENDING']);
 
 // 纸张类型（旧模型兼容）
 export const PaperTypeEnum = z.enum([
@@ -36,7 +36,7 @@ export const ColorStatusLabels: Record<z.infer<typeof ColorStatusEnum>, string> 
 // 审计状态中文映射
 export const AuditStatusLabels: Record<z.infer<typeof AuditStatusEnum>, string> = {
     VERIFIED: '已验证',
-    UNDER_REVIEW: '审核中',
+    PENDING: '待审核',
 };
 
 // 纸张类型中文映射
@@ -111,7 +111,7 @@ export const createColorSchema = z.object({
     trueSourceNote: z.string().max(1000).optional(),
 
     // 审计与溯源
-    auditStatus: AuditStatusEnum.optional().default('UNDER_REVIEW'),
+    auditStatus: AuditStatusEnum.optional().default('PENDING'),
     auditors: z.array(z.string()).optional().default([]),
     auditNotes: z.string().max(1000).optional(),
 

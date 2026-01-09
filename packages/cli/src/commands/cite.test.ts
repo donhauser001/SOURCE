@@ -110,7 +110,7 @@ describe('cite 命令', () => {
         });
 
         it('未验证状态应显示 Under Review', () => {
-            const unverified = { ...mockCitationData, auditStatus: 'UNDER_REVIEW' };
+            const unverified = { ...mockCitationData, auditStatus: 'PENDING' };
             const result = formatBibtex(unverified);
             expect(result).toContain('Under Review');
         });

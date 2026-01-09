@@ -289,7 +289,7 @@ model Color {
   lastVerifiedAt DateTime?                // 最近整体验证时间（R）
 
   // 审计与溯源
-  auditStatus   AuditStatus @default(UNDER_REVIEW)  // verified / under_review
+  auditStatus   AuditStatus @default(PENDING)  // verified / pending
   auditors      String[]                  // 审计人/机构
   auditNotes    String?                   // 审计说明
   lastAuditAt   DateTime?                 // 最近审计时间
@@ -339,7 +339,7 @@ enum SourceType {
 
 enum AuditStatus {
   VERIFIED      // 已验证
-  UNDER_REVIEW  // 审核中
+  PENDING       // 待审核
 }
 
 // =============================================================================
@@ -967,3 +967,42 @@ model ActivationCode {
   @@index([code])
 }
 
+
+
+// =============================================================================
+// 管理员操作审计日志
+// =============================================================================
+
+model AdminAuditLog {
+  id          String      @id @default(cuid())
+  
+  // 操作人
+  userId      String
+  userEmail   String                       // 冗余存储，便于查询
+  
+  // 操作信息
+  action      AdminAction
+  targetType  String                       // color, partner, user, batch, proofingPack, apiKey...
+  targetId    String?                      // 目标 ID（删除时可能为空）
+  
+  // 变更详情
+  changes     Json?                        // { before: {...}, after: {...} }
+  metadata    Json?                        // { ip, userAgent, count... }
+  
+  createdAt   DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+enum AdminAction {
+  CREATE
+  UPDATE
+  DELETE
+  BATCH_DELETE
+  IMPORT
+  EXPORT
+  STATUS_CHANGE
+}

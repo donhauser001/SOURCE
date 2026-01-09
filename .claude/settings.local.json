@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm tsc:*)",
+      "Bash(PGPASSWORD=mysecretpassword psql:*)",
+      "Bash(PGPASSWORD=source_dev_password psql:*)",
+      "Bash(pnpm prisma db push:*)",
+      "Bash(pnpm prisma generate:*)"
+    ]
+  }
+}

@@ -12,7 +12,7 @@ import { z } from 'zod';
 export const PaperCategoryEnum = z.enum(['COATED', 'UNCOATED', 'SPECIALTY']);
 export const RecommendationTypeEnum = z.enum(['WHITELIST', 'BLACKLIST']);
 export const RiskTypeEnum = z.enum(['COLOR_SHIFT', 'GRAYING', 'DOT_LOSS', 'UNSTABLE']);
-export const AuditStatusEnum = z.enum(['VERIFIED', 'UNDER_REVIEW']);
+export const AuditStatusEnum = z.enum(['VERIFIED', 'PENDING']);
 
 // 中文标签映射
 export const PaperCategoryLabels: Record<z.infer<typeof PaperCategoryEnum>, string> = {
@@ -35,7 +35,7 @@ export const RiskTypeLabels: Record<z.infer<typeof RiskTypeEnum>, string> = {
 
 export const AuditStatusLabels: Record<z.infer<typeof AuditStatusEnum>, string> = {
   VERIFIED: '已验证',
-  UNDER_REVIEW: '审核中',
+  PENDING: '审核中',
 };
 
 // =============================================================================
