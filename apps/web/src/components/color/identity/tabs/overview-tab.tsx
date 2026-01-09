@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Info, ThumbsUp, ThumbsDown, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Info, ShieldCheck, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import { DesignerViewCard } from '../designer-view-card';
 import { ViewModeToggle } from '../view-mode-toggle';
 import { useViewMode } from '../view-mode-context';
 import { getRecommendationVariant, getAuditStatusVariant } from '../utils';
-import type { ColorData, PaperRecommendation } from '../types';
+import type { ColorData } from '../types';
 
 interface OverviewTabProps {
     color: ColorData;
@@ -29,13 +29,6 @@ export function OverviewTab({ color }: OverviewTabProps) {
     );
 
     const selectedProfile = color.paperProfiles.find((p) => p.paperType === selectedPaper);
-
-    const whitelistPapers = color.paperRecommendations?.filter(
-        (p) => p.recommendationType === 'WHITELIST'
-    ) || [];
-    const blacklistPapers = color.paperRecommendations?.filter(
-        (p) => p.recommendationType === 'BLACKLIST'
-    ) || [];
 
     // 为 LabSpectrumCard 准备纸张数据
     const paperProfilesForSpectrum = color.paperProfiles.map((p) => ({
@@ -78,7 +71,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
                             deltaETolerance={color.trueSource.deltaETolerance}
                         />
                     ) : (
-                        /* 设计师模式：简化视图卡片 */
+                        /* 设计师模式：简化视图卡片（整合纸张推荐） */
                         <DesignerViewCard
                             colorName={color.name}
                             trueSource={{
@@ -88,18 +81,10 @@ export function OverviewTab({ color }: OverviewTabProps) {
                                 deltaETolerance: color.trueSource.deltaETolerance,
                             }}
                             paperProfiles={paperProfilesForSpectrum}
+                            paperRecommendations={color.paperRecommendations}
                         />
                     )}
                 </div>
-
-                {/* 推荐纸张场景 */}
-                {(whitelistPapers.length > 0 || blacklistPapers.length > 0) && (
-                    <PaperRecommendationsCard
-                        whitelistPapers={whitelistPapers}
-                        blacklistPapers={blacklistPapers}
-                        isDark={isDark}
-                    />
-                )}
 
                 {/* 纸张选择标签 */}
                 <PaperPerformanceCard
@@ -142,89 +127,6 @@ export function OverviewTab({ color }: OverviewTabProps) {
                 )}
             </div>
         </div>
-    );
-}
-
-// 推荐纸张卡片
-function PaperRecommendationsCard({
-    whitelistPapers,
-    blacklistPapers,
-    isDark,
-}: {
-    whitelistPapers: PaperRecommendation[];
-    blacklistPapers: PaperRecommendation[];
-    isDark: boolean;
-}) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
-    return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg flex items-center gap-2",
-                    isDark ? "text-white" : "text-black"
-                )}>
-                    推荐纸张场景
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Info className={cn("h-4 w-4", isDark ? "text-white/40" : "text-black/40")} />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                            限定讨论空间的前置条件，帮助您快速判断适用性
-                        </TooltipContent>
-                    </Tooltip>
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {whitelistPapers.length > 0 && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-2 text-sm font-medium text-green-400">
-                            <ThumbsUp className="h-4 w-4" />
-                            推荐纸张
-                        </div>
-                        <div className="space-y-2">
-                            {whitelistPapers.map((paper) => (
-                                <div
-                                    key={paper.id}
-                                    className={cn(
-                                        "p-3 rounded-lg border",
-                                        isDark ? "bg-green-950/30 border-green-900/50" : "bg-green-50 border-green-200"
-                                    )}
-                                >
-                                    <div className={cn("font-medium", isDark ? "text-white" : "text-green-900")}>{paper.paperName}</div>
-                                    <p className={cn("text-sm mt-1", isDark ? "text-white/60" : "text-green-700")}>{paper.reason}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {blacklistPapers.length > 0 && (
-                    <div>
-                        <div className="flex items-center gap-2 mb-2 text-sm font-medium text-red-400">
-                            <ThumbsDown className="h-4 w-4" />
-                            排除纸张
-                        </div>
-                        <div className="space-y-2">
-                            {blacklistPapers.map((paper) => (
-                                <div
-                                    key={paper.id}
-                                    className={cn(
-                                        "p-3 rounded-lg border",
-                                        isDark ? "bg-red-950/30 border-red-900/50" : "bg-red-50 border-red-200"
-                                    )}
-                                >
-                                    <div className={cn("font-medium", isDark ? "text-white" : "text-red-900")}>{paper.paperName}</div>
-                                    <p className={cn("text-sm mt-1", isDark ? "text-white/60" : "text-red-700")}>{paper.reason}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
     );
 }
 

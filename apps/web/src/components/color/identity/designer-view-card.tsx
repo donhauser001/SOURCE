@@ -7,8 +7,10 @@
  * - 单色系视觉，与页面背景融为一体
  * - 用排版和间距区分层级
  * - 信息密度适中，一眼抓住重点
+ * - 整合人工标注的推荐/排除理由
  */
 
+import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useViewMode } from './view-mode-context';
@@ -36,6 +38,15 @@ interface PaperProfile {
     cautionNote?: string | null;
 }
 
+interface PaperRecommendation {
+    id: string;
+    paperId: string;
+    paperName: string;
+    paperCategory: string;
+    recommendationType: 'WHITELIST' | 'BLACKLIST';
+    reason: string;
+}
+
 interface DesignerViewCardProps {
     trueSource: {
         labL: number;
@@ -46,6 +57,8 @@ interface DesignerViewCardProps {
     paperProfiles: PaperProfile[];
     colorName: string;
     className?: string;
+    /** 人工标注的纸张推荐（白名单/黑名单） */
+    paperRecommendations?: PaperRecommendation[];
 }
 
 export function DesignerViewCard({
@@ -53,6 +66,7 @@ export function DesignerViewCard({
     paperProfiles,
     colorName,
     className,
+    paperRecommendations = [],
 }: DesignerViewCardProps) {
     const { isDark } = useViewMode();
 
@@ -65,6 +79,15 @@ export function DesignerViewCard({
     });
     const bestPaper = sortedProfiles[0];
     const tolerance = trueSource.deltaETolerance;
+
+    // 分离白名单和黑名单
+    const whitelistRecommendations = paperRecommendations.filter(r => r.recommendationType === 'WHITELIST');
+    const blacklistRecommendations = paperRecommendations.filter(r => r.recommendationType === 'BLACKLIST');
+
+    // 创建纸张名称到推荐理由的映射
+    const whitelistReasonMap = new Map(
+        whitelistRecommendations.map(r => [r.paperName, r.reason])
+    );
 
     const cardStyle = cn(
         "backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl",
@@ -117,16 +140,67 @@ export function DesignerViewCard({
 
                 {/* 纸张列表 */}
                 <div className="space-y-1">
-                    {sortedProfiles.map((profile, index) => (
-                        <PaperRow
-                            key={profile.paperType}
-                            profile={profile}
-                            tolerance={tolerance}
-                            isFirst={index === 0}
-                            isDark={isDark}
-                        />
-                    ))}
+                    {sortedProfiles.map((profile, index) => {
+                        const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
+                        const whitelistReason = whitelistReasonMap.get(paperName);
+                        
+                        return (
+                            <PaperRow
+                                key={profile.paperType}
+                                profile={profile}
+                                tolerance={tolerance}
+                                isFirst={index === 0}
+                                isDark={isDark}
+                                whitelistReason={whitelistReason}
+                            />
+                        );
+                    })}
                 </div>
+
+                {/* 黑名单警示 */}
+                {blacklistRecommendations.length > 0 && (
+                    <>
+                        <div className={cn(
+                            "h-px",
+                            isDark ? "bg-white/10" : "bg-black/10"
+                        )} />
+                        <div className="space-y-3">
+                            <div className={cn(
+                                "flex items-center gap-2 text-sm font-medium",
+                                isDark ? "text-red-400" : "text-red-600"
+                            )}>
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>不建议使用</span>
+                            </div>
+                            <div className="space-y-2">
+                                {blacklistRecommendations.map((rec) => (
+                                    <div
+                                        key={rec.id}
+                                        className={cn(
+                                            "p-3 rounded-xl",
+                                            isDark 
+                                                ? "bg-red-950/30 border border-red-900/30" 
+                                                : "bg-red-50 border border-red-200/50"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "font-medium text-sm",
+                                            isDark ? "text-white/90" : "text-red-900"
+                                        )}>
+                                            {rec.paperName}
+                                        </div>
+                                        <p className={cn(
+                                            "text-sm mt-1",
+                                            isDark ? "text-white/50" : "text-red-700/70"
+                                        )}>
+                                            {rec.reason}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {/* 底部说明 */}
                 <p className={cn(
@@ -148,54 +222,80 @@ function PaperRow({
     tolerance,
     isFirst,
     isDark,
+    whitelistReason,
 }: {
     profile: PaperProfile;
     tolerance: number;
     isFirst: boolean;
     isDark: boolean;
+    /** 人工标注的推荐理由（来自白名单） */
+    whitelistReason?: string;
 }) {
     const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
     const quality = profile.deltaE !== null ? getQualityLevel(profile.deltaE, tolerance) : 0;
 
     return (
         <div className={cn(
-            "group flex items-center gap-4 py-4 transition-colors rounded-xl px-4 -mx-4",
+            "group transition-colors rounded-xl px-4 -mx-4",
             isDark
                 ? "hover:bg-white/[0.03]"
                 : "hover:bg-black/[0.02]"
         )}>
-            {/* 纸张名称 */}
-            <div className="flex-1 flex items-center gap-3">
-                <span className={cn(
-                    "text-lg",
-                    isFirst
-                        ? (isDark ? "text-white font-medium" : "text-black font-medium")
-                        : (isDark ? "text-white/80" : "text-black/80")
-                )}>
-                    {paperName}
-                </span>
-                {isFirst && (
+            {/* 主行 */}
+            <div className="flex items-center gap-4 py-4">
+                {/* 纸张名称 */}
+                <div className="flex-1 flex items-center gap-3">
                     <span className={cn(
-                        "text-xs uppercase tracking-wider px-2.5 py-1 rounded-full",
-                        isDark
-                            ? "bg-white/10 text-white/70"
-                            : "bg-black/5 text-black/70"
+                        "text-lg",
+                        isFirst
+                            ? (isDark ? "text-white font-medium" : "text-black font-medium")
+                            : (isDark ? "text-white/80" : "text-black/80")
                     )}>
-                        推荐
+                        {paperName}
                     </span>
-                )}
+                    {isFirst && (
+                        <span className={cn(
+                            "text-xs uppercase tracking-wider px-2.5 py-1 rounded-full",
+                            isDark
+                                ? "bg-white/10 text-white/70"
+                                : "bg-black/5 text-black/70"
+                        )}>
+                            推荐
+                        </span>
+                    )}
+                </div>
+
+                {/* 质量指示器 */}
+                <div className="flex items-center gap-4">
+                    <QualityIndicator quality={quality} isDark={isDark} />
+                    <span className={cn(
+                        "text-sm font-mono w-12 text-right tabular-nums",
+                        isDark ? "text-white/60" : "text-black/60"
+                    )}>
+                        {profile.deltaE?.toFixed(1) ?? 'N/A'}
+                    </span>
+                </div>
             </div>
 
-            {/* 质量指示器 */}
-            <div className="flex items-center gap-4">
-                <QualityIndicator quality={quality} isDark={isDark} />
-                <span className={cn(
-                    "text-sm font-mono w-12 text-right tabular-nums",
-                    isDark ? "text-white/60" : "text-black/60"
+            {/* 人工标注的推荐理由 */}
+            {whitelistReason && (
+                <p className={cn(
+                    "text-sm pb-3 pl-0.5",
+                    isDark ? "text-green-400/70" : "text-green-700/80"
                 )}>
-                    {profile.deltaE?.toFixed(1) ?? 'N/A'}
-                </span>
-            </div>
+                    {whitelistReason}
+                </p>
+            )}
+
+            {/* 注意事项 */}
+            {profile.cautionNote && !whitelistReason && (
+                <p className={cn(
+                    "text-sm pb-3 pl-0.5",
+                    isDark ? "text-amber-400/70" : "text-amber-700/80"
+                )}>
+                    {profile.cautionNote}
+                </p>
+            )}
         </div>
     );
 }
