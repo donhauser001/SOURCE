@@ -36,6 +36,8 @@ export interface ChromaticityPlotProps {
     showSafeZone: boolean;
     showToleranceZone: boolean;
     showConnections: boolean;
+    /** 是否处于全屏模式，全屏时会适应屏幕比例 */
+    isFullscreen?: boolean;
 }
 
 export interface LightnessScaleProps {

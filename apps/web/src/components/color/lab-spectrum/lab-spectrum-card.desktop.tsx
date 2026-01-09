@@ -167,6 +167,7 @@ export function LabSpectrumCardDesktop({
                                     showSafeZone={showSafeZone}
                                     showToleranceZone={showToleranceZone}
                                     showConnections={showConnections}
+                                    isFullscreen={isFullscreen}
                                 />
                             </div>
 

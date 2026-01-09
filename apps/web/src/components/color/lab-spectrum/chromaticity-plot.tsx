@@ -9,7 +9,7 @@
  * - 动态网格和坐标轴
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { PAPER_TYPE_LABELS, PAPER_COLORS, PLOT_DIMENSIONS } from './constants';
@@ -39,42 +39,131 @@ export function ChromaticityPlot({
     showSafeZone,
     showToleranceZone,
     showConnections,
+    isFullscreen = false,
 }: ChromaticityPlotProps) {
     // 拖拽状态
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // 应用缩放后的范围
-    const rangeA = baseRangeA / zoom;
-    const rangeB = baseRangeB / zoom;
+    // 触摸状态
+    const lastTouchDistance = useRef<number | null>(null);
+    const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
 
-    // 转换为 viewBox 坐标（考虑平移）
+    // 容器尺寸（用于全屏模式的动态比例）
+    const [containerSize, setContainerSize] = useState({ width: 600, height: 450 });
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const updateSize = () => {
+            const rect = container.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setContainerSize({ width: rect.width, height: rect.height });
+            }
+        };
+
+        updateSize();
+
+        const resizeObserver = new ResizeObserver(updateSize);
+        resizeObserver.observe(container);
+
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // 动态计算尺寸参数
+    // 全屏模式：根据容器比例动态调整 Lab 显示范围
+    // 非全屏模式：保持固定 4:3 比例
+    const dynamicParams = useMemo(() => {
+        if (!isFullscreen) {
+            // 非全屏：使用固定参数
+            return {
+                viewWidth,
+                viewHeight,
+                plotWidth,
+                plotHeight,
+                centerX,
+                centerY,
+                rangeA: baseRangeA / zoom,
+                rangeB: baseRangeB / zoom,
+            };
+        }
+
+        // 全屏模式：根据容器比例动态计算
+        const containerAspect = containerSize.width / containerSize.height;
+        const baseAspect = viewWidth / viewHeight; // 4:3 = 1.333
+
+        let dynViewWidth = viewWidth;
+        let dynViewHeight = viewHeight;
+
+        if (containerAspect < baseAspect) {
+            // 容器更高（竖屏），增加高度
+            const heightRatio = baseAspect / containerAspect;
+            dynViewHeight = viewHeight * heightRatio;
+        } else if (containerAspect > baseAspect) {
+            // 容器更宽（横屏），增加宽度
+            const widthRatio = containerAspect / baseAspect;
+            dynViewWidth = viewWidth * widthRatio;
+        }
+
+        const dynPlotWidth = dynViewWidth - padding * 2;
+        const dynPlotHeight = dynViewHeight - padding * 2;
+
+        // 关键修复：根据实际 plotSize 比例计算 range，保持椭圆形状不变
+        // 原始比例：rangeA/plotWidth = baseRangeA/plotWidth, rangeB/plotHeight = baseRangeB/plotHeight
+        // 保持这个比例关系，才能让 ΔE 容差椭圆形状正确
+        const dynRangeA = (baseRangeA / zoom) * (dynPlotWidth / plotWidth);
+        const dynRangeB = (baseRangeB / zoom) * (dynPlotHeight / plotHeight);
+
+        return {
+            viewWidth: dynViewWidth,
+            viewHeight: dynViewHeight,
+            plotWidth: dynPlotWidth,
+            plotHeight: dynPlotHeight,
+            centerX: dynViewWidth / 2,
+            centerY: dynViewHeight / 2,
+            rangeA: dynRangeA,
+            rangeB: dynRangeB,
+        };
+    }, [isFullscreen, containerSize, zoom]);
+
+    // 使用动态参数
+    const rangeA = dynamicParams.rangeA;
+    const rangeB = dynamicParams.rangeB;
+    const dynViewWidth = dynamicParams.viewWidth;
+    const dynViewHeight = dynamicParams.viewHeight;
+    const dynPlotWidth = dynamicParams.plotWidth;
+    const dynPlotHeight = dynamicParams.plotHeight;
+    const dynCenterX = dynamicParams.centerX;
+    const dynCenterY = dynamicParams.centerY;
+
+    // 转换为 viewBox 坐标（考虑平移）- 使用动态参数
     const toSvgX = useCallback((a: number) => {
-        return centerX + ((a - pan.x) / rangeA) * (plotWidth / 2);
-    }, [pan.x, rangeA]);
+        return dynCenterX + ((a - pan.x) / rangeA) * (dynPlotWidth / 2);
+    }, [pan.x, rangeA, dynCenterX, dynPlotWidth]);
 
     const toSvgY = useCallback((b: number) => {
-        return centerY - ((b - pan.y) / rangeB) * (plotHeight / 2);
-    }, [pan.y, rangeB]);
+        return dynCenterY - ((b - pan.y) / rangeB) * (dynPlotHeight / 2);
+    }, [pan.y, rangeB, dynCenterY, dynPlotHeight]);
 
     // 转换为绘图区域内的百分比位置
     const toPercentX = useCallback((a: number) => {
         const svgX = toSvgX(a);
-        return ((svgX - padding) / plotWidth) * 100;
-    }, [toSvgX]);
+        return ((svgX - padding) / dynPlotWidth) * 100;
+    }, [toSvgX, dynPlotWidth]);
 
     const toPercentY = useCallback((b: number) => {
         const svgY = toSvgY(b);
-        return ((svgY - padding) / plotHeight) * 100;
-    }, [toSvgY]);
+        return ((svgY - padding) / dynPlotHeight) * 100;
+    }, [toSvgY, dynPlotHeight]);
 
     const sourceX = toSvgX(trueSource.labA);
     const sourceY = toSvgY(trueSource.labB);
 
-    // 容差椭圆
-    const toleranceRadiusX = (deltaETolerance / rangeA) * (plotWidth / 2);
-    const toleranceRadiusY = (deltaETolerance / rangeB) * (plotHeight / 2);
+    // 容差椭圆 - 使用动态参数
+    const toleranceRadiusX = (deltaETolerance / rangeA) * (dynPlotWidth / 2);
+    const toleranceRadiusY = (deltaETolerance / rangeB) * (dynPlotHeight / 2);
 
     // 滚轮缩放 - 使用 useEffect 添加非被动事件监听器以阻止页面滚动
     useEffect(() => {
@@ -96,6 +185,120 @@ export function ChromaticityPlot({
         };
     }, [zoom, onZoomChange]);
 
+    // 触摸事件处理 - 支持单指拖动和双指缩放
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        // 计算两点之间的距离
+        const getDistance = (touches: TouchList) => {
+            if (touches.length < 2) return null;
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        // 计算两点的中心
+        const getCenter = (touches: TouchList) => {
+            if (touches.length < 2) return null;
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2,
+            };
+        };
+
+        const handleTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 1) {
+                // 单指拖动开始
+                setIsDragging(true);
+                setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            } else if (e.touches.length === 2) {
+                // 双指缩放开始
+                e.preventDefault();
+                lastTouchDistance.current = getDistance(e.touches);
+                lastTouchCenter.current = getCenter(e.touches);
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 1 && isDragging) {
+                // 单指拖动
+                e.preventDefault();
+                const rect = container.getBoundingClientRect();
+                // 使用动态参数计算比例
+                const plotRatioX = dynPlotWidth / dynViewWidth;
+                const plotRatioY = dynPlotHeight / dynViewHeight;
+                const scaleX = rangeA / (rect.width * plotRatioX);
+                const scaleY = rangeB / (rect.height * plotRatioY);
+
+                const dx = (e.touches[0].clientX - dragStart.x) * scaleX;
+                const dy = (e.touches[0].clientY - dragStart.y) * scaleY;
+
+                onPanChange({
+                    x: Math.min(Math.max(pan.x - dx, -baseRangeA), baseRangeA),
+                    y: Math.min(Math.max(pan.y + dy, -baseRangeB), baseRangeB),
+                });
+                setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            } else if (e.touches.length === 2) {
+                // 双指缩放
+                e.preventDefault();
+                const newDistance = getDistance(e.touches);
+                const newCenter = getCenter(e.touches);
+
+                if (lastTouchDistance.current && newDistance) {
+                    // 缩放
+                    const scale = newDistance / lastTouchDistance.current;
+                    const newZoom = Math.min(Math.max(zoom * scale, 1), 20);
+                    onZoomChange(newZoom);
+                    lastTouchDistance.current = newDistance;
+                }
+
+                // 双指拖动
+                if (lastTouchCenter.current && newCenter) {
+                    const rect = container.getBoundingClientRect();
+                    const plotRatioX = dynPlotWidth / dynViewWidth;
+                    const plotRatioY = dynPlotHeight / dynViewHeight;
+                    const scaleX = rangeA / (rect.width * plotRatioX);
+                    const scaleY = rangeB / (rect.height * plotRatioY);
+
+                    const dx = (newCenter.x - lastTouchCenter.current.x) * scaleX;
+                    const dy = (newCenter.y - lastTouchCenter.current.y) * scaleY;
+
+                    onPanChange({
+                        x: Math.min(Math.max(pan.x - dx, -baseRangeA), baseRangeA),
+                        y: Math.min(Math.max(pan.y + dy, -baseRangeB), baseRangeB),
+                    });
+                    lastTouchCenter.current = newCenter;
+                }
+            }
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length === 0) {
+                setIsDragging(false);
+                lastTouchDistance.current = null;
+                lastTouchCenter.current = null;
+            } else if (e.touches.length === 1) {
+                // 从双指变为单指
+                lastTouchDistance.current = null;
+                lastTouchCenter.current = null;
+                setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+            }
+        };
+
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd);
+        container.addEventListener('touchcancel', handleTouchEnd);
+
+        return () => {
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
+            container.removeEventListener('touchend', handleTouchEnd);
+            container.removeEventListener('touchcancel', handleTouchEnd);
+        };
+    }, [zoom, onZoomChange, pan, onPanChange, rangeA, rangeB, isDragging, dragStart, dynPlotWidth, dynPlotHeight, dynViewWidth, dynViewHeight]);
+
     // 开始拖拽
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if (zoom <= 1) return;
@@ -108,8 +311,11 @@ export function ChromaticityPlot({
         if (!isDragging || !containerRef.current) return;
 
         const rect = containerRef.current.getBoundingClientRect();
-        const scaleX = rangeA / (rect.width * 0.833); // 0.833 = plotWidth / viewWidth
-        const scaleY = rangeB / (rect.height * 0.778); // 0.778 = plotHeight / viewHeight
+        // 使用动态参数计算比例
+        const plotRatioX = dynPlotWidth / dynViewWidth;
+        const plotRatioY = dynPlotHeight / dynViewHeight;
+        const scaleX = rangeA / (rect.width * plotRatioX);
+        const scaleY = rangeB / (rect.height * plotRatioY);
 
         const dx = (e.clientX - dragStart.x) * scaleX;
         const dy = (e.clientY - dragStart.y) * scaleY;
@@ -119,7 +325,7 @@ export function ChromaticityPlot({
             y: Math.min(Math.max(pan.y + dy, -baseRangeB), baseRangeB),
         });
         setDragStart({ x: e.clientX, y: e.clientY });
-    }, [isDragging, dragStart, rangeA, rangeB, pan, onPanChange]);
+    }, [isDragging, dragStart, rangeA, rangeB, pan, onPanChange, dynPlotWidth, dynPlotHeight, dynViewWidth, dynViewHeight]);
 
     // 结束拖拽
     const handleMouseUp = useCallback(() => {
@@ -136,16 +342,16 @@ export function ChromaticityPlot({
     const visibleMinB = pan.y - rangeB;
     const visibleMaxB = pan.y + rangeB;
 
-    // 生成网格线
+    // 生成网格线 - 使用动态参数
     for (let a = Math.ceil(visibleMinA / gridStep) * gridStep; a <= visibleMaxA; a += gridStep) {
         const x = toSvgX(a);
-        if (x >= padding && x <= viewWidth - padding) {
+        if (x >= padding && x <= dynViewWidth - padding) {
             gridLines.push({ type: 'v', pos: x, value: a, major: a % (gridStep * 2) === 0 });
         }
     }
     for (let b = Math.ceil(visibleMinB / gridStep) * gridStep; b <= visibleMaxB; b += gridStep) {
         const y = toSvgY(b);
-        if (y >= padding && y <= viewHeight - padding) {
+        if (y >= padding && y <= dynViewHeight - padding) {
             gridLines.push({ type: 'h', pos: y, value: b, major: b % (gridStep * 2) === 0 });
         }
     }
@@ -154,7 +360,7 @@ export function ChromaticityPlot({
         <div
             ref={containerRef}
             className={cn(
-                "relative w-full h-full select-none touch-none flex items-center justify-center",
+                "relative w-full h-full select-none touch-none flex items-center justify-center overflow-hidden",
                 isDragging ? "cursor-grabbing" : zoom > 1 ? "cursor-grab" : "cursor-crosshair"
             )}
             onMouseDown={handleMouseDown}
@@ -162,25 +368,25 @@ export function ChromaticityPlot({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
         >
-            {/* 固定宽高比的内容容器，确保 SVG 和 HTML 层对齐 */}
+            {/* 全屏模式：填满容器；非全屏：保持 4:3 比例 */}
             <div
                 className="relative w-full h-full"
-                style={{
+                style={isFullscreen ? {} : {
+                    aspectRatio: `${viewWidth} / ${viewHeight}`,
                     maxWidth: '100%',
                     maxHeight: '100%',
-                    aspectRatio: `${viewWidth} / ${viewHeight}`,
                 }}
             >
-                {/* SVG 背景层 */}
+                {/* SVG 背景层 - 使用动态尺寸 */}
                 <svg
-                    viewBox={`0 0 ${viewWidth} ${viewHeight}`}
+                    viewBox={`0 0 ${dynViewWidth} ${dynViewHeight}`}
                     className="absolute inset-0 w-full h-full"
-                    preserveAspectRatio="none"
+                    preserveAspectRatio={isFullscreen ? "xMidYMid meet" : "none"}
                 >
                     {/* 定义裁剪区域 */}
                     <defs>
                         <clipPath id="plot-clip">
-                            <rect x={padding} y={padding} width={plotWidth} height={plotHeight} rx="8" ry="8" />
+                            <rect x={padding} y={padding} width={dynPlotWidth} height={dynPlotHeight} rx="8" ry="8" />
                         </clipPath>
                     </defs>
 
@@ -188,8 +394,8 @@ export function ChromaticityPlot({
                     <rect
                         x={padding}
                         y={padding}
-                        width={plotWidth}
-                        height={plotHeight}
+                        width={dynPlotWidth}
+                        height={dynPlotHeight}
                         rx="8"
                         ry="8"
                         fill="rgba(0, 0, 0, 0.3)"
@@ -208,7 +414,7 @@ export function ChromaticityPlot({
                                     x1={line.pos}
                                     y1={padding}
                                     x2={line.pos}
-                                    y2={viewHeight - padding}
+                                    y2={dynViewHeight - padding}
                                     stroke={line.major ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.06)"}
                                     strokeWidth="0.5"
                                     vectorEffect="non-scaling-stroke"
@@ -218,7 +424,7 @@ export function ChromaticityPlot({
                                     key={`grid-${i}`}
                                     x1={padding}
                                     y1={line.pos}
-                                    x2={viewWidth - padding}
+                                    x2={dynViewWidth - padding}
                                     y2={line.pos}
                                     stroke={line.major ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.06)"}
                                     strokeWidth="0.5"
@@ -228,23 +434,23 @@ export function ChromaticityPlot({
                         ))}
 
                         {/* 坐标轴（在原点位置） */}
-                        {toSvgY(0) >= padding && toSvgY(0) <= viewHeight - padding && (
+                        {toSvgY(0) >= padding && toSvgY(0) <= dynViewHeight - padding && (
                             <line
                                 x1={padding}
                                 y1={toSvgY(0)}
-                                x2={viewWidth - padding}
+                                x2={dynViewWidth - padding}
                                 y2={toSvgY(0)}
                                 stroke="rgba(255, 255, 255, 0.4)"
                                 strokeWidth="1"
                                 vectorEffect="non-scaling-stroke"
                             />
                         )}
-                        {toSvgX(0) >= padding && toSvgX(0) <= viewWidth - padding && (
+                        {toSvgX(0) >= padding && toSvgX(0) <= dynViewWidth - padding && (
                             <line
                                 x1={toSvgX(0)}
                                 y1={padding}
                                 x2={toSvgX(0)}
-                                y2={viewHeight - padding}
+                                y2={dynViewHeight - padding}
                                 stroke="rgba(255, 255, 255, 0.4)"
                                 strokeWidth="1"
                                 vectorEffect="non-scaling-stroke"
@@ -301,7 +507,7 @@ export function ChromaticityPlot({
                             x1={sourceX}
                             y1={padding}
                             x2={sourceX}
-                            y2={viewHeight - padding}
+                            y2={dynViewHeight - padding}
                             stroke="rgba(34, 211, 238, 0.2)"
                             strokeWidth="1"
                             strokeDasharray="4 4"
@@ -310,7 +516,7 @@ export function ChromaticityPlot({
                         <line
                             x1={padding}
                             y1={sourceY}
-                            x2={viewWidth - padding}
+                            x2={dynViewWidth - padding}
                             y2={sourceY}
                             stroke="rgba(34, 211, 238, 0.2)"
                             strokeWidth="1"
@@ -346,8 +552,8 @@ export function ChromaticityPlot({
                     <rect
                         x={padding}
                         y={padding}
-                        width={plotWidth}
-                        height={plotHeight}
+                        width={dynPlotWidth}
+                        height={dynPlotHeight}
                         rx="8"
                         ry="8"
                         fill="none"
@@ -361,9 +567,9 @@ export function ChromaticityPlot({
                 <div className="absolute inset-0 pointer-events-none">
                     {/* +a 右侧 */}
                     <div
-                        className="absolute text-[18px] font-medium text-red-400"
+                        className="absolute text-[10px] sm:text-[12px] md:text-[14px] lg:text-[18px] font-medium text-red-400"
                         style={{
-                            right: `${((padding - 8) / viewWidth) * 100}%`,
+                            right: `${((padding - 8) / dynViewWidth) * 100}%`,
                             top: '50%',
                             transform: 'translateY(-50%) translateX(100%)'
                         }}
@@ -372,9 +578,9 @@ export function ChromaticityPlot({
                     </div>
                     {/* -a 左侧 */}
                     <div
-                        className="absolute text-[18px] font-medium text-green-400"
+                        className="absolute text-[10px] sm:text-[12px] md:text-[14px] lg:text-[18px] font-medium text-green-400"
                         style={{
-                            left: `${((padding - 8) / viewWidth) * 100}%`,
+                            left: `${((padding - 8) / dynViewWidth) * 100}%`,
                             top: '50%',
                             transform: 'translateY(-50%) translateX(-100%)'
                         }}
@@ -383,10 +589,10 @@ export function ChromaticityPlot({
                     </div>
                     {/* +b 顶部 */}
                     <div
-                        className="absolute text-[18px] font-medium text-yellow-400"
+                        className="absolute text-[10px] sm:text-[12px] md:text-[14px] lg:text-[18px] font-medium text-yellow-400"
                         style={{
                             left: '50%',
-                            top: `${((padding - 8) / viewHeight) * 100}%`,
+                            top: `${((padding - 8) / dynViewHeight) * 100}%`,
                             transform: 'translateX(-50%) translateY(-100%)'
                         }}
                     >
@@ -394,10 +600,10 @@ export function ChromaticityPlot({
                     </div>
                     {/* -b 底部 */}
                     <div
-                        className="absolute text-[18px] font-medium text-blue-400"
+                        className="absolute text-[10px] sm:text-[12px] md:text-[14px] lg:text-[18px] font-medium text-blue-400"
                         style={{
                             left: '50%',
-                            bottom: `${((padding - 8) / viewHeight) * 100}%`,
+                            bottom: `${((padding - 8) / dynViewHeight) * 100}%`,
                             transform: 'translateX(-50%) translateY(100%)'
                         }}
                     >
@@ -407,9 +613,9 @@ export function ChromaticityPlot({
                     {/* 当前可见范围标签 - 在线框内部显示 */}
                     {/* 右侧数字 */}
                     <div
-                        className="absolute text-[18px] text-white/30 tabular-nums text-right"
+                        className="absolute text-[9px] sm:text-[10px] md:text-[12px] lg:text-[18px] text-white/30 tabular-nums text-right"
                         style={{
-                            right: `${((padding + 8) / viewWidth) * 100}%`,
+                            right: `${((padding + 8) / dynViewWidth) * 100}%`,
                             top: '50%',
                             transform: 'translateY(-150%)'
                         }}
@@ -418,9 +624,9 @@ export function ChromaticityPlot({
                     </div>
                     {/* 左侧数字 */}
                     <div
-                        className="absolute text-[18px] text-white/30 tabular-nums"
+                        className="absolute text-[9px] sm:text-[10px] md:text-[12px] lg:text-[18px] text-white/30 tabular-nums"
                         style={{
-                            left: `${((padding + 8) / viewWidth) * 100}%`,
+                            left: `${((padding + 8) / dynViewWidth) * 100}%`,
                             top: '50%',
                             transform: 'translateY(-150%)'
                         }}
@@ -429,10 +635,10 @@ export function ChromaticityPlot({
                     </div>
                     {/* 上方数字 */}
                     <div
-                        className="absolute text-[18px] text-white/30 tabular-nums"
+                        className="absolute text-[9px] sm:text-[10px] md:text-[12px] lg:text-[18px] text-white/30 tabular-nums"
                         style={{
                             left: '50%',
-                            top: `${((padding + 8) / viewHeight) * 100}%`,
+                            top: `${((padding + 8) / dynViewHeight) * 100}%`,
                             transform: 'translateX(8px)'
                         }}
                     >
@@ -440,10 +646,10 @@ export function ChromaticityPlot({
                     </div>
                     {/* 下方数字 */}
                     <div
-                        className="absolute text-[18px] text-white/30 tabular-nums"
+                        className="absolute text-[9px] sm:text-[10px] md:text-[12px] lg:text-[18px] text-white/30 tabular-nums"
                         style={{
                             left: '50%',
-                            bottom: `${((padding + 8) / viewHeight) * 100}%`,
+                            bottom: `${((padding + 8) / dynViewHeight) * 100}%`,
                             transform: 'translateX(8px)'
                         }}
                     >
@@ -455,10 +661,10 @@ export function ChromaticityPlot({
                 <div
                     className="absolute pointer-events-none overflow-hidden rounded-lg"
                     style={{
-                        left: `${(padding / viewWidth) * 100}%`,
-                        top: `${(padding / viewHeight) * 100}%`,
-                        right: `${(padding / viewWidth) * 100}%`,
-                        bottom: `${(padding / viewHeight) * 100}%`,
+                        left: `${(padding / dynViewWidth) * 100}%`,
+                        top: `${(padding / dynViewHeight) * 100}%`,
+                        right: `${(padding / dynViewWidth) * 100}%`,
+                        bottom: `${(padding / dynViewHeight) * 100}%`,
                     }}
                 >
                     {/* 纸张漂移点 */}

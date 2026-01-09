@@ -48,7 +48,7 @@ export function ViewModeToggle({ isDark = false, className }: ViewModeToggleProp
                         <button
                             onClick={() => setMode(value)}
                             className={cn(
-                                'flex items-center gap-1.5 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-medium',
+                                'flex items-center gap-1.5 px-2.5 py-1.5 sm:px-4 rounded-full transition-all duration-300 text-sm font-medium',
                                 mode === value
                                     ? isDark
                                         ? 'bg-white/15 text-white'
@@ -59,7 +59,7 @@ export function ViewModeToggle({ isDark = false, className }: ViewModeToggleProp
                             )}
                         >
                             <Icon className="h-4 w-4" />
-                            <span>{label}模式</span>
+                            <span className="hidden sm:inline">{label}模式</span>
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">

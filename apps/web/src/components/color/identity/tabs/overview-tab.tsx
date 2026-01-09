@@ -61,8 +61,8 @@ export function OverviewTab({ color }: OverviewTabProps) {
             <div className="lg:col-span-2 space-y-6">
                 {/* 根据模式显示不同的卡片 */}
                 <div className="relative">
-                    {/* 模式切换按钮 - 右上角 */}
-                    <div className="absolute top-4 right-4 z-10">
+                    {/* 模式切换按钮 - 手机端在上方，桌面端右上角覆盖 */}
+                    <div className="flex justify-end mb-3 sm:mb-0 sm:absolute sm:top-4 sm:right-4 sm:z-10">
                         <ViewModeToggle isDark={isDark} />
                     </div>
                     

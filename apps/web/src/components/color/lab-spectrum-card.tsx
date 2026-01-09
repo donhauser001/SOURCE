@@ -9,13 +9,26 @@
  * import { LabSpectrumCard } from '@/components/color/lab-spectrum-card';
  * 
  * // 新方式（推荐）
- * import { LabSpectrumCard, ChromaticityPlot, LightnessScale } from '@/components/color/lab-spectrum';
+ * import { 
+ *   LabSpectrumCard,           // 响应式版本（自动切换）
+ *   LabSpectrumCardDesktop,    // 桌面版
+ *   LabSpectrumCardTablet,     // 平板版
+ *   LabSpectrumCardMobile,     // 手机版
+ *   LabSpectrumCardResponsive, // 响应式版本
+ *   LabSpectrumCardWithVariant // 可指定版本
+ * } from '@/components/color/lab-spectrum';
  */
 
 export {
-    // 主组件
+    // 主组件（响应式）
     LabSpectrumCard,
+    LabSpectrumCardResponsive,
+    LabSpectrumCardWithVariant,
+
+    // 各版本主组件
     LabSpectrumCardDesktop,
+    LabSpectrumCardTablet,
+    LabSpectrumCardMobile,
 
     // 子组件
     Toolbar,
