@@ -8,12 +8,15 @@
  * - 用排版和间距区分层级
  * - 信息密度适中，一眼抓住重点
  * - 整合人工标注的推荐/排除理由
+ * - 点击展开材质详情
  */
 
-import { AlertTriangle, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, ExternalLink, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useViewMode } from './view-mode-context';
+import { ColorSwatch } from '../color-swatch';
 
 // 纸张类型中文标签
 const PAPER_TYPE_LABELS: Record<string, string> = {
@@ -36,6 +39,16 @@ interface PaperProfile {
     recommendation?: string;
     recommendationLabel?: string;
     cautionNote?: string | null;
+}
+
+/** 完整纸张数据（包含材质参数） */
+interface FullPaperProfile extends PaperProfile {
+    id?: string;
+    glossiness?: number;
+    inkAbsorption?: number;
+    gamutCoverage?: number;
+    scanImageUrl?: string | null;
+    batchNo?: string | null;
 }
 
 interface PaperRecommendation {
@@ -62,7 +75,8 @@ interface DesignerViewCardProps {
         labB: number;
         deltaETolerance: number;
     };
-    paperProfiles: PaperProfile[];
+    /** 纸张数据（支持简化版和完整版） */
+    paperProfiles: FullPaperProfile[];
     colorName: string;
     className?: string;
     /** 人工标注的纸张推荐（白名单/黑名单） */
@@ -80,6 +94,7 @@ export function DesignerViewCard({
     proofingPacks = [],
 }: DesignerViewCardProps) {
     const { isDark } = useViewMode();
+    const [expandedPaper, setExpandedPaper] = useState<string | null>(null);
 
     // 按还原度排序（ΔE 越小越好，null 值排最后）
     const sortedProfiles = [...paperProfiles].sort((a, b) => {
@@ -104,6 +119,11 @@ export function DesignerViewCard({
     const proofingPackMap = new Map(
         proofingPacks.map(p => [p.paperType, p])
     );
+
+    // 切换展开状态
+    const toggleExpanded = (paperType: string) => {
+        setExpandedPaper(prev => prev === paperType ? null : paperType);
+    };
 
     const cardStyle = cn(
         "backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl",
@@ -160,16 +180,22 @@ export function DesignerViewCard({
                         const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
                         const whitelistReason = whitelistReasonMap.get(paperName);
                         const proofingPack = proofingPackMap.get(profile.paperType);
+                        const isExpanded = expandedPaper === profile.paperType;
+                        const hasDetails = profile.glossiness !== undefined || profile.scanImageUrl;
                         
                         return (
                             <PaperRow
                                 key={profile.paperType}
                                 profile={profile}
+                                trueSource={trueSource}
                                 tolerance={tolerance}
                                 isFirst={index === 0}
                                 isDark={isDark}
                                 whitelistReason={whitelistReason}
                                 proofingPack={proofingPack}
+                                isExpanded={isExpanded}
+                                hasDetails={hasDetails}
+                                onToggle={() => toggleExpanded(profile.paperType)}
                             />
                         );
                     })}
@@ -243,37 +269,49 @@ export function DesignerViewCard({
 }
 
 /**
- * 单行纸张信息
+ * 单行纸张信息（可展开详情）
  */
 function PaperRow({
     profile,
+    trueSource,
     tolerance,
     isFirst,
     isDark,
     whitelistReason,
     proofingPack,
+    isExpanded,
+    hasDetails,
+    onToggle,
 }: {
-    profile: PaperProfile;
+    profile: FullPaperProfile;
+    trueSource: { labL: number; labA: number; labB: number };
     tolerance: number;
     isFirst: boolean;
     isDark: boolean;
-    /** 人工标注的推荐理由（来自白名单） */
     whitelistReason?: string;
-    /** 对应的打样包 */
     proofingPack?: ProofingPack;
+    isExpanded: boolean;
+    hasDetails: boolean;
+    onToggle: () => void;
 }) {
     const paperName = profile.paperTypeLabel || PAPER_TYPE_LABELS[profile.paperType] || profile.paperType;
     const quality = profile.deltaE !== null ? getQualityLevel(profile.deltaE, tolerance) : 0;
 
     return (
         <div className={cn(
-            "group transition-colors rounded-xl px-4 -mx-4",
-            isDark
-                ? "hover:bg-white/[0.03]"
-                : "hover:bg-black/[0.02]"
+            "transition-colors rounded-xl px-4 -mx-4",
+            isExpanded
+                ? (isDark ? "bg-white/[0.05]" : "bg-black/[0.03]")
+                : (isDark ? "hover:bg-white/[0.03]" : "hover:bg-black/[0.02]")
         )}>
-            {/* 主行 */}
-            <div className="flex items-center gap-4 py-4">
+            {/* 主行 - 可点击展开 */}
+            <div 
+                className={cn(
+                    "flex items-center gap-4 py-4",
+                    hasDetails && "cursor-pointer"
+                )}
+                onClick={hasDetails ? onToggle : undefined}
+            >
                 {/* 纸张名称 */}
                 <div className="flex-1 flex items-center gap-3">
                     <span className={cn(
@@ -296,7 +334,7 @@ function PaperRow({
                     )}
                 </div>
 
-                {/* 质量指示器 + 购买链接 */}
+                {/* 质量指示器 + 购买链接 + 展开箭头 */}
                 <div className="flex items-center gap-4">
                     <QualityIndicator quality={quality} isDark={isDark} />
                     <span className={cn(
@@ -311,6 +349,7 @@ function PaperRow({
                             href={proofingPack.externalUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                             className={cn(
                                 "flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors",
                                 isDark
@@ -322,11 +361,19 @@ function PaperRow({
                             <ExternalLink className="h-3 w-3" />
                         </a>
                     )}
+                    {/* 展开箭头 */}
+                    {hasDetails && (
+                        <ChevronDown className={cn(
+                            "h-4 w-4 transition-transform",
+                            isDark ? "text-white/40" : "text-black/40",
+                            isExpanded && "rotate-180"
+                        )} />
+                    )}
                 </div>
             </div>
 
             {/* 人工标注的推荐理由 */}
-            {whitelistReason && (
+            {whitelistReason && !isExpanded && (
                 <p className={cn(
                     "text-sm pb-3 pl-0.5",
                     isDark ? "text-white/40" : "text-black/50"
@@ -336,7 +383,7 @@ function PaperRow({
             )}
 
             {/* 注意事项 */}
-            {profile.cautionNote && !whitelistReason && (
+            {profile.cautionNote && !whitelistReason && !isExpanded && (
                 <p className={cn(
                     "text-sm pb-3 pl-0.5",
                     isDark ? "text-white/40" : "text-black/50"
@@ -344,6 +391,169 @@ function PaperRow({
                     {profile.cautionNote}
                 </p>
             )}
+
+            {/* 展开的详情面板 */}
+            {isExpanded && hasDetails && (
+                <PaperDetails 
+                    profile={profile} 
+                    trueSource={trueSource}
+                    isDark={isDark} 
+                    whitelistReason={whitelistReason}
+                />
+            )}
+        </div>
+    );
+}
+
+/**
+ * 纸张详情面板
+ */
+function PaperDetails({
+    profile,
+    trueSource,
+    isDark,
+    whitelistReason,
+}: {
+    profile: FullPaperProfile;
+    trueSource: { labL: number; labA: number; labB: number };
+    isDark: boolean;
+    whitelistReason?: string;
+}) {
+    return (
+        <div className={cn(
+            "pb-5 pt-2 space-y-5 border-t",
+            isDark ? "border-white/10" : "border-black/10"
+        )}>
+            {/* 推荐理由或注意事项 */}
+            {(whitelistReason || profile.cautionNote) && (
+                <p className={cn(
+                    "text-sm",
+                    isDark ? "text-white/50" : "text-black/60"
+                )}>
+                    {whitelistReason || profile.cautionNote}
+                </p>
+            )}
+
+            {/* 色块对比 + Lab 值 */}
+            <div className="flex items-start gap-6">
+                {/* 真源色块 */}
+                <div className="space-y-2">
+                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                        真源
+                    </span>
+                    <ColorSwatch labL={trueSource.labL} labA={trueSource.labA} labB={trueSource.labB} size="sm" />
+                </div>
+                {/* 当前纸张色块 */}
+                <div className="space-y-2">
+                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                        {profile.paperTypeLabel || profile.paperType}
+                    </span>
+                    <ColorSwatch labL={profile.labL} labA={profile.labA} labB={profile.labB} size="sm" />
+                </div>
+                {/* Lab 数值 */}
+                <div className={cn(
+                    "flex-1 grid grid-cols-3 gap-4 text-sm font-mono",
+                    isDark ? "text-white/70" : "text-black/70"
+                )}>
+                    <div>
+                        <span className={isDark ? "text-white/40" : "text-black/40"}>L* </span>
+                        {profile.labL.toFixed(1)}
+                    </div>
+                    <div>
+                        <span className={isDark ? "text-white/40" : "text-black/40"}>a* </span>
+                        {profile.labA.toFixed(1)}
+                    </div>
+                    <div>
+                        <span className={isDark ? "text-white/40" : "text-black/40"}>b* </span>
+                        {profile.labB.toFixed(1)}
+                    </div>
+                </div>
+            </div>
+
+            {/* 材质参数 - 简化横条 */}
+            {(profile.glossiness !== undefined || profile.inkAbsorption !== undefined || profile.gamutCoverage !== undefined) && (
+                <div className="space-y-3">
+                    {profile.glossiness !== undefined && (
+                        <MaterialBar label="光泽度" value={profile.glossiness} isDark={isDark} />
+                    )}
+                    {profile.inkAbsorption !== undefined && (
+                        <MaterialBar label="吸墨率" value={profile.inkAbsorption} isDark={isDark} />
+                    )}
+                    {profile.gamutCoverage !== undefined && (
+                        <MaterialBar label="色域覆盖" value={profile.gamutCoverage} isDark={isDark} />
+                    )}
+                </div>
+            )}
+
+            {/* 验证批次 */}
+            {profile.batchNo && (
+                <div className={cn(
+                    "flex items-center gap-2 text-sm",
+                    isDark ? "text-white/50" : "text-black/50"
+                )}>
+                    <span>验证批次</span>
+                    <code className={cn(
+                        "text-xs px-1.5 py-0.5 rounded font-mono",
+                        isDark ? "bg-white/10" : "bg-black/5"
+                    )}>
+                        {profile.batchNo}
+                    </code>
+                </div>
+            )}
+
+            {/* 高清扫描图 */}
+            {profile.scanImageUrl && (
+                <div className="space-y-2">
+                    <span className={cn("text-xs", isDark ? "text-white/40" : "text-black/40")}>
+                        高清扫描
+                    </span>
+                    <div className={cn(
+                        "relative aspect-[3/1] rounded-lg overflow-hidden",
+                        isDark ? "bg-white/5" : "bg-black/5"
+                    )}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={profile.scanImageUrl}
+                            alt={`${profile.paperTypeLabel || profile.paperType} 扫描图`}
+                            className="object-cover w-full h-full"
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * 材质参数横条
+ */
+function MaterialBar({ label, value, isDark }: { label: string; value: number; isDark: boolean }) {
+    return (
+        <div className="flex items-center gap-3">
+            <span className={cn(
+                "text-xs w-16 shrink-0",
+                isDark ? "text-white/40" : "text-black/40"
+            )}>
+                {label}
+            </span>
+            <div className={cn(
+                "flex-1 h-1.5 rounded-full overflow-hidden",
+                isDark ? "bg-white/10" : "bg-black/10"
+            )}>
+                <div 
+                    className={cn(
+                        "h-full rounded-full transition-all",
+                        isDark ? "bg-white/50" : "bg-black/40"
+                    )}
+                    style={{ width: `${value}%` }}
+                />
+            </div>
+            <span className={cn(
+                "text-xs font-mono w-10 text-right tabular-nums",
+                isDark ? "text-white/60" : "text-black/60"
+            )}>
+                {value}%
+            </span>
         </div>
     );
 }

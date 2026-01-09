@@ -1,21 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { Info, ShieldCheck, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PaperProfileCard } from '../../paper-profile-card';
-import { MaterialRadar } from '../../material-radar';
 import { InkRecipeDisplay } from '../../ink-recipe-display';
 import { LabSpectrumCard } from '../../lab-spectrum-card';
 import { DesignerViewCard } from '../designer-view-card';
 import { ViewModeToggle } from '../view-mode-toggle';
 import { useViewMode } from '../view-mode-context';
-import { getRecommendationVariant, getAuditStatusVariant } from '../utils';
+import { getAuditStatusVariant } from '../utils';
 import type { ColorData } from '../types';
 
 interface OverviewTabProps {
@@ -24,13 +20,8 @@ interface OverviewTabProps {
 
 export function OverviewTab({ color }: OverviewTabProps) {
     const { isExpert, isDark } = useViewMode();
-    const [selectedPaper, setSelectedPaper] = useState<string | null>(
-        color.paperProfiles[0]?.paperType || null
-    );
 
-    const selectedProfile = color.paperProfiles.find((p) => p.paperType === selectedPaper);
-
-    // 为 LabSpectrumCard 准备纸张数据
+    // 为 LabSpectrumCard 准备简化纸张数据
     const paperProfilesForSpectrum = color.paperProfiles.map((p) => ({
         paperType: p.paperType,
         paperTypeLabel: p.paperTypeLabel,
@@ -43,10 +34,24 @@ export function OverviewTab({ color }: OverviewTabProps) {
         cautionNote: p.cautionNote,
     }));
 
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
+    // 为设计师卡片准备完整纸张数据（包含材质参数）
+    const paperProfilesForDesigner = color.paperProfiles.map((p) => ({
+        id: p.id,
+        paperType: p.paperType,
+        paperTypeLabel: p.paperTypeLabel,
+        labL: p.labL,
+        labA: p.labA,
+        labB: p.labB,
+        deltaE: p.deltaE,
+        recommendation: p.recommendation,
+        recommendationLabel: p.recommendationLabel,
+        cautionNote: p.cautionNote,
+        glossiness: p.glossiness,
+        inkAbsorption: p.inkAbsorption,
+        gamutCoverage: p.gamutCoverage,
+        scanImageUrl: p.scanImageUrl,
+        batchNo: p.batchNo,
+    }));
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -71,7 +76,7 @@ export function OverviewTab({ color }: OverviewTabProps) {
                             deltaETolerance={color.trueSource.deltaETolerance}
                         />
                     ) : (
-                        /* 设计师模式：简化视图卡片（整合纸张推荐 + 打样包） */
+                        /* 设计师模式：整合纸张推荐 + 材质详情 + 打样包 */
                         <DesignerViewCard
                             colorName={color.name}
                             trueSource={{
@@ -80,40 +85,12 @@ export function OverviewTab({ color }: OverviewTabProps) {
                                 labB: color.trueSource.labB,
                                 deltaETolerance: color.trueSource.deltaETolerance,
                             }}
-                            paperProfiles={paperProfilesForSpectrum}
+                            paperProfiles={paperProfilesForDesigner}
                             paperRecommendations={color.paperRecommendations}
                             proofingPacks={color.proofingPacks}
                         />
                     )}
                 </div>
-
-                {/* 纸张选择标签 */}
-                <PaperPerformanceCard
-                    paperProfiles={color.paperProfiles}
-                    selectedPaper={selectedPaper}
-                    onSelectPaper={setSelectedPaper}
-                    isDark={isDark}
-                />
-
-                {/* 材质雷达图 */}
-                {selectedProfile && (
-                    <Card className={cardStyle}>
-                        <CardHeader className="pb-3">
-                            <CardTitle className={cn(
-                                "text-lg",
-                                isDark ? "text-white" : "text-black"
-                            )}>材质表现雷达图</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <MaterialRadar
-                                glossiness={selectedProfile.glossiness}
-                                inkAbsorption={selectedProfile.inkAbsorption}
-                                gamutCoverage={selectedProfile.gamutCoverage}
-                                paperType={selectedProfile.paperTypeLabel}
-                            />
-                        </CardContent>
-                    </Card>
-                )}
             </div>
 
             {/* 右侧：生产技术区 */}
@@ -128,83 +105,6 @@ export function OverviewTab({ color }: OverviewTabProps) {
                 )}
             </div>
         </div>
-    );
-}
-
-// 纸张表现卡片
-function PaperPerformanceCard({
-    paperProfiles,
-    selectedPaper,
-    onSelectPaper,
-    isDark,
-}: {
-    paperProfiles: ColorData['paperProfiles'];
-    selectedPaper: string | null;
-    onSelectPaper: (paper: string) => void;
-    isDark: boolean;
-}) {
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
-    return (
-        <Card className={cardStyle}>
-            <CardHeader className="pb-3">
-                <CardTitle className={cn(
-                    "text-lg flex items-center gap-2",
-                    isDark ? "text-white" : "text-black"
-                )}>
-                    实操表现区
-                    <Tooltip>
-                        <TooltipTrigger>
-                            <Info className={cn("h-4 w-4", isDark ? "text-white/40" : "text-black/40")} />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                            基于「开放差异」原则，展示该颜色在不同介质上的真实状态
-                        </TooltipContent>
-                    </Tooltip>
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                {paperProfiles.length > 0 ? (
-                    <Tabs value={selectedPaper || undefined} onValueChange={onSelectPaper}>
-                        <TabsList className={cn(
-                            "mb-4 flex-wrap h-auto gap-1 border-0",
-                            isDark ? "bg-white/10" : "bg-black/5"
-                        )}>
-                            {paperProfiles.map((profile) => (
-                                <TabsTrigger
-                                    key={profile.paperType}
-                                    value={profile.paperType}
-                                    className={cn(
-                                        "gap-2 transition-all",
-                                        isDark
-                                            ? "text-white/50 data-[state=active]:bg-white/20 data-[state=active]:text-white"
-                                            : "text-black/50 data-[state=active]:bg-black/10 data-[state=active]:text-black"
-                                    )}
-                                >
-                                    {profile.paperTypeLabel}
-                                    <Badge
-                                        variant={getRecommendationVariant(profile.recommendation) as 'success' | 'info' | 'warning' | 'destructive' | 'secondary'}
-                                        className="text-[10px] px-1.5 py-0"
-                                    >
-                                        {profile.recommendationLabel}
-                                    </Badge>
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                        {paperProfiles.map((profile) => (
-                            <TabsContent key={profile.paperType} value={profile.paperType}>
-                                <PaperProfileCard profile={profile} isDark={isDark} />
-                            </TabsContent>
-                        ))}
-                    </Tabs>
-                ) : (
-                    <p className={isDark ? "text-white/40 text-center py-8" : "text-black/40 text-center py-8"}>暂无纸张表现数据</p>
-                )}
-            </CardContent>
-        </Card>
     );
 }
 
