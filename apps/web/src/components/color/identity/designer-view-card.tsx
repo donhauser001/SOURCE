@@ -269,10 +269,10 @@ function PaperRow({
                 <div className="flex items-center gap-4">
                     <QualityIndicator quality={quality} isDark={isDark} />
                     <span className={cn(
-                        "text-sm font-mono w-12 text-right tabular-nums",
+                        "text-sm font-mono text-right tabular-nums",
                         isDark ? "text-white/60" : "text-black/60"
                     )}>
-                        {profile.deltaE?.toFixed(1) ?? 'N/A'}
+                        {profile.deltaE !== null ? `ΔE ${profile.deltaE.toFixed(1)}` : 'N/A'}
                     </span>
                 </div>
             </div>
