@@ -124,11 +124,12 @@ export const batchRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const profiles = await ctx.prisma.paperProfile.findMany({
                 where: { batchId: input.batchId },
-                orderBy: [{ paperType: 'asc' }],
+                orderBy: [{ paperType: { order: 'asc' } }],
                 include: {
                     color: {
                         select: { colorId: true, name: true },
                     },
+                    paperType: true,
                 },
             });
 

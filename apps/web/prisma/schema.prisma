@@ -305,6 +305,9 @@ model Color {
 
   // 状态
   status        ColorStatus @default(EXPERIMENTAL)
+  
+  // 色系分类（便于筛选）
+  colorFamily   ColorFamily?
 
   // 关联 - 旧模型（向后兼容）
   paperProfiles PaperProfile[]
@@ -328,6 +331,7 @@ model Color {
   @@index([slug])
   @@index([status])
   @@index([auditStatus])
+  @@index([colorFamily])
 }
 
 enum ColorStatus {
@@ -347,6 +351,19 @@ enum SourceType {
 enum AuditStatus {
   VERIFIED      // 已验证
   PENDING       // 待审核
+}
+
+enum ColorFamily {
+  RED           // 红色系
+  ORANGE        // 橙色系
+  YELLOW        // 黄色系
+  GREEN         // 绿色系
+  CYAN          // 青色系
+  BLUE          // 蓝色系
+  PURPLE        // 紫色系
+  PINK          // 粉色系
+  BROWN         // 棕色系
+  NEUTRAL       // 黑白灰（中性色）
 }
 
 // =============================================================================

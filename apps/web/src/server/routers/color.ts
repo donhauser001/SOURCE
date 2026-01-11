@@ -40,7 +40,8 @@ export const colorRouter = createTRPCRouter({
             include: {
                 batch: true,
                 paperProfiles: {
-                    orderBy: { paperType: 'asc' },
+                    orderBy: { paperType: { order: 'asc' } },
+                    include: { paperType: true },
                 },
             },
         });
@@ -82,14 +83,16 @@ export const colorRouter = createTRPCRouter({
                 include: {
                     batch: true,
                     paperProfiles: {
-                        orderBy: { paperType: 'asc' },
+                        orderBy: { paperType: { order: 'asc' } },
                         include: {
                             batch: { select: { batchNo: true } },
+                            paperType: true,
                         },
                     },
                     proofingPacks: {
                         where: { isActive: true },
-                        orderBy: { paperType: 'asc' },
+                        orderBy: { paperType: { order: 'asc' } },
+                        include: { paperType: true },
                     },
                     paperRecommendations: {
                         include: {
@@ -509,10 +512,11 @@ export const colorRouter = createTRPCRouter({
                 search: z.string().optional(),
                 status: ColorStatusEnum.optional(),
                 auditStatus: z.enum(['VERIFIED', 'PENDING']).optional(),
+                colorFamily: z.enum(['RED', 'ORANGE', 'YELLOW', 'GREEN', 'CYAN', 'BLUE', 'PURPLE', 'PINK', 'BROWN', 'NEUTRAL']).optional(),
             })
         )
         .query(async ({ ctx, input }) => {
-            const { limit, cursor, search, status, auditStatus } = input;
+            const { limit, cursor, search, status, auditStatus, colorFamily } = input;
 
             // 构建 where 条件
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -534,6 +538,10 @@ export const colorRouter = createTRPCRouter({
                 where.auditStatus = auditStatus;
             }
 
+            if (colorFamily) {
+                where.colorFamily = colorFamily;
+            }
+
             // 并行查询：数据和总数
             const [items, totalCount] = await Promise.all([
                 ctx.prisma.color.findMany({
@@ -551,8 +559,20 @@ export const colorRouter = createTRPCRouter({
                         labB: true,
                         status: true,
                         auditStatus: true,
+                        colorFamily: true,
                         createdAt: true,
                         updatedAt: true,
+                        colorBookEntries: {
+                            select: {
+                                colorBook: {
+                                    select: {
+                                        id: true,
+                                        slug: true,
+                                        name: true,
+                                    },
+                                },
+                            },
+                        },
                         _count: {
                             select: {
                                 recipes: true,
@@ -927,7 +947,7 @@ export const colorRouter = createTRPCRouter({
             const items = await ctx.prisma.paperProfile.findMany({
                 where,
                 take: input.limit,
-                orderBy: [{ recommendation: 'asc' }, { paperType: 'asc' }],
+                orderBy: [{ recommendation: 'asc' }, { paperType: { order: 'asc' } }],
                 include: {
                     color: {
                         select: { colorId: true, name: true },
@@ -935,6 +955,7 @@ export const colorRouter = createTRPCRouter({
                     batch: {
                         select: { batchNo: true },
                     },
+                    paperType: true,
                 },
             });
 

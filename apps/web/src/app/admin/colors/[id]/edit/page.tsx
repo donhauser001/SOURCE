@@ -39,6 +39,7 @@ export default async function EditColorPage({ params }: Props) {
         trueSourceNote: color.trueSourceNote || '',
         status: color.status,
         auditStatus: color.auditStatus,
+        colorFamily: color.colorFamily || '',
         auditors: color.auditors,
         auditNotes: color.auditNotes || '',
         version: color.version,

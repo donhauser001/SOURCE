@@ -53,7 +53,8 @@ export default async function BatchDetailPage({ params }: PageProps) {
                         },
                     },
                 },
-                orderBy: { paperType: 'asc' },
+                orderBy: { paperType: { order: 'asc' } },
+                include: { paperType: true },
             },
         },
     });

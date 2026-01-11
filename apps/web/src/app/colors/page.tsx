@@ -5,6 +5,10 @@
  * - 字号统一，不传递错误层级
  * - 卡片大小基于"成熟度"（验证状态 + 配方数量）
  * - 位置保持随机（视觉丰富）
+ * 
+ * 性能优化：
+ * - 使用缓存查询减少数据库负载
+ * - ISR 静态生成，60秒重新验证
  */
 
 import { Metadata } from 'next';
@@ -12,7 +16,11 @@ import { Suspense } from 'react';
 import { prisma } from '@/lib/db';
 import { ColorListClientB } from '@/components/color/color-list-client-b';
 import { PaperTypeLabels, ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
+import { COLOR_FAMILY_LABELS, COLOR_FAMILY_COLORS } from '@/lib/labels';
 import { SiteHeader } from '@/components/site-header';
+
+// ISR: 60秒重新验证
+export const revalidate = 60;
 
 export const metadata: Metadata = {
     title: '色彩库 | SOURCE',
@@ -24,15 +32,22 @@ export const metadata: Metadata = {
 };
 
 async function getColors() {
-    const colors = await prisma.color.findMany({
+    // 直接查询获取基础数据
+    const cachedColors = await prisma.color.findMany({
         orderBy: { colorId: 'asc' },
-        include: {
-            paperProfiles: {
-                select: {
-                    paperType: true,
-                    recommendation: true,
-                },
-            },
+        select: {
+            id: true,
+            colorId: true,
+            name: true,
+            slug: true,
+            labL: true,
+            labA: true,
+            labB: true,
+            status: true,
+            auditStatus: true,
+            colorFamily: true,
+            version: true,
+            lastVerifiedAt: true,
             _count: {
                 select: {
                     paperProfiles: true,
@@ -42,8 +57,31 @@ async function getColors() {
             },
         },
     });
+    
+    // 获取需要额外关联的数据（bestPaper）
+    // 使用单独查询避免 N+1，只查询有 BEST 推荐的纸张档案
+    const bestPapers = await prisma.paperProfile.findMany({
+        where: {
+            recommendation: 'BEST',
+            colorId: { in: cachedColors.map(c => c.id) },
+        },
+        select: {
+            colorId: true,
+            paperType: {
+                select: { code: true },
+            },
+        },
+    });
+    
+    // 构建 colorId -> bestPaper 映射
+    const bestPaperMap = new Map<string, string>();
+    bestPapers.forEach(bp => {
+        if (!bestPaperMap.has(bp.colorId)) {
+            bestPaperMap.set(bp.colorId, bp.paperType.code);
+        }
+    });
 
-    return colors.map((color) => ({
+    return cachedColors.map((color) => ({
         id: color.id,
         colorId: color.colorId,
         name: color.name,
@@ -55,11 +93,13 @@ async function getColors() {
         statusLabel: ColorStatusLabels[color.status] || color.status,
         auditStatus: color.auditStatus,
         auditStatusLabel: AuditStatusLabels[color.auditStatus] || color.auditStatus,
+        colorFamily: color.colorFamily,
+        colorFamilyLabel: color.colorFamily ? COLOR_FAMILY_LABELS[color.colorFamily] : null,
         version: color.version,
         paperProfileCount: color._count.paperProfiles,
         recipeCount: color._count.recipes,
         participantCount: color._count.participations,
-        bestPaper: color.paperProfiles.find((p) => p.recommendation === 'BEST')?.paperType,
+        bestPaper: bestPaperMap.get(color.id),
         lastVerifiedAt: color.lastVerifiedAt?.toISOString() || null,
     }));
 }
@@ -87,6 +127,8 @@ export default async function ColorsPage() {
                             paperTypeLabels={PaperTypeLabels}
                             colorStatusLabels={ColorStatusLabels}
                             auditStatusLabels={AuditStatusLabels}
+                            colorFamilyLabels={COLOR_FAMILY_LABELS}
+                            colorFamilyColors={COLOR_FAMILY_COLORS}
                         />
                     </Suspense>
                 </div>

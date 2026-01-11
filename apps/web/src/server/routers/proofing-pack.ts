@@ -187,7 +187,8 @@ export const proofingPackRouter = createTRPCRouter({
                     colorId: color.id,
                     isActive: true,
                 },
-                orderBy: { paperType: 'asc' },
+                orderBy: { paperType: { order: 'asc' } },
+                include: { paperType: true },
             });
 
             return proofingPacks;

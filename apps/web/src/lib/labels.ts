@@ -30,6 +30,39 @@ export const AUDIT_STATUS_LABELS = {
 export type AuditStatus = keyof typeof AUDIT_STATUS_LABELS;
 
 // =============================================================================
+// 色系
+// =============================================================================
+
+export const COLOR_FAMILY_LABELS = {
+    RED: '红色系',
+    ORANGE: '橙色系',
+    YELLOW: '黄色系',
+    GREEN: '绿色系',
+    CYAN: '青色系',
+    BLUE: '蓝色系',
+    PURPLE: '紫色系',
+    PINK: '粉色系',
+    BROWN: '棕色系',
+    NEUTRAL: '中性色',
+} as const;
+
+export type ColorFamily = keyof typeof COLOR_FAMILY_LABELS;
+
+// 色系对应的代表色（用于UI展示）
+export const COLOR_FAMILY_COLORS: Record<ColorFamily, string> = {
+    RED: '#DC2626',
+    ORANGE: '#EA580C',
+    YELLOW: '#CA8A04',
+    GREEN: '#16A34A',
+    CYAN: '#0891B2',
+    BLUE: '#2563EB',
+    PURPLE: '#9333EA',
+    PINK: '#EC4899',
+    BROWN: '#92400E',
+    NEUTRAL: '#6B7280',
+};
+
+// =============================================================================
 // 合作者状态
 // =============================================================================
 

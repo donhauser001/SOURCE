@@ -11,15 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Package, ExternalLink, TrendingUp } from 'lucide-react';
 
-// 纸张类型标签
-const PAPER_TYPE_LABELS: Record<string, string> = {
-    PREMIUM_MATTE: '高阶映画',
-    UNCOATED: '纯质纸',
-    COATED: '铜版纸',
-    OFFSET: '双胶纸',
-    LIGHTWEIGHT: '轻型纸',
-};
-
 // 格式化价格
 function formatPrice(priceInCents: number): string {
     return `¥${(priceInCents / 100).toFixed(2)}`;
@@ -29,7 +20,7 @@ async function getProofingPacks() {
     const proofingPacks = await prisma.proofingPack.findMany({
         orderBy: [
             { color: { colorId: 'asc' } },
-            { paperType: 'asc' },
+            { paperType: { order: 'asc' } },
         ],
         include: {
             color: {
@@ -39,6 +30,7 @@ async function getProofingPacks() {
                     name: true,
                 },
             },
+            paperType: true,
             _count: {
                 select: { buyIntents: true },
             },
@@ -165,7 +157,7 @@ export default async function ProofingPacksPage() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                {PAPER_TYPE_LABELS[pack.paperType] || pack.paperType}
+                                                {pack.paperType.name}
                                             </td>
                                             <td className="px-4 py-3 font-medium">
                                                 {formatPrice(pack.price)}

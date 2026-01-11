@@ -1,6 +1,5 @@
 import {
     PrismaClient,
-    PaperType,
     Recommendation,
     BatchType,
     ColorStatus,
@@ -25,6 +24,15 @@ import {
     ParticipationStatus,
     EvidenceType,
 } from '@prisma/client';
+
+// 纸型代码常量（对应 PaperTypeOption.code）
+const PaperTypeCode = {
+    PREMIUM_MATTE: 'PREMIUM_MATTE',
+    UNCOATED: 'UNCOATED',
+    COATED: 'COATED',
+    OFFSET: 'OFFSET',
+    LIGHTWEIGHT: 'LIGHTWEIGHT',
+} as const;
 
 const prisma = new PrismaClient();
 
@@ -392,133 +400,153 @@ async function main() {
 
     console.log(`✅ 示例颜色创建完成（共 ${3 + additionalColors.length} 种）`);
 
-    // 7. 创建纸张表现数据（旧模型，保持兼容）
-    const paperProfiles = [
-        // 烟雨青的纸张表现
-        {
-            colorId: colorYanyuQing.id,
-            paperType: PaperType.PREMIUM_MATTE,
-            labL: 64.8,
-            labA: -12.3,
-            labB: -8.1,
-            deltaE: 0.5,
-            glossiness: 25,
-            inkAbsorption: 45,
-            gamutCoverage: 95,
-            recommendation: Recommendation.BEST,
-            cautionNote: null,
-        },
-        {
-            colorId: colorYanyuQing.id,
-            paperType: PaperType.UNCOATED,
-            labL: 63.5,
-            labA: -11.8,
-            labB: -7.5,
-            deltaE: 2.1,
-            glossiness: 15,
-            inkAbsorption: 65,
-            gamutCoverage: 88,
-            recommendation: Recommendation.GOOD,
-            cautionNote: '饱和度略有降低，但保持文艺气质',
-        },
-        {
-            colorId: colorYanyuQing.id,
-            paperType: PaperType.COATED,
-            labL: 65.0,
-            labA: -12.4,
-            labB: -8.2,
-            deltaE: 0.3,
-            glossiness: 75,
-            inkAbsorption: 25,
-            gamutCoverage: 98,
-            recommendation: Recommendation.GOOD,
-            cautionNote: '还原度高，但光泽感可能不符合文艺风格定位',
-        },
-        {
-            colorId: colorYanyuQing.id,
-            paperType: PaperType.OFFSET,
-            labL: 62.1,
-            labA: -10.5,
-            labB: -6.8,
-            deltaE: 4.2,
-            glossiness: 20,
-            inkAbsorption: 70,
-            gamutCoverage: 75,
-            recommendation: Recommendation.CAUTION,
-            cautionNote: '明显发灰，饱和度损失较大',
-        },
-        {
-            colorId: colorYanyuQing.id,
-            paperType: PaperType.LIGHTWEIGHT,
-            labL: 60.5,
-            labA: -9.2,
-            labB: -5.5,
-            deltaE: 6.8,
-            glossiness: 10,
-            inkAbsorption: 85,
-            gamutCoverage: 65,
-            recommendation: Recommendation.AVOID,
-            cautionNote: '严重发灰，不建议用于需要色彩表现的场景',
-        },
-        // 朱砂红的纸张表现
-        {
-            colorId: colorZhushaHong.id,
-            paperType: PaperType.COATED,
-            labL: 42.5,
-            labA: 56.0,
-            labB: 31.8,
-            deltaE: 0.5,
-            glossiness: 80,
-            inkAbsorption: 20,
-            gamutCoverage: 98,
-            recommendation: Recommendation.BEST,
-            cautionNote: null,
-        },
-        {
-            colorId: colorZhushaHong.id,
-            paperType: PaperType.PREMIUM_MATTE,
-            labL: 42.0,
-            labA: 54.5,
-            labB: 30.5,
-            deltaE: 2.3,
-            glossiness: 28,
-            inkAbsorption: 40,
-            gamutCoverage: 92,
-            recommendation: Recommendation.GOOD,
-            cautionNote: '饱和度略降，呈现更沉稳的质感',
-        },
-        {
-            colorId: colorZhushaHong.id,
-            paperType: PaperType.LIGHTWEIGHT,
-            labL: 38.2,
-            labA: 48.5,
-            labB: 25.3,
-            deltaE: 9.5,
-            glossiness: 8,
-            inkAbsorption: 88,
-            gamutCoverage: 55,
-            recommendation: Recommendation.AVOID,
-            cautionNote: '红色严重暗沉，失去活力',
-        },
-    ];
-
-    for (const profile of paperProfiles) {
-        await prisma.paperProfile.upsert({
-            where: {
-                colorId_paperType: {
-                    colorId: profile.colorId,
-                    paperType: profile.paperType,
-                },
-            },
-            update: {},
-            create: {
-                ...profile,
-                batchId: batch2.id,
-            },
-        });
+    // 7. 创建纸张表现数据（新模型，使用 PaperTypeOption）
+    // 先获取纸型选项的 ID 映射
+    const paperTypeOptions = await prisma.paperTypeOption.findMany();
+    const paperTypeMap: Record<string, string> = {};
+    for (const pt of paperTypeOptions) {
+        paperTypeMap[pt.code] = pt.id;
     }
 
-    console.log('✅ 纸张表现数据创建完成');
+    // 如果纸型数据不存在，先跳过纸张表现数据创建
+    if (paperTypeOptions.length === 0) {
+        console.log('⚠️ 纸型选项数据不存在，跳过纸张表现数据创建（请先运行 seed-materials.ts）');
+    } else {
+        const paperProfiles = [
+            // 烟雨青的纸张表现
+            {
+                colorId: colorYanyuQing.id,
+                paperTypeCode: PaperTypeCode.PREMIUM_MATTE,
+                labL: 64.8,
+                labA: -12.3,
+                labB: -8.1,
+                deltaE: 0.5,
+                glossiness: 25,
+                inkAbsorption: 45,
+                gamutCoverage: 95,
+                recommendation: Recommendation.BEST,
+                cautionNote: null,
+            },
+            {
+                colorId: colorYanyuQing.id,
+                paperTypeCode: PaperTypeCode.UNCOATED,
+                labL: 63.5,
+                labA: -11.8,
+                labB: -7.5,
+                deltaE: 2.1,
+                glossiness: 15,
+                inkAbsorption: 65,
+                gamutCoverage: 88,
+                recommendation: Recommendation.GOOD,
+                cautionNote: '饱和度略有降低，但保持文艺气质',
+            },
+            {
+                colorId: colorYanyuQing.id,
+                paperTypeCode: PaperTypeCode.COATED,
+                labL: 65.0,
+                labA: -12.4,
+                labB: -8.2,
+                deltaE: 0.3,
+                glossiness: 75,
+                inkAbsorption: 25,
+                gamutCoverage: 98,
+                recommendation: Recommendation.GOOD,
+                cautionNote: '还原度高，但光泽感可能不符合文艺风格定位',
+            },
+            {
+                colorId: colorYanyuQing.id,
+                paperTypeCode: PaperTypeCode.OFFSET,
+                labL: 62.1,
+                labA: -10.5,
+                labB: -6.8,
+                deltaE: 4.2,
+                glossiness: 20,
+                inkAbsorption: 70,
+                gamutCoverage: 75,
+                recommendation: Recommendation.CAUTION,
+                cautionNote: '明显发灰，饱和度损失较大',
+            },
+            {
+                colorId: colorYanyuQing.id,
+                paperTypeCode: PaperTypeCode.LIGHTWEIGHT,
+                labL: 60.5,
+                labA: -9.2,
+                labB: -5.5,
+                deltaE: 6.8,
+                glossiness: 10,
+                inkAbsorption: 85,
+                gamutCoverage: 65,
+                recommendation: Recommendation.AVOID,
+                cautionNote: '严重发灰，不建议用于需要色彩表现的场景',
+            },
+            // 朱砂红的纸张表现
+            {
+                colorId: colorZhushaHong.id,
+                paperTypeCode: PaperTypeCode.COATED,
+                labL: 42.5,
+                labA: 56.0,
+                labB: 31.8,
+                deltaE: 0.5,
+                glossiness: 80,
+                inkAbsorption: 20,
+                gamutCoverage: 98,
+                recommendation: Recommendation.BEST,
+                cautionNote: null,
+            },
+            {
+                colorId: colorZhushaHong.id,
+                paperTypeCode: PaperTypeCode.PREMIUM_MATTE,
+                labL: 42.0,
+                labA: 54.5,
+                labB: 30.5,
+                deltaE: 2.3,
+                glossiness: 28,
+                inkAbsorption: 40,
+                gamutCoverage: 92,
+                recommendation: Recommendation.GOOD,
+                cautionNote: '饱和度略降，呈现更沉稳的质感',
+            },
+            {
+                colorId: colorZhushaHong.id,
+                paperTypeCode: PaperTypeCode.LIGHTWEIGHT,
+                labL: 38.2,
+                labA: 48.5,
+                labB: 25.3,
+                deltaE: 9.5,
+                glossiness: 8,
+                inkAbsorption: 88,
+                gamutCoverage: 55,
+                recommendation: Recommendation.AVOID,
+                cautionNote: '红色严重暗沉，失去活力',
+            },
+        ];
+
+        for (const profile of paperProfiles) {
+            const paperTypeId = paperTypeMap[profile.paperTypeCode];
+            if (!paperTypeId) {
+                console.log(`  ⚠️ 纸型 ${profile.paperTypeCode} 不存在，跳过`);
+                continue;
+            }
+
+            const { paperTypeCode, ...profileData } = profile;
+            await prisma.paperProfile.upsert({
+                where: {
+                    colorId_paperTypeId: {
+                        colorId: profileData.colorId,
+                        paperTypeId: paperTypeId,
+                    },
+                },
+                update: {},
+                create: {
+                    ...profileData,
+                    paperTypeId: paperTypeId,
+                    batchId: batch2.id,
+                },
+            });
+        }
+
+        console.log('✅ 纸张表现数据创建完成');
+    }
 
     // 8. 创建纸张推荐/排除（新模型）
     const paperRecommendations = [
@@ -587,25 +615,49 @@ async function main() {
     console.log('✅ 配方数据创建完成');
 
     // 10. 创建油墨构成（Recipe Ingredients）
-    const ingredientsYanyu = [
-        { recipeId: recipeYanyuQing.id, inkName: '冲淡剂', inkType: InkType.EXTENDER, percentage: 70, order: 1 },
-        { recipeId: recipeYanyuQing.id, inkName: '射光蓝', inkType: InkType.BASE, percentage: 20, order: 2 },
-        { recipeId: recipeYanyuQing.id, inkName: '荧光红', inkType: InkType.BASE, percentage: 10, order: 3 },
-    ];
-
-    const ingredientsZhusha = [
-        { recipeId: recipeZhushaHong.id, inkName: '原色红', inkType: InkType.BASE, percentage: 65, order: 1 },
-        { recipeId: recipeZhushaHong.id, inkName: '黄色', inkType: InkType.BASE, percentage: 25, order: 2 },
-        { recipeId: recipeZhushaHong.id, inkName: '冲淡剂', inkType: InkType.EXTENDER, percentage: 10, order: 3 },
-    ];
-
-    for (const ing of [...ingredientsYanyu, ...ingredientsZhusha]) {
-        await prisma.recipeIngredient.create({
-            data: ing,
-        });
+    // 先获取油墨选项
+    const inkOptions = await prisma.inkOption.findMany();
+    const inkMap: Record<string, string> = {};
+    for (const ink of inkOptions) {
+        inkMap[ink.code] = ink.id;
     }
 
-    console.log('✅ 油墨构成数据创建完成');
+    // 如果油墨数据不存在，使用默认的冲淡剂
+    const extenderInk = inkOptions.find(i => i.inkType === InkType.EXTENDER);
+    const cyanInk = inkOptions.find(i => i.code.includes('CYAN'));
+    const magentaInk = inkOptions.find(i => i.code.includes('MAGENTA'));
+    const yellowInk = inkOptions.find(i => i.code.includes('YELLOW'));
+
+    if (!extenderInk) {
+        console.log('⚠️ 未找到油墨数据，跳过配方成分创建（请先运行 seed-materials.ts）');
+    } else {
+        // 删除现有的配方成分（避免重复）
+        await prisma.recipeIngredient.deleteMany({
+            where: {
+                recipeId: { in: [recipeYanyuQing.id, recipeZhushaHong.id] },
+            },
+        });
+
+        const ingredientsYanyu = [
+            { recipeId: recipeYanyuQing.id, inkId: extenderInk.id, percentage: 70, order: 1 },
+            ...(cyanInk ? [{ recipeId: recipeYanyuQing.id, inkId: cyanInk.id, percentage: 20, order: 2 }] : []),
+            ...(magentaInk ? [{ recipeId: recipeYanyuQing.id, inkId: magentaInk.id, percentage: 10, order: 3 }] : []),
+        ];
+
+        const ingredientsZhusha = [
+            ...(magentaInk ? [{ recipeId: recipeZhushaHong.id, inkId: magentaInk.id, percentage: 65, order: 1 }] : []),
+            ...(yellowInk ? [{ recipeId: recipeZhushaHong.id, inkId: yellowInk.id, percentage: 25, order: 2 }] : []),
+            { recipeId: recipeZhushaHong.id, inkId: extenderInk.id, percentage: 10, order: 3 },
+        ];
+
+        for (const ing of [...ingredientsYanyu, ...ingredientsZhusha]) {
+            await prisma.recipeIngredient.create({
+                data: ing,
+            });
+        }
+
+        console.log('✅ 油墨构成数据创建完成');
+    }
 
     // 11. 创建适配矩阵（FitMatrix）
     const paperPremiumMatte = await prisma.paper.findUnique({ where: { paperId: 'PAPER-PREMIUM-MATTE' } });
@@ -758,28 +810,42 @@ async function main() {
     console.log('✅ 按纸张推荐配方数据创建完成');
 
     // 15. 创建打样包 SKU
-    const proofingPacks = [
-        { colorId: colorYanyuQing.id, paperType: PaperType.PREMIUM_MATTE, price: 1000, externalUrl: 'https://item.taobao.com/example-1' },
-        { colorId: colorYanyuQing.id, paperType: PaperType.UNCOATED, price: 1000, externalUrl: 'https://item.taobao.com/example-2' },
-        { colorId: colorYanyuQing.id, paperType: PaperType.COATED, price: 1000, externalUrl: 'https://item.taobao.com/example-3' },
-        { colorId: colorZhushaHong.id, paperType: PaperType.COATED, price: 1000, externalUrl: 'https://item.taobao.com/example-4' },
-        { colorId: colorZhushaHong.id, paperType: PaperType.PREMIUM_MATTE, price: 1000, externalUrl: 'https://item.taobao.com/example-5' },
-    ];
+    if (paperTypeOptions.length === 0) {
+        console.log('⚠️ 纸型选项数据不存在，跳过打样包 SKU 创建');
+    } else {
+        const proofingPacks = [
+            { colorId: colorYanyuQing.id, paperTypeCode: PaperTypeCode.PREMIUM_MATTE, price: 1000, externalUrl: 'https://item.taobao.com/example-1' },
+            { colorId: colorYanyuQing.id, paperTypeCode: PaperTypeCode.UNCOATED, price: 1000, externalUrl: 'https://item.taobao.com/example-2' },
+            { colorId: colorYanyuQing.id, paperTypeCode: PaperTypeCode.COATED, price: 1000, externalUrl: 'https://item.taobao.com/example-3' },
+            { colorId: colorZhushaHong.id, paperTypeCode: PaperTypeCode.COATED, price: 1000, externalUrl: 'https://item.taobao.com/example-4' },
+            { colorId: colorZhushaHong.id, paperTypeCode: PaperTypeCode.PREMIUM_MATTE, price: 1000, externalUrl: 'https://item.taobao.com/example-5' },
+        ];
 
-    for (const pack of proofingPacks) {
-        await prisma.proofingPack.upsert({
-            where: {
-                colorId_paperType: {
-                    colorId: pack.colorId,
-                    paperType: pack.paperType,
+        for (const pack of proofingPacks) {
+            const paperTypeId = paperTypeMap[pack.paperTypeCode];
+            if (!paperTypeId) {
+                console.log(`  ⚠️ 纸型 ${pack.paperTypeCode} 不存在，跳过`);
+                continue;
+            }
+
+            const { paperTypeCode, ...packData } = pack;
+            await prisma.proofingPack.upsert({
+                where: {
+                    colorId_paperTypeId: {
+                        colorId: packData.colorId,
+                        paperTypeId: paperTypeId,
+                    },
                 },
-            },
-            update: {},
-            create: pack,
-        });
-    }
+                update: {},
+                create: {
+                    ...packData,
+                    paperTypeId: paperTypeId,
+                },
+            });
+        }
 
-    console.log('✅ 打样包 SKU 创建完成');
+        console.log('✅ 打样包 SKU 创建完成');
+    }
 
     // 16. 创建示例用户（5 级角色体系）
     const adminUser = await prisma.user.upsert({
@@ -942,21 +1008,28 @@ async function main() {
 
     console.log('✅ 颜色参与关联数据创建完成');
 
+    // 打印最终统计
+    const totalColors = await prisma.color.count();
+    const totalPaperProfiles = await prisma.paperProfile.count();
+    const totalRecipes = await prisma.recipe.count();
+    const totalProofingPacks = await prisma.proofingPack.count();
+    const totalParticipations = await prisma.colorParticipation.count();
+
     console.log('\n🎉 种子数据播种完成！');
     console.log('   - 2 个限流策略');
     console.log(`   - ${partners.length} 个合作者（印厂/纸商/油墨商/实验室）`);
     console.log('   - 3 个验证批次');
     console.log('   - 5 种纸张数据');
-    console.log('   - 3 个示例颜色（含完整 v1.0 字段）');
-    console.log(`   - ${paperProfiles.length} 条纸张表现数据`);
+    console.log(`   - ${totalColors} 个示例颜色（含完整 v1.0 字段）`);
+    console.log(`   - ${totalPaperProfiles} 条纸张表现数据`);
     console.log('   - 纸张推荐/排除数据');
-    console.log('   - 2 个配方及油墨构成');
+    console.log(`   - ${totalRecipes} 个配方及油墨构成`);
     console.log('   - 适配矩阵数据');
     console.log('   - 2 份测试报告');
     console.log('   - 风险数据');
-    console.log(`   - ${proofingPacks.length} 个打样包 SKU`);
+    console.log(`   - ${totalProofingPacks} 个打样包 SKU`);
     console.log('   - 5 个示例用户（5 级角色）');
-    console.log(`   - ${colorParticipations.length} 条颜色参与关联`);
+    console.log(`   - ${totalParticipations} 条颜色参与关联`);
 }
 
 main()

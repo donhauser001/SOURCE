@@ -7,11 +7,16 @@
  * - 卡片大小基于"成熟度"（验证状态 + 配方数量）
  * - 字号统一，不传递错误层级
  * - 位置保持随机（视觉丰富）
+ * 
+ * 性能优化：
+ * - Lab 转 RGB 计算缓存
+ * - 卡片组件使用 React.memo
+ * - 筛选列表使用 useMemo
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Beaker, ShieldCheck, Users, X, ChevronDown } from 'lucide-react';
+import { Search, ShieldCheck, X, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +40,8 @@ interface Color {
     statusLabel: string;
     auditStatus: string;
     auditStatusLabel: string;
+    colorFamily?: string | null;
+    colorFamilyLabel?: string | null;
     version: string;
     paperProfileCount: number;
     recipeCount: number;
@@ -48,6 +55,8 @@ interface Props {
     paperTypeLabels: Record<string, string>;
     colorStatusLabels: Record<string, string>;
     auditStatusLabels: Record<string, string>;
+    colorFamilyLabels?: Record<string, string>;
+    colorFamilyColors?: Record<string, string>;
     recommendationLabels?: Record<string, string>;
 }
 
@@ -128,16 +137,46 @@ function getGridStyle(size: CardSize): string {
     }
 }
 
+// 默认色系标签
+const defaultColorFamilyLabels: Record<string, string> = {
+    RED: '红色系',
+    ORANGE: '橙色系',
+    YELLOW: '黄色系',
+    GREEN: '绿色系',
+    CYAN: '青色系',
+    BLUE: '蓝色系',
+    PURPLE: '紫色系',
+    PINK: '粉色系',
+    BROWN: '棕色系',
+    NEUTRAL: '中性色',
+};
+
+const defaultColorFamilyColors: Record<string, string> = {
+    RED: '#DC2626',
+    ORANGE: '#EA580C',
+    YELLOW: '#CA8A04',
+    GREEN: '#16A34A',
+    CYAN: '#0891B2',
+    BLUE: '#2563EB',
+    PURPLE: '#9333EA',
+    PINK: '#EC4899',
+    BROWN: '#92400E',
+    NEUTRAL: '#6B7280',
+};
+
 export function ColorListClientB({
     colors,
     paperTypeLabels,
     colorStatusLabels,
     auditStatusLabels,
+    colorFamilyLabels = defaultColorFamilyLabels,
+    colorFamilyColors = defaultColorFamilyColors,
     recommendationLabels = defaultRecommendationLabels
 }: Props) {
     const [search, setSearch] = useState('');
     const [statusFilters, setStatusFilters] = useState<string[]>([]);
     const [auditFilters, setAuditFilters] = useState<string[]>([]);
+    const [familyFilters, setFamilyFilters] = useState<string[]>([]);
     const [paperTypeFilters, setPaperTypeFilters] = useState<string[]>([]);
     const [recommendationFilters, setRecommendationFilters] = useState<string[]>([]);
     const [hasParticipants, setHasParticipants] = useState<boolean | null>(null);
@@ -184,6 +223,14 @@ export function ColorListClientB({
         return Array.from(types);
     }, [colors]);
 
+    const uniqueColorFamilies = useMemo(() => {
+        const families = new Set<string>();
+        colors.forEach(c => {
+            if (c.colorFamily) families.add(c.colorFamily);
+        });
+        return Array.from(families);
+    }, [colors]);
+
     const uniqueRecommendations = ['BEST', 'GOOD', 'CAUTION', 'AVOID'];
 
     // 为每个颜色分配语义化卡片大小，并按成熟度排序
@@ -224,6 +271,10 @@ export function ColorListClientB({
             result = result.filter(c => auditFilters.includes(c.auditStatus));
         }
 
+        if (familyFilters.length > 0) {
+            result = result.filter(c => c.colorFamily && familyFilters.includes(c.colorFamily));
+        }
+
         if (paperTypeFilters.length > 0) {
             result = result.filter(c => c.bestPaper && paperTypeFilters.includes(c.bestPaper));
         }
@@ -239,23 +290,25 @@ export function ColorListClientB({
         }
 
         return result;
-    }, [semanticColors, search, statusFilters, auditFilters, paperTypeFilters, recommendationFilters, hasParticipants]);
+    }, [semanticColors, search, statusFilters, auditFilters, familyFilters, paperTypeFilters, recommendationFilters, hasParticipants]);
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilters([]);
         setAuditFilters([]);
+        setFamilyFilters([]);
         setPaperTypeFilters([]);
         setRecommendationFilters([]);
         setHasParticipants(null);
     };
 
     const hasFilters = search || statusFilters.length > 0 || auditFilters.length > 0 ||
-        paperTypeFilters.length > 0 || recommendationFilters.length > 0 || hasParticipants !== null;
+        familyFilters.length > 0 || paperTypeFilters.length > 0 || recommendationFilters.length > 0 || hasParticipants !== null;
 
     const activeFilterCount = [
         statusFilters.length > 0,
         auditFilters.length > 0,
+        familyFilters.length > 0,
         paperTypeFilters.length > 0,
         recommendationFilters.length > 0,
         hasParticipants !== null,
@@ -274,7 +327,7 @@ export function ColorListClientB({
         }
     };
 
-    const getStatusVariant = (status: string) => {
+    const getStatusVariant = useCallback((status: string) => {
         switch (status) {
             case 'ACTIVE':
             case 'VERIFIED':
@@ -286,7 +339,7 @@ export function ColorListClientB({
             default:
                 return 'secondary';
         }
-    };
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -359,6 +412,40 @@ export function ColorListClientB({
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    {/* 色系筛选 */}
+                    {uniqueColorFamilies.length > 0 && (
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="bg-white border-0 shadow-sm text-gray-700 gap-1">
+                                    色系
+                                    {familyFilters.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                                            {familyFilters.length}
+                                        </Badge>
+                                    )}
+                                    <ChevronDown className="h-4 w-4 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-2" align="start">
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {uniqueColorFamilies.map(family => (
+                                        <label key={family} className="flex items-center gap-2 p-1.5 rounded hover:bg-gray-100 cursor-pointer">
+                                            <Checkbox
+                                                checked={familyFilters.includes(family)}
+                                                onCheckedChange={() => toggleFilter(family, familyFilters, setFamilyFilters)}
+                                            />
+                                            <span
+                                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                                style={{ backgroundColor: colorFamilyColors[family] || '#6B7280' }}
+                                            />
+                                            <span className="text-sm">{colorFamilyLabels[family] || family}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    )}
 
                     {/* 纸张类型筛选 */}
                     {uniquePaperTypes.length > 0 && (
@@ -523,82 +610,99 @@ function getRandomPosition(colorId: string): CornerPosition {
     return cornerPositions[getStableIndex(colorId, 'pos', cornerPositions.length)];
 }
 
-// 生成柔和的背景色（基于 Lab 值，提高明度和降低饱和度）
+// 柔和背景色缓存
+const softBgCache = new Map<string, string>();
+
+// 生成柔和的背景色（基于 Lab 值，提高明度和降低饱和度）- 带缓存
 function getSoftBackgroundColor(labL: number, labA: number, labB: number): string {
+    const key = `soft|${labL.toFixed(1)}|${labA.toFixed(1)}|${labB.toFixed(1)}`;
+    
+    const cached = softBgCache.get(key);
+    if (cached) return cached;
+    
     // 将 Lab 转换为更柔和的版本：提高明度，适度保留饱和度
     const softL = Math.min(94, Math.max(82, labL * 0.4 + 55)); // 明度在 82-94 之间，更浅
     const softA = labA * 0.45; // 适度保留饱和度
     const softB = labB * 0.45;
-
-    // Lab to RGB 近似转换
-    const y = (softL + 16) / 116;
-    const x = softA / 500 + y;
-    const z = y - softB / 200;
-
-    const x3 = x * x * x;
-    const y3 = y * y * y;
-    const z3 = z * z * z;
-
-    const xn = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
-    const yn = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
-    const zn = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
-
-    const xr = xn * 95.047;
-    const yr = yn * 100.0;
-    const zr = zn * 108.883;
-
-    let r = xr * 3.2406 + yr * -1.5372 + zr * -0.4986;
-    let g = xr * -0.9689 + yr * 1.8758 + zr * 0.0415;
-    let b = xr * 0.0557 + yr * -0.2040 + zr * 1.0570;
-
-    r = r > 0.0031308 ? 1.055 * Math.pow(r / 100, 1 / 2.4) - 0.055 : 12.92 * r / 100;
-    g = g > 0.0031308 ? 1.055 * Math.pow(g / 100, 1 / 2.4) - 0.055 : 12.92 * g / 100;
-    b = b > 0.0031308 ? 1.055 * Math.pow(b / 100, 1 / 2.4) - 0.055 : 12.92 * b / 100;
-
-    r = Math.min(255, Math.max(0, Math.round(r * 255)));
-    g = Math.min(255, Math.max(0, Math.round(g * 255)));
-    b = Math.min(255, Math.max(0, Math.round(b * 255)));
-
-    return `rgb(${r}, ${g}, ${b})`;
+    
+    const result = labToRgbCore(softL, softA, softB);
+    
+    // 限制缓存大小
+    if (softBgCache.size > 500) {
+        const firstKey = softBgCache.keys().next().value;
+        if (firstKey) softBgCache.delete(firstKey);
+    }
+    
+    softBgCache.set(key, result);
+    return result;
 }
 
-// 生成对比色文字（基于原始颜色，但更深更饱和）
+// 对比色缓存
+const contrastCache = new Map<string, string>();
+
+// 生成对比色文字（基于原始颜色，但更深更饱和）- 带缓存
 function getContrastTextColor(labL: number, labA: number, labB: number): string {
+    const key = `contrast|${labL.toFixed(1)}|${labA.toFixed(1)}|${labB.toFixed(1)}`;
+    
+    const cached = contrastCache.get(key);
+    if (cached) return cached;
+    
     // 降低明度，保持或增强色相
     const darkL = Math.max(25, labL * 0.4);
     const darkA = labA * 1.2;
     const darkB = labB * 1.2;
-
-    const y = (darkL + 16) / 116;
-    const x = darkA / 500 + y;
-    const z = y - darkB / 200;
-
-    const x3 = x * x * x;
-    const y3 = y * y * y;
-    const z3 = z * z * z;
-
-    const xn = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
-    const yn = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
-    const zn = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
-
-    const xr = xn * 95.047;
-    const yr = yn * 100.0;
-    const zr = zn * 108.883;
-
-    let r = xr * 3.2406 + yr * -1.5372 + zr * -0.4986;
-    let g = xr * -0.9689 + yr * 1.8758 + zr * 0.0415;
-    let b = xr * 0.0557 + yr * -0.2040 + zr * 1.0570;
-
-    r = r > 0.0031308 ? 1.055 * Math.pow(r / 100, 1 / 2.4) - 0.055 : 12.92 * r / 100;
-    g = g > 0.0031308 ? 1.055 * Math.pow(g / 100, 1 / 2.4) - 0.055 : 12.92 * g / 100;
-    b = b > 0.0031308 ? 1.055 * Math.pow(b / 100, 1 / 2.4) - 0.055 : 12.92 * b / 100;
-
-    r = Math.min(255, Math.max(0, Math.round(r * 255)));
-    g = Math.min(255, Math.max(0, Math.round(g * 255)));
-    b = Math.min(255, Math.max(0, Math.round(b * 255)));
-
-    return `rgb(${r}, ${g}, ${b})`;
+    
+    const result = labToRgbCore(darkL, darkA, darkB);
+    
+    // 限制缓存大小
+    if (contrastCache.size > 500) {
+        const firstKey = contrastCache.keys().next().value;
+        if (firstKey) contrastCache.delete(firstKey);
+    }
+    
+    contrastCache.set(key, result);
+    return result;
 }
+
+// 明度渐变色块组件（使用 memo 缓存）
+const GradientSwatches = memo(function GradientSwatches({
+    labL,
+    labA,
+    labB,
+    isHovered
+}: {
+    labL: number;
+    labA: number;
+    labB: number;
+    isHovered: boolean;
+}) {
+    // 预计算渐变色
+    const gradientColors = useMemo(() => {
+        return [0, 0.25, 0.5, 0.75, 1].map((factor) => {
+            const adjustedL = labL + (100 - labL) * factor;
+            const adjustedA = labA * (1 - factor * 0.8);
+            const adjustedB = labB * (1 - factor * 0.8);
+            return labToRgb(adjustedL, adjustedA, adjustedB);
+        });
+    }, [labL, labA, labB]);
+
+    return (
+        <div
+            className="absolute top-4 right-4 transition-opacity duration-300"
+            style={{ opacity: isHovered ? 0 : 1 }}
+        >
+            <div className="flex flex-col rounded-lg overflow-hidden ring-2 ring-white/50 shadow-sm">
+                {gradientColors.map((rgb, index) => (
+                    <div
+                        key={index}
+                        className="w-5 h-5"
+                        style={{ backgroundColor: rgb }}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+});
 
 // 搜索高亮组件
 function HighlightText({
@@ -635,8 +739,15 @@ function HighlightText({
     );
 }
 
-// Lab 转 RGB（用于原始色彩背景）
-function labToRgb(labL: number, labA: number, labB: number): string {
+// =============================================================================
+// Lab 转 RGB 缓存系统 - 性能优化
+// =============================================================================
+
+// 缓存 Map，避免重复计算
+const labToRgbCache = new Map<string, string>();
+
+// Lab 转 RGB 核心计算（内部使用）
+function labToRgbCore(labL: number, labA: number, labB: number): string {
     const y = (labL + 16) / 116;
     const x = labA / 500 + y;
     const z = y - labB / 200;
@@ -668,8 +779,28 @@ function labToRgb(labL: number, labA: number, labB: number): string {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-// B-Plan 色彩卡片组件 - Coolors 风格
-function ColorCardB({
+// Lab 转 RGB（带缓存，用于原始色彩背景）
+function labToRgb(labL: number, labA: number, labB: number): string {
+    // 使用固定精度作为缓存键，避免浮点误差
+    const key = `${labL.toFixed(1)}|${labA.toFixed(1)}|${labB.toFixed(1)}`;
+    
+    const cached = labToRgbCache.get(key);
+    if (cached) return cached;
+    
+    const result = labToRgbCore(labL, labA, labB);
+    
+    // 限制缓存大小，防止内存泄漏
+    if (labToRgbCache.size > 1000) {
+        const firstKey = labToRgbCache.keys().next().value;
+        if (firstKey) labToRgbCache.delete(firstKey);
+    }
+    
+    labToRgbCache.set(key, result);
+    return result;
+}
+
+// B-Plan 色彩卡片组件 - Coolors 风格（使用 React.memo 优化）
+const ColorCardB = memo(function ColorCardB({
     color,
     size,
     paperTypeLabels,
@@ -684,10 +815,10 @@ function ColorCardB({
 }) {
     const [isHovered, setIsHovered] = useState(false);
 
-    // Coolors 风格：柔和背景 + 深色对比文字
-    const softBg = getSoftBackgroundColor(color.labL, color.labA, color.labB);
-    const originalBg = labToRgb(color.labL, color.labA, color.labB);
-    const textColor = getContrastTextColor(color.labL, color.labA, color.labB);
+    // Coolors 风格：柔和背景 + 深色对比文字（使用缓存的计算函数）
+    const softBg = useMemo(() => getSoftBackgroundColor(color.labL, color.labA, color.labB), [color.labL, color.labA, color.labB]);
+    const originalBg = useMemo(() => labToRgb(color.labL, color.labA, color.labB), [color.labL, color.labA, color.labB]);
+    const textColor = useMemo(() => getContrastTextColor(color.labL, color.labA, color.labB), [color.labL, color.labA, color.labB]);
 
     // Hover 时根据明度决定文字颜色（白或黑）
     const hoverTextColor = color.labL > 58 ? '#000000' : '#ffffff';
@@ -768,31 +899,17 @@ function ColorCardB({
                     </div>
                 </div>
 
-                {/* 明度变化色块组 - hover 时隐藏 */}
-                <div
-                    className="absolute top-4 right-4 transition-opacity duration-300"
-                    style={{ opacity: isHovered ? 0 : 1 }}
-                >
-                    <div className="flex flex-col rounded-lg overflow-hidden ring-2 ring-white/50 shadow-sm">
-                        {[0, 0.25, 0.5, 0.75, 1].map((factor, index) => {
-                            // 从原色逐渐变浅（向白色过渡）
-                            const adjustedL = color.labL + (100 - color.labL) * factor;
-                            // 同时降低饱和度使其更接近白色
-                            const adjustedA = color.labA * (1 - factor * 0.8);
-                            const adjustedB = color.labB * (1 - factor * 0.8);
-                            const rgb = labToRgb(adjustedL, adjustedA, adjustedB);
-                            return (
-                                <div
-                                    key={index}
-                                    className="w-5 h-5"
-                                    style={{ backgroundColor: rgb }}
-                                />
-                            );
-                        })}
-                    </div>
-                </div>
+                {/* 明度变化色块组 - hover 时隐藏（使用 useMemo 缓存计算结果） */}
+                <GradientSwatches labL={color.labL} labA={color.labA} labB={color.labB} isHovered={isHovered} />
             </div>
         </Link>
     );
-}
+}, (prevProps, nextProps) => {
+    // 自定义比较函数：仅在关键属性变化时重新渲染
+    return prevProps.color.id === nextProps.color.id &&
+           prevProps.color.labL === nextProps.color.labL &&
+           prevProps.color.labA === nextProps.color.labA &&
+           prevProps.color.labB === nextProps.color.labB &&
+           prevProps.searchQuery === nextProps.searchQuery;
+});
 

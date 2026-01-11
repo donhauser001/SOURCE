@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
+import { COLOR_FAMILY_LABELS, COLOR_FAMILY_COLORS } from '@/lib/labels';
 import { Loader2, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +39,7 @@ interface ColorFormData {
     trueSourceNote: string;
     status: string;
     auditStatus: string;
+    colorFamily: string;
     auditors: string[];
     auditNotes: string;
     version: string;
@@ -67,6 +69,7 @@ export function ColorForm({ initialData, mode }: Props) {
         trueSourceNote: initialData?.trueSourceNote || '',
         status: initialData?.status || 'EXPERIMENTAL',
         auditStatus: initialData?.auditStatus || 'PENDING',
+        colorFamily: initialData?.colorFamily || '',
         auditors: initialData?.auditors || [],
         auditNotes: initialData?.auditNotes || '',
         version: initialData?.version || '1.0',
@@ -158,20 +161,50 @@ export function ColorForm({ initialData, mode }: Props) {
                             />
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="slug">URL 标识 *</Label>
-                            <Button type="button" variant="ghost" size="sm" onClick={generateSlug}>
-                                自动生成
-                            </Button>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="slug">URL 标识 *</Label>
+                                <Button type="button" variant="ghost" size="sm" onClick={generateSlug}>
+                                    自动生成
+                                </Button>
+                            </div>
+                            <Input
+                                id="slug"
+                                value={formData.slug}
+                                onChange={(e) => handleChange('slug', e.target.value)}
+                                placeholder="cn-song-04"
+                                required
+                            />
                         </div>
-                        <Input
-                            id="slug"
-                            value={formData.slug}
-                            onChange={(e) => handleChange('slug', e.target.value)}
-                            placeholder="cn-song-04"
-                            required
-                        />
+                        <div className="space-y-2">
+                            <Label htmlFor="colorFamily">色系分类</Label>
+                            <Select 
+                                value={formData.colorFamily || '__auto__'} 
+                                onValueChange={(v) => handleChange('colorFamily', v === '__auto__' ? '' : v)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="自动识别" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__auto__">自动识别</SelectItem>
+                                    {Object.entries(COLOR_FAMILY_LABELS).map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ backgroundColor: COLOR_FAMILY_COLORS[value] || '#6B7280' }}
+                                                />
+                                                {label}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                留空时将根据 Lab 值自动计算色系
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -319,6 +352,8 @@ export function ColorForm({ initialData, mode }: Props) {
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-1">
                         <div className="space-y-2">
                             <Label htmlFor="version">版本</Label>
                             <Input

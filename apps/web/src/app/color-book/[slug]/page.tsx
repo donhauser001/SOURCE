@@ -10,9 +10,9 @@ import { prisma } from '@/lib/db';
 import { SiteHeader } from '@/components/site-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { labToRgb } from '@/lib/color';
 import { Book, Calendar, Palette, ArrowLeft } from 'lucide-react';
 import type { ColorBookCategory } from '@prisma/client';
+import { ColorBookColorList } from './color-book-color-list';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -44,6 +44,7 @@ async function getColorBook(slug: string) {
                             labB: true,
                             status: true,
                             auditStatus: true,
+                            colorFamily: true,
                         },
                     },
                 },
@@ -81,9 +82,6 @@ export default async function ColorBookPage({ params }: Props) {
     if (!book) {
         notFound();
     }
-
-    // 按章节分组
-    const sections = groupBySection(book.entries);
 
     return (
         <>
@@ -162,122 +160,11 @@ export default async function ColorBookPage({ params }: Props) {
                     </div>
                 </header>
 
-                {/* 色彩列表 */}
+                {/* 色彩列表 - 使用客户端组件支持搜索和筛选 */}
                 <section className="max-w-6xl mx-auto px-6 pb-16">
-                    {sections.map((section, idx) => (
-                        <div key={section.name || idx} className="mb-12">
-                            {section.name && (
-                                <h2 className="text-xl font-semibold text-foreground mb-6 pb-2 border-b">
-                                    {section.name}
-                                </h2>
-                            )}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                                {section.entries.map((entry) => (
-                                    <ColorCard
-                                        key={entry.id}
-                                        color={entry.color}
-                                        pageNumber={entry.pageNumber}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                    <ColorBookColorList entries={book.entries} />
                 </section>
             </main>
         </>
     );
-}
-
-// 色彩卡片组件
-function ColorCard({
-    color,
-    pageNumber,
-}: {
-    color: {
-        id: string;
-        colorId: string;
-        name: string;
-        slug: string;
-        labL: number;
-        labA: number;
-        labB: number;
-    };
-    pageNumber: string | null;
-}) {
-    const rgb = labToRgb(color.labL, color.labA, color.labB);
-    const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-    const isLight = color.labL > 60;
-
-    return (
-        <Link
-            href={`/color/${color.slug}`}
-            className="group block"
-        >
-            <div
-                className="aspect-square rounded-xl shadow-sm transition-all duration-200 group-hover:shadow-lg group-hover:scale-105 relative overflow-hidden"
-                style={{ backgroundColor: bgColor }}
-            >
-                {/* 悬停时显示信息 */}
-                <div className={`absolute inset-0 flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity ${
-                    isLight ? 'bg-black/30' : 'bg-white/20'
-                }`}>
-                    <span className={`text-xs font-medium truncate ${
-                        isLight ? 'text-white' : 'text-white'
-                    }`}>
-                        {color.colorId}
-                    </span>
-                </div>
-                
-                {/* 页码标记 */}
-                {pageNumber && (
-                    <div className={`absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                        isLight ? 'bg-black/20 text-black/70' : 'bg-white/20 text-white/70'
-                    }`}>
-                        {pageNumber}
-                    </div>
-                )}
-            </div>
-            <div className="mt-2 text-center">
-                <p className="text-sm font-medium text-foreground truncate">
-                    {color.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    {color.colorId}
-                </p>
-            </div>
-        </Link>
-    );
-}
-
-// 按章节分组
-function groupBySection(entries: Array<{
-    id: string;
-    sectionName: string | null;
-    pageNumber: string | null;
-    color: {
-        id: string;
-        colorId: string;
-        name: string;
-        slug: string;
-        labL: number;
-        labA: number;
-        labB: number;
-        status: string;
-        auditStatus: string;
-    };
-}>) {
-    const groups: Map<string, typeof entries> = new Map();
-
-    for (const entry of entries) {
-        const key = entry.sectionName || '';
-        if (!groups.has(key)) {
-            groups.set(key, []);
-        }
-        groups.get(key)!.push(entry);
-    }
-
-    return Array.from(groups.entries()).map(([name, entries]) => ({
-        name: name || null,
-        entries,
-    }));
 }

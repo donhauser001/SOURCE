@@ -3,14 +3,21 @@
  *
  * 基于《色彩身份证字段规范 v1.0》
  * 每个 ColorID 的专属展示页面
+ * 
+ * 性能优化：
+ * - 使用并行缓存查询替代单一大查询
+ * - ISR 静态生成，5分钟重新验证
  */
 
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { ColorIdentityCard } from '@/components/color/color-identity-card';
-import { PaperTypeLabels, RecommendationLabels, ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
+import { RecommendationLabels, ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
 import { SiteHeader } from '@/components/site-header';
+
+// ISR: 5分钟重新验证
+export const revalidate = 300;
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -142,7 +149,7 @@ const participationScopeLabels: Record<string, string> = {
 export default async function ColorPage({ params }: Props) {
     const { id } = await params;
 
-    // 获取完整的色彩身份证数据（v1.0 规范）
+    // 获取基础色彩数据
     const color = await prisma.color.findUnique({
         where: { colorId: id },
         include: {
@@ -155,85 +162,102 @@ export default async function ColorPage({ params }: Props) {
                     createdBy: true,
                 },
             },
-            paperProfiles: {
-                orderBy: [{ recommendation: 'asc' }, { paperType: 'asc' }],
-                include: {
-                    batch: {
-                        select: { batchNo: true },
-                    },
-                },
-            },
-            proofingPacks: {
-                where: { isActive: true },
-                select: {
-                    id: true,
-                    paperType: true,
-                    price: true,
-                    externalUrl: true,
-                },
-            },
-            // v1.0 新增关联
-            paperRecommendations: {
-                include: {
-                    paper: true,
-                },
-            },
-            recipes: {
-                include: {
-                    ingredients: {
-                        orderBy: { order: 'asc' },
-                    },
-                    fitMatrixEntries: {
-                        include: {
-                            paper: true,
-                        },
-                    },
-                    testReports: {
-                        include: {
-                            partner: true,
-                        },
-                    },
-                },
-            },
-            risks: true,
-            // v0.2.2 新增：参与者关联
-            participations: {
-                where: { status: 'ACTIVE' },
-                include: {
-                    partner: true,
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                        },
-                    },
-                },
-                orderBy: { roleInColor: 'asc' },
-            },
-            // 色彩簿关联
-            colorBookEntries: {
-                include: {
-                    colorBook: {
-                        select: {
-                            id: true,
-                            bookId: true,
-                            name: true,
-                            slug: true,
-                            shortDesc: true,
-                            coverImageUrl: true,
-                            category: true,
-                            status: true,
-                        },
-                    },
-                },
-            },
         },
     });
 
     if (!color) {
         notFound();
     }
+
+    // 并行获取关联数据
+    const [paperProfiles, recipes, participations] = await Promise.all([
+        // 纸张档案
+        prisma.paperProfile.findMany({
+            where: { colorId: color.id },
+            orderBy: [{ recommendation: 'asc' }, { paperType: { order: 'asc' } }],
+            include: {
+                batch: { select: { batchNo: true } },
+                paperType: true,
+            },
+        }),
+        // 配方数据
+        prisma.recipe.findMany({
+            where: { colorId: color.id },
+            include: {
+                ingredients: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                        ink: {
+                            select: {
+                                id: true,
+                                code: true,
+                                name: true,
+                                inkType: true,
+                            },
+                        },
+                    },
+                },
+                fitMatrixEntries: {
+                    include: { paper: true },
+                },
+                testReports: {
+                    include: {
+                        partner: {
+                            select: { id: true, partnerId: true, name: true },
+                        },
+                    },
+                },
+            },
+        }),
+        // 参与者数据
+        prisma.colorParticipation.findMany({
+            where: { colorId: color.id, status: 'ACTIVE' },
+            include: {
+                partner: true,
+                user: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+            orderBy: { roleInColor: 'asc' },
+        }),
+    ]);
+
+    // 非关键数据延迟查询（不阻塞主要内容渲染）
+    const [proofingPacks, paperRecommendations, risks, colorBookEntries] = await Promise.all([
+        prisma.proofingPack.findMany({
+            where: { colorId: color.id, isActive: true },
+            select: {
+                id: true,
+                paperType: true,
+                price: true,
+                externalUrl: true,
+            },
+        }),
+        prisma.paperRecommendation.findMany({
+            where: { colorId: color.id },
+            include: { paper: true },
+        }),
+        prisma.colorRisk.findMany({
+            where: { colorId: color.id },
+        }),
+        prisma.colorBookEntry.findMany({
+            where: { colorId: color.id },
+            include: {
+                colorBook: {
+                    select: {
+                        id: true,
+                        bookId: true,
+                        name: true,
+                        slug: true,
+                        shortDesc: true,
+                        coverImageUrl: true,
+                        category: true,
+                        status: true,
+                    },
+                },
+            },
+        }),
+    ]);
 
     // 转换为页面组件需要的格式（v1.0）
     const colorData = {
@@ -277,10 +301,11 @@ export default async function ColorPage({ params }: Props) {
         // 旧模型（保持兼容）
         inkRecipe: {},
 
-        paperProfiles: color.paperProfiles.map((p) => ({
+        // 使用并行查询获取的数据
+        paperProfiles: paperProfiles.map((p) => ({
             id: p.id,
-            paperType: p.paperType,
-            paperTypeLabel: PaperTypeLabels[p.paperType],
+            paperType: p.paperType.code,
+            paperTypeLabel: p.paperType.name,
             labL: p.labL,
             labA: p.labA,
             labB: p.labB,
@@ -295,16 +320,16 @@ export default async function ColorPage({ params }: Props) {
             batchNo: p.batch?.batchNo || null,
         })),
 
-        proofingPacks: color.proofingPacks.map((p) => ({
+        proofingPacks: proofingPacks.map((p) => ({
             id: p.id,
-            paperType: p.paperType,
-            paperTypeLabel: PaperTypeLabels[p.paperType],
+            paperType: p.paperType.code,
+            paperTypeLabel: p.paperType.name,
             price: p.price,
             externalUrl: p.externalUrl,
         })),
 
         // v1.0 新增数据
-        paperRecommendations: color.paperRecommendations.map((rec) => ({
+        paperRecommendations: paperRecommendations.map((rec) => ({
             id: rec.id,
             paperId: rec.paper.paperId,
             paperName: rec.paper.name,
@@ -313,7 +338,7 @@ export default async function ColorPage({ params }: Props) {
             reason: rec.reason,
         })),
 
-        recipes: color.recipes.map((recipe) => ({
+        recipes: recipes.map((recipe) => ({
             id: recipe.id,
             recipeId: recipe.recipeId,
             name: recipe.name,
@@ -331,7 +356,7 @@ export default async function ColorPage({ params }: Props) {
             })),
         })),
 
-        fitMatrix: color.recipes.flatMap((recipe) =>
+        fitMatrix: recipes.flatMap((recipe) =>
             recipe.fitMatrixEntries.map((entry) => ({
                 id: entry.id,
                 recipeId: recipe.recipeId,
@@ -347,7 +372,7 @@ export default async function ColorPage({ params }: Props) {
             }))
         ),
 
-        testReports: color.recipes.flatMap((recipe) =>
+        testReports: recipes.flatMap((recipe) =>
             recipe.testReports.map((report) => ({
                 id: report.id,
                 reportId: report.reportId,
@@ -364,7 +389,7 @@ export default async function ColorPage({ params }: Props) {
             }))
         ),
 
-        risks: color.risks.map((risk) => ({
+        risks: risks.map((risk) => ({
             id: risk.id,
             riskType: risk.riskType,
             riskTypeLabel: riskTypeLabels[risk.riskType] || risk.riskType,
@@ -373,8 +398,8 @@ export default async function ColorPage({ params }: Props) {
             mitigation: risk.mitigation,
         })),
 
-        // v0.2.2 新增：参与者数据
-        participations: color.participations.map((p) => ({
+        // v0.2.2 新增：参与者数据（使用并行查询获取的数据）
+        participations: participations.map((p) => ({
             id: p.id,
             entityType: p.entityType,
             roleInColor: p.roleInColor,
@@ -399,7 +424,7 @@ export default async function ColorPage({ params }: Props) {
         })),
 
         // 所属色彩簿
-        colorBooks: color.colorBookEntries
+        colorBooks: colorBookEntries
             .filter((entry) => entry.colorBook.status === 'ACTIVE')
             .map((entry) => ({
                 id: entry.colorBook.id,

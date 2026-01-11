@@ -11,13 +11,14 @@
  * - CSV/JSON 导出
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-    Plus, Edit, Eye, Search, Filter, Download, Trash2, 
+    Plus, Edit, Eye, Search, Download, Trash2, 
     CheckSquare, Square, MoreHorizontal, FileJson, FileSpreadsheet,
-    Loader2, ChevronDown
+    Loader2, ChevronDown, BookOpen, LayoutGrid, LayoutList
 } from 'lucide-react';
+import { labToRgb } from '@/lib/color';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -40,10 +41,13 @@ import { trpc } from '@/lib/trpc';
 import {
     COLOR_STATUS_LABELS,
     AUDIT_STATUS_LABELS,
+    COLOR_FAMILY_LABELS,
+    COLOR_FAMILY_COLORS,
     getColorStatusVariant,
     getAuditStatusVariant,
     type ColorStatus,
     type AuditStatus,
+    type ColorFamily,
 } from '@/lib/labels';
 
 // 每页显示条数
@@ -55,7 +59,23 @@ export default function AdminColorsPage() {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [auditFilter, setAuditFilter] = useState<string>('all');
+    const [familyFilter, setFamilyFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+
+    // 从 localStorage 恢复视图模式
+    useEffect(() => {
+        const saved = localStorage.getItem('admin-colors-view-mode');
+        if (saved === 'table' || saved === 'grid') {
+            setViewMode(saved);
+        }
+    }, []);
+
+    // 视图模式变化时持久化
+    const handleViewModeChange = (mode: 'table' | 'grid') => {
+        setViewMode(mode);
+        localStorage.setItem('admin-colors-view-mode', mode);
+    };
 
     // 防抖搜索
     const handleSearchChange = (value: string) => {
@@ -74,6 +94,7 @@ export default function AdminColorsPage() {
                 search: debouncedSearch || undefined,
                 status: statusFilter !== 'all' ? (statusFilter as ColorStatus) : undefined,
                 auditStatus: auditFilter !== 'all' ? (auditFilter as AuditStatus) : undefined,
+                colorFamily: familyFilter !== 'all' ? (familyFilter as ColorFamily) : undefined,
             },
             {
                 getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -176,98 +197,133 @@ export default function AdminColorsPage() {
         setDebouncedSearch('');
         setStatusFilter('all');
         setAuditFilter('all');
+        setFamilyFilter('all');
     };
 
-    const hasFilters = debouncedSearch || statusFilter !== 'all' || auditFilter !== 'all';
+    const hasFilters = debouncedSearch || statusFilter !== 'all' || auditFilter !== 'all' || familyFilter !== 'all';
 
     return (
         <div className="space-y-6">
-            {/* 操作按钮 */}
-            <div className="flex justify-end">
-                <div className="flex gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="gap-2">
-                                <Download className="h-4 w-4" />
-                                导出
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
-                                <FileSpreadsheet className="h-4 w-4" />
-                                导出 CSV
-                                {selectedIds.size > 0 && (
-                                    <Badge variant="secondary" className="ml-auto">
-                                        {selectedIds.size} 条
-                                    </Badge>
-                                )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleExportJSON} className="gap-2">
-                                <FileJson className="h-4 w-4" />
-                                导出 JSON
-                                {selectedIds.size > 0 && (
-                                    <Badge variant="secondary" className="ml-auto">
-                                        {selectedIds.size} 条
-                                    </Badge>
-                                )}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Link href="/admin/colors/new">
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            添加色彩
-                        </Button>
-                    </Link>
+            {/* 工具栏：视图切换 + 搜索筛选 + 操作按钮 */}
+            <div className="flex flex-wrap items-center gap-3">
+                {/* 视图切换 */}
+                <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                    <Button
+                        variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleViewModeChange('table')}
+                        className="h-8 px-2"
+                    >
+                        <LayoutList className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleViewModeChange('grid')}
+                        className="h-8 px-2"
+                    >
+                        <LayoutGrid className="h-4 w-4" />
+                    </Button>
                 </div>
-            </div>
 
-            {/* 搜索和筛选 */}
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="搜索色彩编号或名称..."
-                                value={search}
-                                onChange={(e) => handleSearchChange(e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-32">
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    <SelectValue placeholder="状态" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">全部状态</SelectItem>
-                                    {Object.entries(COLOR_STATUS_LABELS).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={auditFilter} onValueChange={setAuditFilter}>
-                                <SelectTrigger className="w-32">
-                                    <SelectValue placeholder="审计状态" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">全部审计</SelectItem>
-                                    {Object.entries(AUDIT_STATUS_LABELS).map(([key, label]) => (
-                                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {hasFilters && (
-                                <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-                                    清除筛选
-                                </Button>
+                {/* 搜索框 */}
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="搜索色彩编号或名称..."
+                        value={search}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 h-9"
+                    />
+                </div>
+
+                {/* 筛选器 */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-28 h-9">
+                        <SelectValue placeholder="状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">全部状态</SelectItem>
+                        {Object.entries(COLOR_STATUS_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={auditFilter} onValueChange={setAuditFilter}>
+                    <SelectTrigger className="w-28 h-9">
+                        <SelectValue placeholder="审计" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">全部审计</SelectItem>
+                        {Object.entries(AUDIT_STATUS_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>{label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={familyFilter} onValueChange={setFamilyFilter}>
+                    <SelectTrigger className="w-28 h-9">
+                        <SelectValue placeholder="色系" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">全部色系</SelectItem>
+                        {Object.entries(COLOR_FAMILY_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: COLOR_FAMILY_COLORS[key as ColorFamily] }}
+                                    />
+                                    {label}
+                                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {hasFilters && (
+                    <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-9">
+                        清除
+                    </Button>
+                )}
+
+                {/* 分隔 */}
+                <div className="flex-1" />
+
+                {/* 操作按钮 */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 gap-2">
+                            <Download className="h-4 w-4" />
+                            导出
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onClick={handleExportCSV} className="gap-2">
+                            <FileSpreadsheet className="h-4 w-4" />
+                            导出 CSV
+                            {selectedIds.size > 0 && (
+                                <Badge variant="secondary" className="ml-auto">
+                                    {selectedIds.size} 条
+                                </Badge>
                             )}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportJSON} className="gap-2">
+                            <FileJson className="h-4 w-4" />
+                            导出 JSON
+                            {selectedIds.size > 0 && (
+                                <Badge variant="secondary" className="ml-auto">
+                                    {selectedIds.size} 条
+                                </Badge>
+                            )}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <Link href="/admin/colors/new">
+                    <Button size="sm" className="h-9 gap-2">
+                        <Plus className="h-4 w-4" />
+                        添加色彩
+                    </Button>
+                </Link>
+            </div>
 
             {/* 批量操作栏 */}
             {selectedIds.size > 0 && (
@@ -323,6 +379,107 @@ export default function AdminColorsPage() {
                         </div>
                     ) : (
                         <>
+                            {/* 网格视图 */}
+                            {viewMode === 'grid' && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                                    {allColors.map((color) => {
+                                        const rgb = labToRgb(color.labL, color.labA, color.labB);
+                                        const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                                        const isLight = color.labL > 60;
+                                        
+                                        return (
+                                            <div
+                                                key={color.id}
+                                                className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 border border-border"
+                                            >
+                                                {/* 颜色区域 */}
+                                                <div
+                                                    className="aspect-square relative"
+                                                    style={{ backgroundColor: bgColor }}
+                                                >
+                                                    {/* 选择框 */}
+                                                    <button
+                                                        onClick={() => handleSelect(color.id)}
+                                                        className={`absolute top-2 left-2 p-1 rounded-md transition-opacity ${
+                                                            selectedIds.has(color.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        } ${isLight ? 'bg-black/20 hover:bg-black/30' : 'bg-white/20 hover:bg-white/30'}`}
+                                                    >
+                                                        {selectedIds.has(color.id) ? (
+                                                            <CheckSquare className={`h-4 w-4 ${isLight ? 'text-black' : 'text-white'}`} />
+                                                        ) : (
+                                                            <Square className={`h-4 w-4 ${isLight ? 'text-black/60' : 'text-white/60'}`} />
+                                                        )}
+                                                    </button>
+                                                    
+                                                    {/* 快捷操作 */}
+                                                    <div className={`absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                                        <Link
+                                                            href={`/color/${color.colorId}`}
+                                                            className={`p-1 rounded-md ${isLight ? 'bg-black/20 hover:bg-black/30 text-black' : 'bg-white/20 hover:bg-white/30 text-white'}`}
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                        <Link
+                                                            href={`/admin/colors/${color.id}/edit`}
+                                                            className={`p-1 rounded-md ${isLight ? 'bg-black/20 hover:bg-black/30 text-black' : 'bg-white/20 hover:bg-white/30 text-white'}`}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Link>
+                                                    </div>
+                                                    
+                                                    {/* 状态标签 */}
+                                                    <div className="absolute bottom-2 left-2 right-2 flex gap-1 flex-wrap">
+                                                        <Badge 
+                                                            variant={getColorStatusVariant(color.status as ColorStatus)}
+                                                            className="text-[10px] px-1.5 py-0"
+                                                        >
+                                                            {COLOR_STATUS_LABELS[color.status as ColorStatus] || color.status}
+                                                        </Badge>
+                                                        {color._count.recipes > 0 && (
+                                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                                                {color._count.recipes} 配方
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* 信息区域 */}
+                                                <div className="p-3 bg-card">
+                                                    <div className="font-medium text-sm truncate">{color.name}</div>
+                                                    <div className="text-xs text-muted-foreground font-mono">{color.colorId}</div>
+                                                    {color.colorBookEntries && color.colorBookEntries.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1">
+                                                            {color.colorBookEntries.slice(0, 1).map((entry) => (
+                                                                <Link
+                                                                    key={entry.colorBook.id}
+                                                                    href={`/color-book/${entry.colorBook.slug}`}
+                                                                    className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 hover:text-blue-800 truncate max-w-full"
+                                                                >
+                                                                    <BookOpen className="h-2.5 w-2.5 flex-shrink-0" />
+                                                                    <span className="truncate">{entry.colorBook.name}</span>
+                                                                </Link>
+                                                            ))}
+                                                            {color.colorBookEntries.length > 1 && (
+                                                                <span className="text-[10px] text-muted-foreground">
+                                                                    +{color.colorBookEntries.length - 1}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {allColors.length === 0 && (
+                                        <div className="col-span-full py-12 text-center text-muted-foreground">
+                                            {hasFilters ? '没有匹配的记录' : '暂无数据，点击右上角添加色彩'}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 列表视图 */}
+                            {viewMode === 'table' && (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -339,18 +496,22 @@ export default function AdminColorsPage() {
                                                     )}
                                                 </button>
                                             </th>
+                                            <th className="text-left py-3 px-4 font-medium w-12">颜色</th>
                                             <th className="text-left py-3 px-4 font-medium">编号</th>
                                             <th className="text-left py-3 px-4 font-medium">名称</th>
-                                            <th className="text-left py-3 px-4 font-medium">Lab</th>
+                                            <th className="text-left py-3 px-4 font-medium">色彩簿</th>
                                             <th className="text-left py-3 px-4 font-medium">状态</th>
                                             <th className="text-left py-3 px-4 font-medium">审计</th>
                                             <th className="text-left py-3 px-4 font-medium">配方</th>
-                                            <th className="text-left py-3 px-4 font-medium">创建时间</th>
                                             <th className="text-right py-3 px-4 font-medium">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {allColors.map((color) => (
+                                        {allColors.map((color) => {
+                                            const rgb = labToRgb(color.labL, color.labA, color.labB);
+                                            const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                                            
+                                            return (
                                             <tr key={color.id} className="border-b hover:bg-muted/50">
                                                 <td className="py-3 px-4">
                                                     <button
@@ -365,6 +526,13 @@ export default function AdminColorsPage() {
                                                     </button>
                                                 </td>
                                                 <td className="py-3 px-4">
+                                                    <div
+                                                        className="w-8 h-8 rounded-md shadow-sm border border-border"
+                                                        style={{ backgroundColor: bgColor }}
+                                                        title={`L*${color.labL.toFixed(1)} a*${color.labA.toFixed(1)} b*${color.labB.toFixed(1)}`}
+                                                    />
+                                                </td>
+                                                <td className="py-3 px-4">
                                                     <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                                                         {color.colorId}
                                                     </code>
@@ -372,8 +540,28 @@ export default function AdminColorsPage() {
                                                 <td className="py-3 px-4">
                                                     <span className="font-medium">{color.name}</span>
                                                 </td>
-                                                <td className="py-3 px-4 font-mono text-xs">
-                                                    L*{color.labL.toFixed(1)} a*{color.labA.toFixed(1)} b*{color.labB.toFixed(1)}
+                                                <td className="py-3 px-4">
+                                                    {color.colorBookEntries && color.colorBookEntries.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {color.colorBookEntries.slice(0, 2).map((entry) => (
+                                                                <Link
+                                                                    key={entry.colorBook.id}
+                                                                    href={`/color-book/${entry.colorBook.slug}`}
+                                                                    className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-0.5 rounded-full transition-colors"
+                                                                >
+                                                                    <BookOpen className="h-3 w-3" />
+                                                                    {entry.colorBook.name}
+                                                                </Link>
+                                                            ))}
+                                                            {color.colorBookEntries.length > 2 && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    +{color.colorBookEntries.length - 2}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">-</span>
+                                                    )}
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <Badge variant={getColorStatusVariant(color.status as ColorStatus)}>
@@ -387,9 +575,6 @@ export default function AdminColorsPage() {
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     {color._count.recipes}
-                                                </td>
-                                                <td className="py-3 px-4 text-muted-foreground">
-                                                    {new Date(color.createdAt).toLocaleDateString('zh-CN')}
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <div className="flex justify-end gap-1">
@@ -432,10 +617,10 @@ export default function AdminColorsPage() {
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        )})}
                                         {allColors.length === 0 && (
                                             <tr>
-                                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                                <td colSpan={10} className="py-8 text-center text-muted-foreground">
                                                     {hasFilters
                                                         ? '没有匹配的记录'
                                                         : '暂无数据，点击右上角添加色彩'}
@@ -445,6 +630,7 @@ export default function AdminColorsPage() {
                                     </tbody>
                                 </table>
                             </div>
+                            )}
 
                             {/* 加载更多按钮 */}
                             {hasNextPage && (
