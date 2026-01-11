@@ -1,11 +1,8 @@
 'use client';
 
 import { Users, Building2, User, Globe, ShieldCheck, ExternalLink, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useViewMode } from '../view-mode-context';
 import type { Participation } from '../types';
 
 interface ParticipantsTabProps {
@@ -13,20 +10,13 @@ interface ParticipantsTabProps {
 }
 
 export function ParticipantsTab({ participations }: ParticipantsTabProps) {
-    const { isDark } = useViewMode();
-
-    const cardStyle = cn(
-        "backdrop-blur-md border-0 shadow-none",
-        isDark ? "bg-white/10 text-white" : "bg-black/5 text-black"
-    );
-
     if (participations.length === 0) {
         return (
-            <Card className={cardStyle}>
-                <CardContent className="py-12 text-center opacity-50">
-                    <Users className="h-12 w-12 mx-auto mb-4" />
-                    <p>暂无参与者记录</p>
-                    <p className="text-sm mt-2">参与者信息将在合作确认后发布</p>
+            <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+                <CardContent className="py-12 text-center">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-black/30" />
+                    <p className="text-black/50">暂无参与者记录</p>
+                    <p className="text-sm mt-2 text-black/30">参与者信息将在合作确认后发布</p>
                 </CardContent>
             </Card>
         );
@@ -47,21 +37,26 @@ export function ParticipantsTab({ participations }: ParticipantsTabProps) {
 
     return (
         <div className="space-y-6">
-            <Card className={cardStyle}>
-                <CardHeader>
-                    <CardTitle className={cn(
-                        "flex items-center gap-2",
-                        isDark ? "text-white" : "text-black"
-                    )}>
-                        <Users className="h-5 w-5" />
-                        参与者
-                    </CardTitle>
-                    <CardDescription className={isDark ? "text-white/40" : "text-black/40"}>参与此颜色验证、配方开发、数据审计的合作者</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
+                <CardContent className="p-6 space-y-5">
+                    {/* 标题区 */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-black/70" />
+                            <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
+                                参与者
+                            </h3>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
+                            {participations.length} 位参与者
+                        </span>
+                    </div>
+                    <p className="text-xs text-black/40">参与此颜色验证、配方开发、数据审计的合作者</p>
+
+                    {/* 角色分组 */}
                     <div className="grid gap-6 md:grid-cols-2">
                         {sortedRoles.map((role) => (
-                            <RoleGroup key={role} role={role} participants={groupedByRole[role]} isDark={isDark} />
+                            <RoleGroup key={role} role={role} participants={groupedByRole[role]} />
                         ))}
                     </div>
                 </CardContent>
@@ -71,25 +66,41 @@ export function ParticipantsTab({ participations }: ParticipantsTabProps) {
 }
 
 // 角色分组
-function RoleGroup({ role, participants, isDark }: { role: string; participants: Participation[]; isDark: boolean }) {
+function RoleGroup({ role, participants }: { role: string; participants: Participation[] }) {
+    const getRoleStyle = (role: string) => {
+        switch (role) {
+            case 'PRINTER': return { color: 'text-blue-600', bg: 'bg-blue-50' };
+            case 'PAPER_SUPPLIER': return { color: 'text-amber-600', bg: 'bg-amber-50' };
+            case 'INK_SUPPLIER': return { color: 'text-purple-600', bg: 'bg-purple-50' };
+            case 'AUDITOR': return { color: 'text-emerald-600', bg: 'bg-emerald-50' };
+            case 'CO_BUILDER': return { color: 'text-cyan-600', bg: 'bg-cyan-50' };
+            case 'TESTER': return { color: 'text-orange-600', bg: 'bg-orange-50' };
+            case 'RESEARCHER': return { color: 'text-indigo-600', bg: 'bg-indigo-50' };
+            default: return { color: 'text-black/50', bg: 'bg-black/5' };
+        }
+    };
+
+    const style = getRoleStyle(role);
+
     return (
-        <div>
-            <div className={cn(
-                "flex items-center gap-2 mb-3 font-medium",
-                getRoleColor(role, isDark)
-            )}>
-                {getRoleIcon(role)}
-                {participants[0]?.roleInColorLabel || role}
-                <Badge variant="outline" className={cn(
-                    "ml-auto text-xs",
-                    isDark ? "border-white/10 text-white/50" : "border-black/10 text-black/50"
-                )}>
+        <div className="space-y-3">
+            {/* 角色标题 */}
+            <div className="flex items-center gap-2">
+                <div className={`h-6 w-6 rounded-full flex items-center justify-center ${style.bg}`}>
+                    {getRoleIcon(role, style.color)}
+                </div>
+                <span className={`text-sm font-medium ${style.color}`}>
+                    {participants[0]?.roleInColorLabel || role}
+                </span>
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-black/5 text-black/40">
                     {participants.length}
-                </Badge>
+                </span>
             </div>
+
+            {/* 参与者列表 */}
             <div className="space-y-2">
                 {participants.map((p) => (
-                    <ParticipantItem key={p.id} participant={p} isDark={isDark} />
+                    <ParticipantItem key={p.id} participant={p} />
                 ))}
             </div>
         </div>
@@ -97,35 +108,31 @@ function RoleGroup({ role, participants, isDark }: { role: string; participants:
 }
 
 // 参与者条目
-function ParticipantItem({ participant: p, isDark }: { participant: Participation; isDark: boolean }) {
+function ParticipantItem({ participant: p }: { participant: Participation }) {
     return (
-        <div className={cn(
-            "flex items-start gap-3 p-3 rounded-lg border",
-            isDark ? "bg-white/5 border-white/5" : "bg-black/5 border-black/5"
-        )}>
-            {getEntityIcon(p)}
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] border border-black/5">
+            {/* 实体图标 */}
+            <div className="h-8 w-8 rounded-full bg-black/5 flex items-center justify-center flex-shrink-0">
+                {getEntityIcon(p)}
+            </div>
+            
+            {/* 信息区 */}
             <div className="flex-1 min-w-0">
-                <div className={cn("font-medium truncate", isDark ? "text-white/90" : "text-black/90")}>{getEntityName(p)}</div>
+                <div className="font-medium text-black/90 truncate">{getEntityName(p)}</div>
                 {getEntitySubtitle(p) && (
-                    <div className={cn("text-xs truncate", isDark ? "text-white/40" : "text-black/40")}>{getEntitySubtitle(p)}</div>
+                    <div className="text-xs text-black/40 truncate">{getEntitySubtitle(p)}</div>
                 )}
-                <div className="flex flex-wrap gap-1 mt-1">
-                    <Badge variant="secondary" className={cn(
-                        "text-[10px]",
-                        isDark ? "bg-white/10 text-white/70" : "bg-black/5 text-black/70"
-                    )}>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/5 text-black/60">
                         {p.scopeLabel}
-                    </Badge>
+                    </span>
                     {p.note && (
                         <Tooltip>
                             <TooltipTrigger>
-                                <Badge variant="outline" className={cn(
-                                    "text-[10px]",
-                                    isDark ? "border-white/10 text-white/50" : "border-black/10 text-black/50"
-                                )}>
-                                    <Info className="h-2.5 w-2.5 mr-0.5" />
+                                <span className="text-[10px] px-2 py-0.5 rounded-full border border-black/10 text-black/40 inline-flex items-center gap-0.5">
+                                    <Info className="h-2.5 w-2.5" />
                                     备注
-                                </Badge>
+                                </span>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">{p.note}</TooltipContent>
                         </Tooltip>
@@ -136,10 +143,7 @@ function ParticipantItem({ participant: p, isDark }: { participant: Participatio
                         href={p.evidenceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={cn(
-                            "text-xs hover:underline inline-flex items-center gap-1 mt-1",
-                            isDark ? "text-cyan-400" : "text-cyan-600"
-                        )}
+                        className="text-xs text-black/50 hover:text-black inline-flex items-center gap-1 mt-1.5 transition-colors"
                     >
                         查看证据
                         <ExternalLink className="h-2.5 w-2.5" />
@@ -151,59 +155,35 @@ function ParticipantItem({ participant: p, isDark }: { participant: Participatio
 }
 
 // 工具函数
-function getRoleIcon(role: string) {
+function getRoleIcon(role: string, colorClass: string) {
+    const className = `h-3.5 w-3.5 ${colorClass}`;
     switch (role) {
         case 'PRINTER':
         case 'PAPER_SUPPLIER':
         case 'INK_SUPPLIER':
-            return <Building2 className="h-4 w-4" />;
+            return <Building2 className={className} />;
         case 'AUDITOR':
-            return <ShieldCheck className="h-4 w-4" />;
+            return <ShieldCheck className={className} />;
         case 'CO_BUILDER':
         case 'TESTER':
         case 'RESEARCHER':
-            return <User className="h-4 w-4" />;
+            return <User className={className} />;
         default:
-            return <Users className="h-4 w-4" />;
-    }
-}
-
-function getRoleColor(role: string, isDark: boolean) {
-    if (isDark) {
-        switch (role) {
-            case 'PRINTER': return 'text-blue-400';
-            case 'PAPER_SUPPLIER': return 'text-amber-400';
-            case 'INK_SUPPLIER': return 'text-purple-400';
-            case 'AUDITOR': return 'text-green-400';
-            case 'CO_BUILDER': return 'text-cyan-400';
-            case 'TESTER': return 'text-orange-400';
-            case 'RESEARCHER': return 'text-indigo-400';
-            default: return 'text-white/50';
-        }
-    } else {
-        switch (role) {
-            case 'PRINTER': return 'text-blue-600';
-            case 'PAPER_SUPPLIER': return 'text-amber-600';
-            case 'INK_SUPPLIER': return 'text-purple-600';
-            case 'AUDITOR': return 'text-green-600';
-            case 'CO_BUILDER': return 'text-cyan-600';
-            case 'TESTER': return 'text-orange-600';
-            case 'RESEARCHER': return 'text-indigo-600';
-            default: return 'text-black/50';
-        }
+            return <Users className={className} />;
     }
 }
 
 function getEntityIcon(p: Participation) {
+    const className = "h-4 w-4 text-black/40";
     switch (p.entityType) {
         case 'PARTNER':
-            return <Building2 className="h-4 w-4 text-muted-foreground" />;
+            return <Building2 className={className} />;
         case 'USER':
-            return <User className="h-4 w-4 text-muted-foreground" />;
+            return <User className={className} />;
         case 'EXTERNAL':
-            return <Globe className="h-4 w-4 text-muted-foreground" />;
+            return <Globe className={className} />;
         default:
-            return <Users className="h-4 w-4 text-muted-foreground" />;
+            return <Users className={className} />;
     }
 }
 
