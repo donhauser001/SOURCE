@@ -1,18 +1,16 @@
 'use client';
 
 /**
- * 色彩簿色彩列表客户端组件
+ * 色彩库视图组件
  * 
- * 遵循 SOURCE 列表页面视觉交互规范
- * - 全圆角工具栏
- * - 搜索框展开/收缩动画
- * - Popover 多选筛选器（状态、审计、色系）
- * - 视图切换（卡片/极简/列表）
- * - 分页功能
+ * 支持三种视图模式：
+ * - cards: 标准卡片视图（Coolors 风格）
+ * - minimal: 极简卡片视图
+ * - list: 列表视图
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { Search, X, ChevronDown, ChevronLeft, ChevronRight, LayoutGrid, Grid3X3, List, Check } from 'lucide-react';
+import { Search, X, ChevronDown, LayoutGrid, Grid3X3, List, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,55 +22,54 @@ import {
     ToggleGroup,
     ToggleGroupItem,
 } from '@/components/ui/toggle-group';
-import { StandardColorCard } from '@/components/color/standard-color-card';
-import { MinimalColorCard } from '@/components/color/minimal-color-card';
-import { ColorListItem } from '@/components/color/color-list-item';
+import { StandardColorCard } from './standard-color-card';
+import { MinimalColorCard } from './minimal-color-card';
+import { ColorListItem } from './color-list-item';
 
 // =============================================================================
 // 类型定义
 // =============================================================================
 
-type ViewMode = 'cards' | 'minimal' | 'list';
+export type ViewMode = 'cards' | 'minimal' | 'list';
 
-interface ColorEntry {
+interface Color {
     id: string;
-    sectionName: string | null;
-    pageNumber: string | null;
-    color: {
-        id: string;
-        colorId: string;
-        name: string;
-        slug: string;
-        labL: number;
-        labA: number;
-        labB: number;
-        status: string;
-        auditStatus: string;
-        colorFamily: string | null;
-    };
+    colorId: string;
+    name: string;
+    slug: string;
+    labL: number;
+    labA: number;
+    labB: number;
+    status: string;
+    statusLabel: string;
+    auditStatus: string;
+    auditStatusLabel: string;
+    colorFamily?: string | null;
+    colorFamilyLabel?: string | null;
+    version: string;
+    paperProfileCount: number;
+    recipeCount: number;
+    participantCount: number;
+    bestPaper?: string;
+    lastVerifiedAt: string | null;
 }
 
-interface Props {
-    entries: ColorEntry[];
+interface ColorLibraryViewProps {
+    colors: Color[];
+    paperTypeLabels: Record<string, string>;
+    colorStatusLabels: Record<string, string>;
+    auditStatusLabels: Record<string, string>;
+    colorFamilyLabels?: Record<string, string>;
+    colorFamilyColors?: Record<string, string>;
+    /** 默认视图模式 */
+    defaultViewMode?: ViewMode;
 }
 
 // =============================================================================
-// 常量
+// 默认标签
 // =============================================================================
 
-const COLOR_STATUS_LABELS: Record<string, string> = {
-    ACTIVE: '激活',
-    EXPERIMENTAL: '实验中',
-    DRAFT: '草稿',
-};
-
-const AUDIT_STATUS_LABELS: Record<string, string> = {
-    PENDING: '待审核',
-    VERIFIED: '已验证',
-    REJECTED: '已拒绝',
-};
-
-const COLOR_FAMILY_LABELS: Record<string, string> = {
+const defaultColorFamilyLabels: Record<string, string> = {
     RED: '红色系',
     ORANGE: '橙色系',
     YELLOW: '黄色系',
@@ -85,7 +82,7 @@ const COLOR_FAMILY_LABELS: Record<string, string> = {
     NEUTRAL: '中性色',
 };
 
-const COLOR_FAMILY_COLORS: Record<string, string> = {
+const defaultColorFamilyColors: Record<string, string> = {
     RED: '#DC2626',
     ORANGE: '#EA580C',
     YELLOW: '#CA8A04',
@@ -102,9 +99,17 @@ const COLOR_FAMILY_COLORS: Record<string, string> = {
 // 主组件
 // =============================================================================
 
-export function ColorBookColorList({ entries }: Props) {
+export function ColorLibraryView({
+    colors,
+    paperTypeLabels,
+    colorStatusLabels,
+    auditStatusLabels,
+    colorFamilyLabels = defaultColorFamilyLabels,
+    colorFamilyColors = defaultColorFamilyColors,
+    defaultViewMode = 'cards',
+}: ColorLibraryViewProps) {
     // 状态
-    const [viewMode, setViewMode] = useState<ViewMode>('cards');
+    const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
     const [search, setSearch] = useState('');
     const [searchExpanded, setSearchExpanded] = useState(false);
     const [statusFilters, setStatusFilters] = useState<string[]>([]);
@@ -115,16 +120,16 @@ export function ColorBookColorList({ entries }: Props) {
     // 根据视图模式设置每页数量
     const pageSize = useMemo(() => {
         switch (viewMode) {
-            case 'cards': return 12;
-            case 'minimal': return 32;
-            case 'list': return 20;
+            case 'cards': return 12;      // 3列 x 4行
+            case 'minimal': return 32;    // 8列 x 4行
+            case 'list': return 20;       // 2列 x 10行
             default: return 12;
         }
     }, [viewMode]);
 
     // 从 localStorage 恢复视图模式
     useEffect(() => {
-        const saved = localStorage.getItem('color-book-view-mode');
+        const saved = localStorage.getItem('color-library-view-mode');
         if (saved && ['cards', 'minimal', 'list'].includes(saved)) {
             setViewMode(saved as ViewMode);
         }
@@ -132,58 +137,55 @@ export function ColorBookColorList({ entries }: Props) {
 
     // 保存视图模式到 localStorage
     useEffect(() => {
-        localStorage.setItem('color-book-view-mode', viewMode);
+        localStorage.setItem('color-library-view-mode', viewMode);
     }, [viewMode]);
 
     // 获取唯一的筛选值
     const uniqueStatuses = useMemo(() => {
-        const statuses = new Set(entries.map(e => e.color.status));
+        const statuses = new Set(colors.map(c => c.status));
         return Array.from(statuses);
-    }, [entries]);
+    }, [colors]);
 
     const uniqueAuditStatuses = useMemo(() => {
-        const statuses = new Set(entries.map(e => e.color.auditStatus));
+        const statuses = new Set(colors.map(c => c.auditStatus));
         return Array.from(statuses);
-    }, [entries]);
+    }, [colors]);
 
-    const uniqueFamilies = useMemo(() => {
+    const uniqueColorFamilies = useMemo(() => {
         const families = new Set<string>();
-        entries.forEach(e => {
-            if (e.color.colorFamily) families.add(e.color.colorFamily);
+        colors.forEach(c => {
+            if (c.colorFamily) families.add(c.colorFamily);
         });
         return Array.from(families);
-    }, [entries]);
+    }, [colors]);
 
     // 筛选颜色
     const filteredColors = useMemo(() => {
-        let result = entries;
+        let result = colors;
 
-        // 搜索筛选
         if (search.trim()) {
             const q = search.toLowerCase();
             result = result.filter(
-                e => e.color.colorId.toLowerCase().includes(q) ||
-                    e.color.name.toLowerCase().includes(q)
+                (c) =>
+                    c.colorId.toLowerCase().includes(q) ||
+                    c.name.toLowerCase().includes(q)
             );
         }
 
-        // 状态筛选
         if (statusFilters.length > 0) {
-            result = result.filter(e => statusFilters.includes(e.color.status));
+            result = result.filter(c => statusFilters.includes(c.status));
         }
 
-        // 审计状态筛选
         if (auditFilters.length > 0) {
-            result = result.filter(e => auditFilters.includes(e.color.auditStatus));
+            result = result.filter(c => auditFilters.includes(c.auditStatus));
         }
 
-        // 色系筛选
         if (familyFilters.length > 0) {
-            result = result.filter(e => e.color.colorFamily && familyFilters.includes(e.color.colorFamily));
+            result = result.filter(c => c.colorFamily && familyFilters.includes(c.colorFamily));
         }
 
         return result;
-    }, [entries, search, statusFilters, auditFilters, familyFilters]);
+    }, [colors, search, statusFilters, auditFilters, familyFilters]);
 
     // 分页计算
     const totalPages = Math.ceil(filteredColors.length / pageSize);
@@ -210,10 +212,17 @@ export function ColorBookColorList({ entries }: Props) {
 
     const hasFilters = search || statusFilters.length > 0 || auditFilters.length > 0 || familyFilters.length > 0;
 
+    const activeFilterCount = [
+        statusFilters.length > 0,
+        auditFilters.length > 0,
+        familyFilters.length > 0,
+    ].filter(Boolean).length;
+
     // 分页控制
     const goToPage = (page: number) => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
+            // 滚动到列表顶部
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -319,7 +328,7 @@ export function ColorBookColorList({ entries }: Props) {
                                                     : 'hover:bg-gray-100 text-gray-700'}
                                             `}
                                         >
-                                            <span>{COLOR_STATUS_LABELS[status] || status}</span>
+                                            <span>{colorStatusLabels[status] || status}</span>
                                             {statusFilters.includes(status) && (
                                                 <Check className="h-4 w-4 flex-shrink-0" />
                                             )}
@@ -357,7 +366,7 @@ export function ColorBookColorList({ entries }: Props) {
                                                     : 'hover:bg-gray-100 text-gray-700'}
                                             `}
                                         >
-                                            <span>{AUDIT_STATUS_LABELS[status] || status}</span>
+                                            <span>{auditStatusLabels[status] || status}</span>
                                             {auditFilters.includes(status) && (
                                                 <Check className="h-4 w-4 flex-shrink-0" />
                                             )}
@@ -368,7 +377,7 @@ export function ColorBookColorList({ entries }: Props) {
                         </Popover>
 
                         {/* 色系筛选 */}
-                        {uniqueFamilies.length > 0 && (
+                        {uniqueColorFamilies.length > 0 && (
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="h-11 w-24 bg-white border-0 rounded-full text-gray-700 gap-1 px-0 hover:bg-gray-50 justify-center">
@@ -383,7 +392,7 @@ export function ColorBookColorList({ entries }: Props) {
                                 </PopoverTrigger>
                                 <PopoverContent className="w-48 p-2 rounded-2xl" align="start">
                                     <div className="space-y-1 max-h-64 overflow-y-auto">
-                                        {uniqueFamilies.map(family => (
+                                        {uniqueColorFamilies.map(family => (
                                             <button
                                                 key={family}
                                                 type="button"
@@ -399,9 +408,9 @@ export function ColorBookColorList({ entries }: Props) {
                                                 <span className="flex items-center gap-2">
                                                     <span
                                                         className="w-3 h-3 rounded-full flex-shrink-0"
-                                                        style={{ backgroundColor: COLOR_FAMILY_COLORS[family] || '#6B7280' }}
+                                                        style={{ backgroundColor: colorFamilyColors[family] || '#6B7280' }}
                                                     />
-                                                    {COLOR_FAMILY_LABELS[family] || family}
+                                                    {colorFamilyLabels[family] || family}
                                                 </span>
                                                 {familyFilters.includes(family) && (
                                                     <Check className="h-4 w-4 flex-shrink-0" />
@@ -467,7 +476,7 @@ export function ColorBookColorList({ entries }: Props) {
                     {hasFilters ? (
                         <>找到 <strong className="text-gray-900">{filteredColors.length}</strong> 个结果</>
                     ) : (
-                        <>共 <strong className="text-gray-900">{entries.length}</strong> 种色彩</>
+                        <>共 <strong className="text-gray-900">{colors.length}</strong> 个色彩</>
                     )}
                     {totalPages > 1 && (
                         <span className="ml-2">
@@ -488,19 +497,10 @@ export function ColorBookColorList({ entries }: Props) {
                     {/* 卡片视图 */}
                     {viewMode === 'cards' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {paginatedColors.map((entry) => (
+                            {paginatedColors.map((color) => (
                                 <StandardColorCard
-                                    key={entry.id}
-                                    color={{
-                                        id: entry.color.id,
-                                        colorId: entry.color.colorId,
-                                        name: entry.color.name,
-                                        labL: entry.color.labL,
-                                        labA: entry.color.labA,
-                                        labB: entry.color.labB,
-                                        status: entry.color.status,
-                                        auditStatus: entry.color.auditStatus,
-                                    }}
+                                    key={color.id}
+                                    color={color}
                                     searchQuery={search}
                                 />
                             ))}
@@ -510,43 +510,25 @@ export function ColorBookColorList({ entries }: Props) {
                     {/* 极简视图 */}
                     {viewMode === 'minimal' && (
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-                            {paginatedColors.map((entry) => (
+                            {paginatedColors.map((color) => (
                                 <MinimalColorCard
-                                    key={entry.id}
-                                    color={{
-                                        id: entry.color.id,
-                                        colorId: entry.color.colorId,
-                                        name: entry.color.name,
-                                        labL: entry.color.labL,
-                                        labA: entry.color.labA,
-                                        labB: entry.color.labB,
-                                        status: entry.color.status,
-                                        auditStatus: entry.color.auditStatus,
-                                    }}
+                                    key={color.id}
+                                    color={color}
+                                    size="md"
                                 />
                             ))}
                         </div>
                     )}
 
-                    {/* 列表视图 */}
+                    {/* 列表视图 - 横向卡片，一行两个 */}
                     {viewMode === 'list' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {paginatedColors.map((entry) => (
+                            {paginatedColors.map((color) => (
                                 <ColorListItem
-                                    key={entry.id}
-                                    color={{
-                                        id: entry.color.id,
-                                        colorId: entry.color.colorId,
-                                        name: entry.color.name,
-                                        labL: entry.color.labL,
-                                        labA: entry.color.labA,
-                                        labB: entry.color.labB,
-                                        status: entry.color.status,
-                                        auditStatus: entry.color.auditStatus,
-                                        colorFamily: entry.color.colorFamily,
-                                    }}
+                                    key={color.id}
+                                    color={color}
                                     searchQuery={search}
-                                    colorFamilyLabels={COLOR_FAMILY_LABELS}
+                                    colorFamilyLabels={colorFamilyLabels}
                                 />
                             ))}
                         </div>

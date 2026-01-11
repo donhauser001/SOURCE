@@ -1,10 +1,10 @@
 /**
  * 色彩库列表页
  * 
- * 设计理念：语义化布局
- * - 字号统一，不传递错误层级
- * - 卡片大小基于"成熟度"（验证状态 + 配方数量）
- * - 位置保持随机（视觉丰富）
+ * 支持三种视图模式：
+ * - cards: 标准卡片视图（Coolors 风格）
+ * - minimal: 极简卡片视图
+ * - list: 列表视图
  * 
  * 性能优化：
  * - 使用缓存查询减少数据库负载
@@ -14,7 +14,7 @@
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 import { prisma } from '@/lib/db';
-import { ColorListClientB } from '@/components/color/color-list-client-b';
+import { ColorLibraryView } from '@/components/color/color-library-view';
 import { PaperTypeLabels, ColorStatusLabels, AuditStatusLabels } from '@/lib/validations/color';
 import { COLOR_FAMILY_LABELS, COLOR_FAMILY_COLORS } from '@/lib/labels';
 import { SiteHeader } from '@/components/site-header';
@@ -116,13 +116,13 @@ export default async function ColorsPage() {
                     <header className="mb-8">
                         <h1 className="text-4xl font-bold tracking-tight text-foreground">色彩库</h1>
                         <p className="text-sm text-muted-foreground mt-2">
-                            语义化布局：卡片大小 = 成熟度（已验证 &gt; 实验中），字号统一
+                            浏览 SOURCE 色彩身份证库，查看已验证的印刷色彩数据
                         </p>
                     </header>
 
-                    {/* 色彩列表 */}
+                    {/* 色彩列表 - 支持多种视图模式 */}
                     <Suspense fallback={<ColorListSkeleton />}>
-                        <ColorListClientB
+                        <ColorLibraryView
                             colors={colors}
                             paperTypeLabels={PaperTypeLabels}
                             colorStatusLabels={ColorStatusLabels}
