@@ -330,9 +330,9 @@ export const inkRouter = createTRPCRouter({
           ...data,
           suppliers: supplierIds !== undefined
             ? {
-                set: [], // 先清空
-                connect: supplierIds.map((pid) => ({ id: pid })),
-              }
+              set: [], // 先清空
+              connect: supplierIds.map((pid) => ({ id: pid })),
+            }
             : undefined,
         },
         include: {

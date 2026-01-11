@@ -151,21 +151,21 @@ async function main() {
   const existingIngredients = await prisma.$queryRawUnsafe<Array<{ inkName: string; inkType: string }>>(`
     SELECT DISTINCT "inkName", "inkType" FROM "RecipeIngredient"
   `);
-  
+
   let inkOrder = 0;
   const inkCodeMap: Record<string, string> = {}; // inkName -> id
-  
+
   for (const ing of existingIngredients) {
     const code = ing.inkName.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-');
     const id = `ink_${code.toLowerCase().slice(0, 20)}_${inkOrder}`;
-    
+
     try {
       await prisma.$executeRawUnsafe(`
         INSERT INTO "InkOption" ("id", "code", "name", "inkType", "order", "isActive", "createdAt", "updatedAt")
         VALUES ($1, $2, $3, $4::"InkType", $5, true, NOW(), NOW())
         ON CONFLICT ("code") DO NOTHING
       `, id, code, ing.inkName, ing.inkType, inkOrder);
-      
+
       inkCodeMap[ing.inkName] = id;
       console.log(`  + ${code}: ${ing.inkName} (${ing.inkType})`);
     } catch (e) {
@@ -188,7 +188,7 @@ async function main() {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "PaperProfile" ADD COLUMN IF NOT EXISTS "paperTypeId" TEXT;
     `);
-    
+
     // 更新外键值
     for (const code of Object.keys(paperTypeMapping)) {
       const id = `pt_${code.toLowerCase()}`;
@@ -207,7 +207,7 @@ async function main() {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "ProofingPack" ADD COLUMN IF NOT EXISTS "paperTypeId" TEXT;
     `);
-    
+
     // 更新外键值
     for (const code of Object.keys(paperTypeMapping)) {
       const id = `pt_${code.toLowerCase()}`;
@@ -226,7 +226,7 @@ async function main() {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "RecipeIngredient" ADD COLUMN IF NOT EXISTS "inkId" TEXT;
     `);
-    
+
     // 更新外键值
     for (const [inkName, inkId] of Object.entries(inkCodeMap)) {
       await prisma.$executeRawUnsafe(`
