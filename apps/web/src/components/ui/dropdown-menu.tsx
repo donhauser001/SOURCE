@@ -6,7 +6,14 @@ import { Check, ChevronRight, Circle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+// 默认禁用模态行为，避免滚动锁定导致的位移问题
+const DropdownMenu = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Root>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>
+>(({ modal = false, ...props }, ref) => (
+    <DropdownMenuPrimitive.Root modal={modal} {...props} />
+));
+DropdownMenu.displayName = 'DropdownMenu';
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 

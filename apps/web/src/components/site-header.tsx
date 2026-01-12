@@ -162,8 +162,8 @@ export function SiteHeader({ isDark = false }: { isDark?: boolean }) {
                                         className={cn(
                                             "hidden md:flex items-center px-4 h-8 rounded-full transition-all text-sm font-medium",
                                             isDark
-                                                ? "text-white border-white/30 hover:bg-white/10"
-                                                : "text-foreground border-foreground hover:bg-foreground/5"
+                                                ? "bg-transparent text-white border-white/30 hover:bg-white/10 data-[state=open]:bg-white/20"
+                                                : "bg-transparent text-foreground border-foreground hover:bg-foreground/5 data-[state=open]:bg-foreground/10"
                                         )}
                                     >
                                         发表
