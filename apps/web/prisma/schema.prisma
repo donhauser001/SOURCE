@@ -51,11 +51,17 @@ model User {
   // 用户作品
   works         UserWork[]
 
+  // 账户状态
+  isActive      Boolean   @default(true)
+  disabledAt    DateTime?
+  disabledBy    String?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([role])
   @@index([partnerId])
+  @@index([isActive])
 }
 
 model Account {
@@ -1285,4 +1291,58 @@ model UserWorkColor {
   @@unique([workId, colorId])
   @@index([workId])
   @@index([colorId])
+}
+
+// =============================================================================
+// 系统配置
+// =============================================================================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  category  String   // general, rate-limit, storage, email
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+// =============================================================================
+// 导入任务
+// =============================================================================
+
+model ImportJob {
+  id          String        @id @default(cuid())
+  
+  // 任务信息
+  type        String                    // color, paper-profile
+  status      ImportJobStatus @default(PENDING)
+  
+  // 进度
+  totalCount  Int           @default(0)
+  successCount Int          @default(0)
+  failedCount Int           @default(0)
+  
+  // 结果
+  errors      Json?                     // 错误详情数组
+  
+  // 操作人
+  userId      String
+  userEmail   String
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  completedAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+enum ImportJobStatus {
+  PENDING     // 等待处理
+  PROCESSING  // 处理中
+  COMPLETED   // 完成
+  FAILED      // 失败
 }
