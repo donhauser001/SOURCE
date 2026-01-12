@@ -39,7 +39,7 @@ export function UserNav({ isDark = false }: { isDark?: boolean }) {
     if (!session) {
         return (
             <Button asChild size="sm" className={cn(
-                "h-8 transition-all",
+                "h-8 px-4 rounded-full transition-all",
                 isDark ? "bg-white/20 hover:bg-white/30 text-white border-0" : ""
             )}>
                 <Link href="/login">登录</Link>

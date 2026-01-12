@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { SiteFooter } from '@/components/site-footer'
 
 const montserrat = Montserrat({
     subsets: ['latin'],
@@ -25,8 +26,11 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="zh-CN" suppressHydrationWarning>
-            <body className={`${montserrat.variable} font-sans antialiased`}>
-                <Providers>{children}</Providers>
+            <body className={`${montserrat.variable} font-sans antialiased min-h-screen flex flex-col`}>
+                <Providers>
+                    <div className="flex-1">{children}</div>
+                    <SiteFooter />
+                </Providers>
             </body>
         </html>
     )

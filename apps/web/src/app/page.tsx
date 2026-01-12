@@ -1,8 +1,28 @@
-import Link from 'next/link'
-import { ArrowRight, Sparkles } from 'lucide-react'
-import { SiteHeader } from '@/components/site-header'
+'use client';
+
+import Link from 'next/link';
+import type { Route } from 'next';
+import { ArrowRight, Sparkles, Palette, BookOpen, FileText, Eye, ThumbsUp } from 'lucide-react';
+import { SiteHeader } from '@/components/site-header';
+import { trpc } from '@/lib/trpc';
+import { labToRgb } from '@/lib/color';
+
+// 内容类型图标
+const typeIcons = {
+    WORK: Palette,
+    TUTORIAL: BookOpen,
+    ARTICLE: FileText,
+};
 
 export default function HomePage() {
+    // 获取首页推荐内容
+    const { data: homepageData } = trpc.content.publicList.useQuery({
+        featuredLevel: 2, // HOMEPAGE = 首页推荐
+        limit: 6,
+    });
+
+    const homepageItems = homepageData?.items || [];
+
     return (
         <div className="min-h-screen bg-background">
             <SiteHeader />
@@ -58,6 +78,127 @@ export default function HomePage() {
                         <div className="w-px h-12 bg-gradient-to-b from-transparent via-foreground/10 to-foreground/20" />
                     </div>
                 </section>
+
+                {/* 首页推荐 */}
+                {homepageItems.length > 0 && (
+                    <section className="relative py-24 px-4 border-t border-foreground/5">
+                        <div className="max-w-6xl mx-auto">
+                            {/* 标题 */}
+                            <div className="flex items-center justify-between mb-12">
+                                <div className="flex items-center gap-3">
+                                    <Sparkles className="h-5 w-5 text-amber-500" />
+                                    <h2 className="text-2xl font-light text-foreground/80">精选推荐</h2>
+                                </div>
+                                <Link
+                                    href="/collab"
+                                    className="group inline-flex items-center gap-1.5 text-sm text-foreground/40 hover:text-foreground/60 transition-colors"
+                                >
+                                    探索更多
+                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                </Link>
+                            </div>
+
+                            {/* 内容网格 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {homepageItems.map((item) => {
+                                    const Icon = typeIcons[item.contentType as keyof typeof typeIcons];
+                                    const colors = item.colors?.slice(0, 4) || [];
+
+                                    return (
+                                        <Link
+                                            key={item.id}
+                                            href={`/collab/${item.id}` as Route}
+                                            className="group block"
+                                        >
+                                            <article className="relative overflow-hidden rounded-2xl border border-foreground/5 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-all duration-300">
+                                                {/* 封面图 */}
+                                                <div className="aspect-[16/10] overflow-hidden bg-foreground/5">
+                                                    {item.coverImageUrl ? (
+                                                        <img
+                                                            src={item.coverImageUrl}
+                                                            alt={item.title}
+                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            <Icon className="h-12 w-12 text-foreground/10" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 内容 */}
+                                                <div className="p-5">
+                                                    {/* 类型标签 */}
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/5 text-[10px] text-foreground/50">
+                                                            <Icon className="h-3 w-3" />
+                                                            {item.contentTypeLabel}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* 标题 */}
+                                                    <h3 className="text-base font-medium text-foreground/80 line-clamp-2 group-hover:text-foreground transition-colors">
+                                                        {item.title}
+                                                    </h3>
+
+                                                    {/* 摘要 */}
+                                                    {item.summary && (
+                                                        <p className="mt-2 text-sm text-foreground/40 line-clamp-2">
+                                                            {item.summary}
+                                                        </p>
+                                                    )}
+
+                                                    {/* 底部信息 */}
+                                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-foreground/5">
+                                                        {/* 作者 */}
+                                                        <div className="flex items-center gap-2">
+                                                            {item.author.image ? (
+                                                                <img
+                                                                    src={item.author.image}
+                                                                    alt={item.author.name || ''}
+                                                                    className="h-6 w-6 rounded-full"
+                                                                />
+                                                            ) : (
+                                                                <div className="h-6 w-6 rounded-full bg-foreground/10 flex items-center justify-center text-[10px] font-medium text-foreground/40">
+                                                                    {(item.author.name || '?')[0].toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                            <span className="text-xs text-foreground/40">
+                                                                {item.author.name || '匿名'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* 关联色彩 */}
+                                                        {colors.length > 0 && (
+                                                            <div className="flex items-center gap-1">
+                                                                {colors.map(({ color }) => {
+                                                                    const rgb = labToRgb(color.labL, color.labA, color.labB);
+                                                                    return (
+                                                                        <div
+                                                                            key={color.id}
+                                                                            className="h-4 w-4 rounded-full border border-foreground/10"
+                                                                            style={{ backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` }}
+                                                                            title={color.name}
+                                                                        />
+                                                                    );
+                                                                })}
+                                                                {(item.colors?.length || 0) > 4 && (
+                                                                    <span className="text-[10px] text-foreground/30 ml-0.5">
+                                                                        +{(item.colors?.length || 0) - 4}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* 特性区 - 极简卡片 */}
                 <section className="relative py-32 px-4">
@@ -154,5 +295,5 @@ export default function HomePage() {
                 </div>
             </footer>
         </div>
-    )
+    );
 }

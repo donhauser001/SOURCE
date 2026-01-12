@@ -3,6 +3,22 @@
 @tailwind utilities;
 
 @layer base {
+    /* 防止弹出菜单导致滚动条消失时页面位移 */
+    html, body {
+        overflow-y: scroll !important;
+        scrollbar-gutter: stable;
+    }
+    
+    /* Vaul/Radix 滚动锁定时的样式覆盖 */
+    body[data-scroll-locked="1"] {
+        overflow-y: scroll !important;
+        --removed-body-scroll-bar-size: 0px !important;
+    }
+    
+    /* 防止 fixed header 位移 */
+    body[data-scroll-locked="1"] header.fixed {
+        padding-right: 0 !important;
+    }
     :root {
         /* 默认浅色主题 - 白色背景 */
         --background: 0 0% 100%;
