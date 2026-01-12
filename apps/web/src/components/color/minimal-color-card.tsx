@@ -210,7 +210,7 @@ export const MinimalColorCard = memo(function MinimalColorCard({
     }
 
     return (
-        <Link href={href || `/color/${color.colorId}`} className="block">
+        <Link href={(href || `/color/${color.colorId}`) as `/color/${string}`} className="block">
             {cardContent}
         </Link>
     );

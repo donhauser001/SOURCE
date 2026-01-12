@@ -36,9 +36,6 @@ export type { ViewMode } from './color-library-view';
 export { ColorIdentityCard } from './identity';
 export type { ColorData } from './identity';
 
-// 色彩列表（旧版，保留兼容）
-export { ColorListClientB } from './color-list-client-b';
-
 // 色彩色块
 export { ColorSwatch } from './color-swatch';
 

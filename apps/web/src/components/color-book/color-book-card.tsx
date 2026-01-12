@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Book, Palette, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import type { ColorBookCategory } from '@prisma/client';
 
 interface ColorBookCardProps {
     book: {
@@ -15,18 +14,10 @@ interface ColorBookCardProps {
         shortDesc: string | null;
         coverImageUrl: string | null;
         publishedYear: number | null;
-        category: ColorBookCategory;
+        category: { name: string };
         totalColors: number;
     };
 }
-
-const CATEGORY_LABELS: Record<ColorBookCategory, string> = {
-    CLASSIC: '经典系列',
-    SEASONAL: '季节系列',
-    THEMED: '主题系列',
-    REGIONAL: '地域系列',
-    CUSTOM: '定制系列',
-};
 
 export function ColorBookCard({ book }: ColorBookCardProps) {
     return (
@@ -52,7 +43,7 @@ export function ColorBookCard({ book }: ColorBookCardProps) {
                     {/* 色彩簿类别标签 */}
                     <div className="absolute top-4 left-4">
                         <Badge variant="secondary" className="bg-white/90 dark:bg-slate-900/90 backdrop-blur">
-                            {CATEGORY_LABELS[book.category]}
+                            {book.category.name}
                         </Badge>
                     </div>
                 </div>

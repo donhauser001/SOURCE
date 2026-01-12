@@ -55,7 +55,7 @@ export function ColorIdentityCard({ color }: Props) {
                         className="relative w-full overflow-hidden"
                     >
                         {/* 顶部导航栏 */}
-                        <nav className="relative z-20 flex items-center justify-between px-6 lg:px-12 py-4">
+                        <nav className="relative z-20 max-w-[1600px] mx-auto flex items-center justify-between px-6 py-4">
                             <Link href="/colors">
                                 <Button
                                     variant="ghost"
@@ -72,7 +72,7 @@ export function ColorIdentityCard({ color }: Props) {
                         </nav>
 
                         {/* Hero 内容 */}
-                        <div className="relative z-10 px-6 lg:px-12 pb-24 pt-12 lg:pt-20">
+                        <div className="relative z-10 max-w-[1600px] mx-auto px-6 pb-24 pt-12 lg:pt-20">
                             <div className="w-full">
                                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-end">
                                     {/* 左侧：色彩标识 */}
@@ -205,7 +205,7 @@ export function ColorIdentityCard({ color }: Props) {
                     {/* ═══════════════════════════════════════════════════════════
                         数据区域：自适应技术风格
                     ═══════════════════════════════════════════════════════════ */}
-                    <section className="relative px-6 lg:px-12 py-12">
+                    <section className="relative max-w-[1600px] mx-auto px-6 py-12">
                         <div className="relative z-10 w-full">
                             {/* 主导航标签 */}
                             <Tabs value={activeTab} onValueChange={setActiveTab}>

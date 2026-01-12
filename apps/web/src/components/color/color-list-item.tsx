@@ -270,7 +270,7 @@ export const ColorListItem = memo(function ColorListItem({
     }
 
     return (
-        <Link href={href || `/color/${color.colorId}`} className="block">
+        <Link href={(href || `/color/${color.colorId}`) as `/color/${string}`} className="block">
             {itemContent}
         </Link>
     );

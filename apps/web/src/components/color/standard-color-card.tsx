@@ -364,7 +364,7 @@ export const StandardColorCard = memo(function StandardColorCard({
 
     return (
         <Link
-            href={href || `/color/${color.colorId}`}
+            href={(href || `/color/${color.colorId}`) as `/color/${string}`}
             className="group block"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}

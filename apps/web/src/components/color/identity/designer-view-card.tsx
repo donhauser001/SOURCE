@@ -181,7 +181,7 @@ export function DesignerViewCard({
                         const whitelistReason = whitelistReasonMap.get(paperName);
                         const proofingPack = proofingPackMap.get(profile.paperType);
                         const isExpanded = expandedPaper === profile.paperType;
-                        const hasDetails = profile.glossiness !== undefined || profile.scanImageUrl;
+                        const hasDetails = profile.glossiness !== undefined || !!profile.scanImageUrl;
                         
                         return (
                             <PaperRow
