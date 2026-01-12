@@ -223,11 +223,10 @@ export function WorksHero({ works }: WorksGalleryProps) {
                                         <button
                                             key={index}
                                             onClick={() => scrollTo(index)}
-                                            className={`h-1.5 rounded-full transition-all ${
-                                                index === current
+                                            className={`h-1.5 rounded-full transition-all ${index === current
                                                     ? 'w-6 bg-white'
                                                     : 'w-1.5 bg-white/40 hover:bg-white/60'
-                                            }`}
+                                                }`}
                                             aria-label={`跳转到第 ${index + 1} 张`}
                                         />
                                     ))}
@@ -618,7 +617,7 @@ export function WorksLibraryView({ works }: WorksGalleryProps) {
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </Button>
-                    
+
                     <div className="flex items-center gap-1">
                         {Array.from({ length: Math.min(totalPages, 7) }).map((_, i) => {
                             let page: number;
@@ -637,9 +636,8 @@ export function WorksLibraryView({ works }: WorksGalleryProps) {
                                     key={page}
                                     variant={currentPage === page ? 'default' : 'ghost'}
                                     onClick={() => goToPage(page)}
-                                    className={`h-10 w-10 rounded-full ${
-                                        currentPage === page ? 'bg-gray-900 text-white' : ''
-                                    }`}
+                                    className={`h-10 w-10 rounded-full ${currentPage === page ? 'bg-gray-900 text-white' : ''
+                                        }`}
                                 >
                                     {page}
                                 </Button>
@@ -682,10 +680,10 @@ function WorkCard({ work }: { work: Work }) {
                         onError={() => setImageError(true)}
                     />
                 )}
-                
+
                 {/* 悬浮遮罩 */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
+
                 {/* 外部链接 */}
                 {work.externalUrl && (
                     <a

@@ -61,12 +61,18 @@ export const userRouter = createTRPCRouter({
     addColorToBook: userColorBooksRouter.addColorToBook,
     removeColorFromBook: userColorBooksRouter.removeColorFromBook,
 
-    // 用户作品
+    // 用户作品 @deprecated - 请使用 content.* API
+    /** @deprecated 使用 content.myContents */
     works: userWorksRouter.works,
+    /** @deprecated 使用 content.myContents 并计算 */
     worksStats: userWorksRouter.worksStats,
+    /** @deprecated 使用 content.create */
     createWork: userWorksRouter.createWork,
+    /** @deprecated 使用 content.update */
     updateWork: userWorksRouter.updateWork,
+    /** @deprecated 使用 content.delete */
     deleteWork: userWorksRouter.deleteWork,
+    /** @deprecated 使用 content.get */
     getWork: userWorksRouter.getWork,
 
     // 管理员功能

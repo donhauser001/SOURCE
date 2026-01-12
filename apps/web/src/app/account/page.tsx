@@ -8,10 +8,10 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { 
-    User, 
-    Shield, 
-    Key, 
+import {
+    User,
+    Shield,
+    Key,
     Palette,
     Clock,
     ArrowRight,
@@ -63,10 +63,10 @@ export default function AccountPage() {
                         <div className="h-16 w-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur">
                             {session?.user?.image ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img 
-                                    src={session.user.image} 
-                                    alt="" 
-                                    className="h-16 w-16 rounded-2xl" 
+                                <img
+                                    src={session.user.image}
+                                    alt=""
+                                    className="h-16 w-16 rounded-2xl"
                                 />
                             ) : (
                                 <span className="text-2xl font-bold">
@@ -98,7 +98,7 @@ export default function AccountPage() {
             {/* 统计卡片 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 色彩资产 */}
-                <Link 
+                <Link
                     href="/account/assets"
                     className="bg-white rounded-2xl border border-black/10 p-5 hover:border-gray-300 hover:shadow-sm transition-all group"
                 >
@@ -113,7 +113,7 @@ export default function AccountPage() {
                 </Link>
 
                 {/* API 密钥 */}
-                <Link 
+                <Link
                     href="/account/api-keys"
                     className="bg-white rounded-2xl border border-black/10 p-5 hover:border-gray-300 hover:shadow-sm transition-all group"
                 >
@@ -128,7 +128,7 @@ export default function AccountPage() {
                 </Link>
 
                 {/* 账户状态 */}
-                <Link 
+                <Link
                     href="/account/security"
                     className="bg-white rounded-2xl border border-black/10 p-5 hover:border-gray-300 hover:shadow-sm transition-all group"
                 >
@@ -160,7 +160,7 @@ export default function AccountPage() {
                     <h3 className="font-bold text-gray-900">快捷操作</h3>
                 </div>
                 <div className="divide-y divide-gray-100">
-                    <Link 
+                    <Link
                         href="/account/assets"
                         className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                     >
@@ -174,7 +174,7 @@ export default function AccountPage() {
                         <ArrowRight className="h-5 w-5 text-gray-300" />
                     </Link>
 
-                    <Link 
+                    <Link
                         href="/account/profile"
                         className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                     >
@@ -188,7 +188,7 @@ export default function AccountPage() {
                         <ArrowRight className="h-5 w-5 text-gray-300" />
                     </Link>
 
-                    <Link 
+                    <Link
                         href="/account/api-keys"
                         className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                     >
@@ -203,7 +203,7 @@ export default function AccountPage() {
                     </Link>
 
                     {tier === 'FREE' && (
-                        <Link 
+                        <Link
                             href="/activate"
                             className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                         >
@@ -218,7 +218,7 @@ export default function AccountPage() {
                         </Link>
                     )}
 
-                    <Link 
+                    <Link
                         href="/docs/api"
                         className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                     >
@@ -246,7 +246,7 @@ export default function AccountPage() {
                             <p className="text-sm text-amber-700 mt-1">
                                 你当前是免费用户，部分功能受限。激活账户后可获得完整的色彩数据访问权限。
                             </p>
-                            <Link 
+                            <Link
                                 href="/activate"
                                 className="inline-flex items-center mt-3 text-sm font-medium text-amber-700 hover:text-amber-900"
                             >

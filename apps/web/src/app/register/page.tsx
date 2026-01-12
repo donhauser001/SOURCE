@@ -11,10 +11,10 @@ import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    ArrowLeft, 
+import {
+    ArrowLeft,
     ArrowRight,
-    Loader2, 
+    Loader2,
     CheckCircle2,
     Sparkles,
     Users,
@@ -103,7 +103,7 @@ export default function RegisterPage() {
                         <p className="text-center text-gray-500 mb-6">
                             点击邮件中的链接完成注册
                         </p>
-                        
+
                         {/* 邮箱显示 */}
                         <div className="bg-gray-100 rounded-2xl p-4 mb-6">
                             <p className="text-center font-mono text-gray-900 break-all">
@@ -169,7 +169,7 @@ export default function RegisterPage() {
                     <div className="absolute top-20 left-20 h-64 w-64 rounded-full bg-white blur-3xl" />
                     <div className="absolute bottom-40 right-20 h-96 w-96 rounded-full bg-white blur-3xl" />
                 </div>
-                
+
                 {/* 内容 */}
                 <div className="relative z-10 flex flex-col justify-center px-16">
                     <div className="mb-8">
@@ -180,7 +180,7 @@ export default function RegisterPage() {
                             <span className="text-2xl font-bold text-white">SOURCE</span>
                         </Link>
                     </div>
-                    
+
                     <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
                         加入 SOURCE<br />
                         探索色彩世界
@@ -194,7 +194,7 @@ export default function RegisterPage() {
                         {[
                             { icon: Palette, text: '浏览完整色彩库' },
                             { icon: FileText, text: '查看详细色彩身份证' },
-                            { icon: Users, text: '参与色彩社区讨论' },
+                            { icon: Users, text: '参与 ColLab 创作分享' },
                         ].map((feature, idx) => (
                             <div key={idx} className="flex items-center gap-3 text-gray-300">
                                 <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
@@ -256,8 +256,8 @@ export default function RegisterPage() {
                                     className="h-12 rounded-xl border-gray-200 focus:border-gray-900 focus:ring-gray-900 text-center text-lg"
                                 />
                             </div>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-medium"
                                 disabled={isLoading}
                             >

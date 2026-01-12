@@ -9,17 +9,18 @@
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    User, 
-    Shield, 
-    Key, 
+import type { Route } from 'next';
+import {
+    User,
+    Shield,
+    Key,
     Loader2,
     LayoutDashboard,
     ArrowLeft,
     LogOut,
     ChevronRight,
     Palette,
-    ImageIcon
+    FileText
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -35,9 +36,9 @@ const navigation = [
         icon: Palette,
     },
     {
-        name: '我的作品',
-        href: '/account/works' as const,
-        icon: ImageIcon,
+        name: '我的发表',
+        href: '/account/contents' as const,
+        icon: FileText,
     },
     {
         name: '个人资料',
@@ -122,10 +123,10 @@ export default function AccountLayout({
                             <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center">
                                 {session?.user?.image ? (
                                     // eslint-disable-next-line @next/next/no-img-element
-                                    <img 
-                                        src={session.user.image} 
-                                        alt="" 
-                                        className="h-10 w-10 rounded-full" 
+                                    <img
+                                        src={session.user.image}
+                                        alt=""
+                                        className="h-10 w-10 rounded-full"
                                     />
                                 ) : (
                                     <span className="text-white font-medium">
@@ -149,12 +150,11 @@ export default function AccountLayout({
                                     return (
                                         <Link
                                             key={item.href}
-                                            href={item.href}
-                                            className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
-                                                isActive
-                                                    ? 'bg-gray-900 text-white'
-                                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                            }`}
+                                            href={item.href as Route}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
+                                                ? 'bg-gray-900 text-white'
+                                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                                }`}
                                         >
                                             <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                             <span className="font-medium">{item.name}</span>

@@ -8,9 +8,9 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { 
-    Shield, 
-    CheckCircle2, 
+import {
+    Shield,
+    CheckCircle2,
     User,
     Sparkles,
     AlertTriangle,
@@ -25,18 +25,18 @@ import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
 import { trpc } from '@/lib/trpc';
 
-const tierConfig: Record<string, { 
-    label: string; 
+const tierConfig: Record<string, {
+    label: string;
     description: string;
-    color: string; 
+    color: string;
     bgColor: string;
     icon: typeof CheckCircle2;
     features: string[];
 }> = {
-    FREE: { 
-        label: '免费用户', 
+    FREE: {
+        label: '免费用户',
         description: '基础功能访问',
-        color: 'text-gray-600', 
+        color: 'text-gray-600',
         bgColor: 'bg-gray-100',
         icon: User,
         features: [
@@ -45,10 +45,10 @@ const tierConfig: Record<string, {
             '创建 1 个 API 密钥',
         ],
     },
-    VERIFIED: { 
-        label: '已验证', 
+    VERIFIED: {
+        label: '已验证',
         description: '已通过激活码验证',
-        color: 'text-emerald-700', 
+        color: 'text-emerald-700',
         bgColor: 'bg-emerald-100',
         icon: CheckCircle2,
         features: [
@@ -58,10 +58,10 @@ const tierConfig: Record<string, {
             '使用分析工具',
         ],
     },
-    PAID: { 
-        label: '付费用户', 
+    PAID: {
+        label: '付费用户',
         description: '完整功能访问',
-        color: 'text-amber-700', 
+        color: 'text-amber-700',
         bgColor: 'bg-amber-100',
         icon: Sparkles,
         features: [
@@ -219,8 +219,8 @@ export default function SecurityPage() {
                                 <p className="text-sm text-gray-500">退出当前会话并需要重新登录</p>
                             </div>
                         </div>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
                             onClick={handleLogoutAllDevices}
                         >

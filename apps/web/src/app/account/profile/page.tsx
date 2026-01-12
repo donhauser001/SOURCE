@@ -6,10 +6,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-    User, 
-    Mail, 
-    Loader2, 
+import {
+    User,
+    Mail,
+    Loader2,
     Save,
     CheckCircle2,
     Camera,
@@ -78,10 +78,10 @@ export default function ProfilePage() {
                         <div className="h-24 w-24 rounded-2xl bg-gray-900 flex items-center justify-center overflow-hidden">
                             {session?.user?.image ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img 
-                                    src={session.user.image} 
-                                    alt="" 
-                                    className="h-24 w-24 object-cover" 
+                                <img
+                                    src={session.user.image}
+                                    alt=""
+                                    className="h-24 w-24 object-cover"
                                 />
                             ) : (
                                 <span className="text-3xl font-bold text-white">
@@ -89,7 +89,7 @@ export default function ProfilePage() {
                                 </span>
                             )}
                         </div>
-                        <button 
+                        <button
                             className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors disabled:opacity-50"
                             disabled
                             title="头像上传功能即将推出"
@@ -166,8 +166,8 @@ export default function ProfilePage() {
 
                     {/* 保存按钮 */}
                     <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={isSaving || !hasChanges || !name.trim()}
                             className="h-11 px-6 rounded-xl bg-gray-900 hover:bg-gray-800"
                         >

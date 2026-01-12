@@ -15,11 +15,11 @@ import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    ArrowLeft, 
-    Mail, 
-    Loader2, 
-    Shield, 
+import {
+    ArrowLeft,
+    Mail,
+    Loader2,
+    Shield,
     Sparkles,
     CheckCircle2,
     ArrowRight
@@ -151,7 +151,7 @@ export default function LoginPage() {
                         <p className="text-center text-gray-500 mb-6">
                             登录链接已发送至
                         </p>
-                        
+
                         {/* 邮箱显示 */}
                         <div className="bg-gray-100 rounded-2xl p-4 mb-6">
                             <p className="text-center font-mono text-gray-900 break-all">
@@ -217,7 +217,7 @@ export default function LoginPage() {
                     <div className="absolute top-20 left-20 h-64 w-64 rounded-full bg-white blur-3xl" />
                     <div className="absolute bottom-40 right-20 h-96 w-96 rounded-full bg-white blur-3xl" />
                 </div>
-                
+
                 {/* 内容 */}
                 <div className="relative z-10 flex flex-col justify-center px-16">
                     <div className="mb-8">
@@ -228,7 +228,7 @@ export default function LoginPage() {
                             <span className="text-2xl font-bold text-white">SOURCE</span>
                         </Link>
                     </div>
-                    
+
                     <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
                         印刷色彩管理<br />
                         从这里开始
@@ -304,8 +304,8 @@ export default function LoginPage() {
                                     className="h-12 rounded-xl border-gray-200 focus:border-gray-900 focus:ring-gray-900 text-center text-lg"
                                 />
                             </div>
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-medium"
                                 disabled={isLoading}
                             >

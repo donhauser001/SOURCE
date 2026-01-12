@@ -5,8 +5,8 @@
  */
 
 import { useState } from 'react';
-import { 
-    Key, 
+import {
+    Key,
     Plus,
     Loader2,
     Copy,
@@ -106,7 +106,7 @@ export default function ApiKeysPage() {
                     <h1 className="text-2xl font-bold text-gray-900">API 密钥</h1>
                     <p className="text-gray-500 mt-1">管理你的 API 访问密钥</p>
                 </div>
-                <Button 
+                <Button
                     onClick={() => setIsCreating(true)}
                     className="rounded-xl bg-gray-900 hover:bg-gray-800"
                     disabled={isCreating}
@@ -162,7 +162,7 @@ export default function ApiKeysPage() {
                     <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
                         创建新密钥
                     </h3>
-                    
+
                     <div className="space-y-4">
                         {/* 密钥名称 */}
                         <div className="space-y-2">
@@ -184,11 +184,10 @@ export default function ApiKeysPage() {
                                         key={role}
                                         type="button"
                                         onClick={() => setNewKeyRole(role as typeof newKeyRole)}
-                                        className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                                            newKeyRole === role
+                                        className={`p-4 rounded-2xl border-2 text-left transition-all ${newKeyRole === role
                                                 ? 'border-gray-900 bg-gray-50'
                                                 : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${info.color}`}>
@@ -215,11 +214,10 @@ export default function ApiKeysPage() {
                                         key={option.label}
                                         type="button"
                                         onClick={() => setNewKeyExpiry(option.value)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                                            newKeyExpiry === option.value
+                                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${newKeyExpiry === option.value
                                                 ? 'bg-gray-900 text-white'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
+                                            }`}
                                     >
                                         {option.label}
                                     </button>
@@ -281,7 +279,7 @@ export default function ApiKeysPage() {
                         {activeKeys.map((key) => {
                             const roleInfo = roleDescriptions[key.role] || roleDescriptions['ai-readonly'];
                             const isExpired = key.expiresAt && new Date(key.expiresAt) < new Date();
-                            
+
                             return (
                                 <div key={key.id} className="p-4 hover:bg-gray-50 transition-colors">
                                     <div className="flex items-start gap-4">

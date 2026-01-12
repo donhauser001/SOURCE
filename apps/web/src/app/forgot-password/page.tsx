@@ -10,10 +10,10 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { 
-    ArrowLeft, 
+import {
+    ArrowLeft,
     ArrowRight,
-    Loader2, 
+    Loader2,
     CheckCircle2,
     Mail,
     KeyRound
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
                         <p className="text-center text-gray-500 mb-6">
                             请检查你的邮箱
                         </p>
-                        
+
                         {/* 邮箱显示 */}
                         <div className="bg-gray-100 rounded-2xl p-4 mb-6">
                             <p className="text-center font-mono text-gray-900 break-all">
@@ -189,8 +189,8 @@ export default function ForgotPasswordPage() {
                                 className="h-12 rounded-xl border-gray-200 focus:border-gray-900 focus:ring-gray-900 text-center text-lg"
                             />
                         </div>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-medium"
                             disabled={isLoading}
                         >

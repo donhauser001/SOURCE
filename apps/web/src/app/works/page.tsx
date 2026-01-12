@@ -1,7 +1,11 @@
 /**
  * 作品展示页面
- * 
+ *
+ * @deprecated 此页面已废弃，请使用 /collab 页面
+ * 已配置 301 重定向：/works → /collab
+ *
  * 展示所有公开的用户作品
+ * 此页面保留用于兼容旧链接，新用户应使用 /collab
  */
 
 import { Suspense } from 'react';
@@ -11,8 +15,8 @@ import { WorksLibraryView, WorksHero } from './works-gallery';
 import { SiteHeader } from '@/components/site-header';
 
 export const metadata: Metadata = {
-    title: '作品 | SOURCE',
-    description: '探索使用 SOURCE 色彩体系创作的设计作品',
+    title: 'ColLab | SOURCE',
+    description: '探索使用 SOURCE 色彩体系创作的设计作品，发现灵感，分享创意',
 };
 
 // 获取公开作品
@@ -65,7 +69,7 @@ async function getPublicWorks() {
 
 export default async function WorksPage() {
     const works = await getPublicWorks();
-    
+
     // 取前3个作为推荐作品
     const featuredWorks = works.slice(0, 3);
     // 其余作品

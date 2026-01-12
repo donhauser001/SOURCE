@@ -8,8 +8,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-    Palette, 
+import {
+    Palette,
     ShoppingCart,
     FileText,
     Clock,
@@ -144,11 +144,10 @@ export default function AssetsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                     onClick={() => setActiveTab('colorBooks')}
-                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${
-                        activeTab === 'colorBooks' 
-                            ? 'border-gray-900 ring-1 ring-gray-900' 
+                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${activeTab === 'colorBooks'
+                            ? 'border-gray-900 ring-1 ring-gray-900'
                             : 'border-black/10 hover:border-gray-300'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-start justify-between">
                         <div className="h-10 w-10 rounded-xl bg-purple-100 flex items-center justify-center">
@@ -168,11 +167,10 @@ export default function AssetsPage() {
 
                 <button
                     onClick={() => setActiveTab('intents')}
-                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${
-                        activeTab === 'intents' 
-                            ? 'border-gray-900 ring-1 ring-gray-900' 
+                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${activeTab === 'intents'
+                            ? 'border-gray-900 ring-1 ring-gray-900'
                             : 'border-black/10 hover:border-gray-300'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-start justify-between">
                         <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -192,11 +190,10 @@ export default function AssetsPage() {
 
                 <button
                     onClick={() => setActiveTab('reports')}
-                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${
-                        activeTab === 'reports' 
-                            ? 'border-gray-900 ring-1 ring-gray-900' 
+                    className={`bg-white rounded-2xl border p-5 text-left transition-all ${activeTab === 'reports'
+                            ? 'border-gray-900 ring-1 ring-gray-900'
                             : 'border-black/10 hover:border-gray-300'
-                    }`}
+                        }`}
                 >
                     <div className="flex items-start justify-between">
                         <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -344,7 +341,7 @@ export default function AssetsPage() {
                                                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
                                                     <BookOpen className="h-6 w-6 text-purple-600" />
                                                 </div>
-                                                
+
                                                 {/* 信息 */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
@@ -403,7 +400,7 @@ export default function AssetsPage() {
                         <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
                             购买意向记录
                         </h3>
-                        <Link 
+                        <Link
                             href="/colors"
                             className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
                         >
@@ -421,7 +418,7 @@ export default function AssetsPage() {
                             <ShoppingCart className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                             <p className="text-gray-500">暂无购买意向</p>
                             <p className="text-sm text-gray-400 mt-1">浏览色彩详情页，点击购买按钮即可记录意向</p>
-                            <Link 
+                            <Link
                                 href="/colors"
                                 className="inline-flex items-center mt-4 text-sm font-medium text-gray-700 hover:text-gray-900"
                             >
@@ -434,18 +431,18 @@ export default function AssetsPage() {
                             {buyIntents.items.map((intent) => {
                                 const color = intent.proofingPack.color;
                                 const bgColor = labToRgb(color.labL, color.labA, color.labB);
-                                
+
                                 return (
                                     <Link
                                         key={intent.id}
                                         href={`/color/${color.colorId}`}
                                         className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors group"
                                     >
-                                        <div 
+                                        <div
                                             className="h-12 w-12 rounded-xl flex-shrink-0"
                                             style={{ backgroundColor: bgColor }}
                                         />
-                                        
+
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-medium text-gray-900 truncate">
@@ -483,7 +480,7 @@ export default function AssetsPage() {
                         <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500">
                             分析报告
                         </h3>
-                        <Link 
+                        <Link
                             href="/analyze"
                             className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
                         >
@@ -501,7 +498,7 @@ export default function AssetsPage() {
                             <FileText className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                             <p className="text-gray-500">暂无分析报告</p>
                             <p className="text-sm text-gray-400 mt-1">上传设计文件进行色彩分析</p>
-                            <Link 
+                            <Link
                                 href="/analyze"
                                 className="inline-flex items-center mt-4 text-sm font-medium text-gray-700 hover:text-gray-900"
                             >
@@ -516,7 +513,7 @@ export default function AssetsPage() {
                                 const summary = report.summary as { fileName?: string; docType?: string } | null;
                                 const fileName = summary?.fileName || '未命名报告';
                                 const docType = summary?.docType || '设计文件';
-                                
+
                                 // 检查是否过期
                                 const isExpired = new Date(report.expiresAt) < new Date();
 
@@ -529,7 +526,7 @@ export default function AssetsPage() {
                                         <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
                                             <FileText className="h-6 w-6 text-gray-500" />
                                         </div>
-                                        
+
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-medium text-gray-900 truncate">
