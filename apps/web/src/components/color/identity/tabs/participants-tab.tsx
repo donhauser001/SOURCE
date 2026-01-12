@@ -115,7 +115,7 @@ function ParticipantItem({ participant: p }: { participant: Participation }) {
             <div className="h-8 w-8 rounded-full bg-black/5 flex items-center justify-center flex-shrink-0">
                 {getEntityIcon(p)}
             </div>
-            
+
             {/* 信息区 */}
             <div className="flex-1 min-w-0">
                 <div className="font-medium text-black/90 truncate">{getEntityName(p)}</div>

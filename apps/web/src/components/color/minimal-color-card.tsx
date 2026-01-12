@@ -84,12 +84,12 @@ function labToRgb(labL: number, labA: number, labB: number): string {
     b = Math.min(255, Math.max(0, Math.round(b * 255)));
 
     const result = `rgb(${r}, ${g}, ${b})`;
-    
+
     if (labToRgbCache.size > 1000) {
         const firstKey = labToRgbCache.keys().next().value;
         if (firstKey) labToRgbCache.delete(firstKey);
     }
-    
+
     labToRgbCache.set(key, result);
     return result;
 }
@@ -108,17 +108,17 @@ export const MinimalColorCard = memo(function MinimalColorCard({
         () => labToRgb(color.labL, color.labA, color.labB),
         [color.labL, color.labA, color.labB]
     );
-    
+
     // 根据明度动态计算边框透明度：浅色用高透明度，深色用低透明度
     // 明度 0-100，透明度映射为 0.6-0.15
     const borderColor = useMemo(() => {
         const opacity = 0.15 + (color.labL / 100) * 0.45; // 深色 0.15，浅色 0.6
         return bgColor.replace('rgb(', 'rgba(').replace(')', `, ${opacity.toFixed(2)})`);
     }, [bgColor, color.labL]);
-    
+
     const isVerified = color.auditStatus === 'VERIFIED';
     const isExperimental = color.status === 'EXPERIMENTAL';
-    
+
     // 根据明度判断悬停时文字颜色
     const isLightBg = color.labL > 55;
     const hoverTextClass = isLightBg ? 'group-hover:text-gray-900' : 'group-hover:text-white';
@@ -135,11 +135,10 @@ export const MinimalColorCard = memo(function MinimalColorCard({
                 hover:border-current
                 ${className}
             `}
-            style={{ 
-                borderWidth: '4px', 
+            style={{
+                borderWidth: '4px',
                 borderStyle: 'solid',
                 borderColor,
-                // @ts-ignore - CSS custom property for hover
                 '--border-hover': borderColorHover,
             } as React.CSSProperties}
             onMouseEnter={(e) => {
@@ -150,14 +149,14 @@ export const MinimalColorCard = memo(function MinimalColorCard({
             }}
         >
             {/* 色块背景 - 悬停时铺满 */}
-            <div 
+            <div
                 className="absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
-                style={{ 
+                style={{
                     backgroundColor: bgColor,
                     clipPath: 'inset(0 0 30% 0)',
                 }}
             />
-            <div 
+            <div
                 className="absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] opacity-0 group-hover:opacity-100"
                 style={{ backgroundColor: bgColor }}
             />
@@ -188,7 +187,7 @@ export const MinimalColorCard = memo(function MinimalColorCard({
                         <FlaskConical className={`h-3.5 w-3.5 flex-shrink-0 text-gray-500 transition-colors duration-500 ease-out ${hoverTextClass}`} />
                     )}
                 </div>
-                
+
                 {/* 编号 */}
                 <div className={`text-xs text-gray-500 font-mono mt-0.5 transition-colors duration-500 ease-out ${hoverTextClass}`}>
                     {color.colorId}

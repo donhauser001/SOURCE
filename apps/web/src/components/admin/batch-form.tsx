@@ -243,14 +243,14 @@ export function BatchForm({ initialData, mode }: Props) {
                         <div className="space-y-2">
                             <Label htmlFor="partnerId">关联合作者</Label>
                             <Select
-                                value={formData.partnerId}
-                                onValueChange={(value) => handleChange('partnerId', value)}
+                                value={formData.partnerId || 'none'}
+                                onValueChange={(value) => handleChange('partnerId', value === 'none' ? '' : value)}
                             >
                                 <SelectTrigger id="partnerId">
                                     <SelectValue placeholder="选择合作者（可选）" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">无</SelectItem>
+                                    <SelectItem value="none">无</SelectItem>
                                     {partnersData?.items.map((partner) => (
                                         <SelectItem key={partner.id} value={partner.id}>
                                             {partner.shortName || partner.name} ({partner.partnerId})

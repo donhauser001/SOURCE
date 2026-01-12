@@ -285,9 +285,9 @@ export const paperTypeRouter = createTRPCRouter({
           suitableFor: suitableFor === null ? Prisma.DbNull : suitableFor,
           suppliers: supplierIds !== undefined
             ? {
-                set: [], // 先清空
-                connect: supplierIds.map((pid) => ({ id: pid })),
-              }
+              set: [], // 先清空
+              connect: supplierIds.map((pid) => ({ id: pid })),
+            }
             : undefined,
         },
         include: {

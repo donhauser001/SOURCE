@@ -53,7 +53,7 @@ export function ColorBookCard({ book }: ColorBookCardProps) {
                     <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                         {book.name}
                     </h3>
-                    
+
                     {book.shortDesc && (
                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                             {book.shortDesc}

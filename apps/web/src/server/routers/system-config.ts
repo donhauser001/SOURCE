@@ -24,14 +24,24 @@ export const CONFIG_KEYS = {
     SITE_LOGO_URL: 'site.logoUrl',
     CONTACT_EMAIL: 'site.contactEmail',
     MAINTENANCE_MODE: 'site.maintenanceMode',
-    
+
     // 限流
     API_DEFAULT_RATE_LIMIT_PER_MINUTE: 'rateLimit.defaultPerMinute',
     API_DEFAULT_RATE_LIMIT_PER_DAY: 'rateLimit.defaultPerDay',
-    
+
     // 存储
     IMPORT_MAX_FILE_SIZE_MB: 'storage.importMaxFileSizeMB',
     EXPORT_MAX_RECORDS: 'storage.exportMaxRecords',
+
+    // 邮件
+    SMTP_HOST: 'email.smtpHost',
+    SMTP_PORT: 'email.smtpPort',
+    SMTP_USER: 'email.smtpUser',
+    SMTP_PASSWORD: 'email.smtpPassword',
+    SMTP_SECURE: 'email.smtpSecure',
+    EMAIL_FROM_ADDRESS: 'email.fromAddress',
+    EMAIL_FROM_NAME: 'email.fromName',
+    EMAIL_ENABLED: 'email.enabled',
 } as const;
 
 // 配置值类型

@@ -64,7 +64,7 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
     // 处理文件
     const handleFile = useCallback((file: File) => {
         setError(null);
-        
+
         // 验证文件
         const validationError = validateFile(file);
         if (validationError) {
@@ -80,13 +80,13 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
             try {
                 const content = e.target?.result as string;
                 const data = JSON.parse(content);
-                
+
                 // 确保是数组
                 if (!Array.isArray(data)) {
                     setError('JSON 文件必须包含一个数组');
                     return;
                 }
-                
+
                 if (data.length === 0) {
                     setError('JSON 数组不能为空');
                     return;
@@ -123,9 +123,9 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        
+
         if (disabled) return;
-        
+
         const file = e.dataTransfer.files[0];
         if (file) {
             handleFile(file);
@@ -176,7 +176,7 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
                     className="hidden"
                     disabled={disabled}
                 />
-                
+
                 <div className="flex flex-col items-center gap-3">
                     <div className="p-3 rounded-full bg-muted">
                         {fileName ? (
@@ -185,7 +185,7 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
                             <Upload className="h-8 w-8 text-muted-foreground" />
                         )}
                     </div>
-                    
+
                     {fileName ? (
                         <div className="flex flex-col items-center gap-1">
                             <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ export function JsonUploader({ onDataParsed, disabled, maxSizeMB = 5 }: Props) {
             <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
                 <p className="font-medium mb-1">JSON 格式要求：</p>
                 <pre className="bg-background p-2 rounded text-[10px] overflow-x-auto">
-{`[
+                    {`[
   {
     "colorId": "CN-Song-04",
     "name": "烟雨青",

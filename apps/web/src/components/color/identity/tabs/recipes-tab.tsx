@@ -70,11 +70,10 @@ function RecipeCard({ recipe }: { recipe: NonNullable<ColorData['recipes']>[numb
                     {recipe.recipeId}
                 </code>
                 <div className="flex gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        recipe.status === 'VERIFIED' 
-                            ? 'bg-emerald-100 text-emerald-700' 
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${recipe.status === 'VERIFIED'
+                            ? 'bg-emerald-100 text-emerald-700'
                             : 'bg-amber-100 text-amber-700'
-                    }`}>
+                        }`}>
                         {recipe.statusLabel}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-black/5 text-black/50">
@@ -82,7 +81,7 @@ function RecipeCard({ recipe }: { recipe: NonNullable<ColorData['recipes']>[numb
                     </span>
                 </div>
             </div>
-            
+
             {recipe.name && (
                 <div className="font-medium text-black/90">{recipe.name}</div>
             )}
@@ -108,8 +107,8 @@ function RecipeCard({ recipe }: { recipe: NonNullable<ColorData['recipes']>[numb
                 <div className="text-xs font-medium uppercase tracking-wider text-black/50">适用纸张</div>
                 <div className="flex flex-wrap gap-1">
                     {recipe.applicablePapers.map((paper) => (
-                        <span 
-                            key={paper} 
+                        <span
+                            key={paper}
                             className="text-xs px-2 py-0.5 rounded-full bg-black/5 text-black/60"
                         >
                             {paper}

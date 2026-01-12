@@ -14,12 +14,34 @@ import { ZodError } from 'zod';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import type { Session } from 'next-auth';
+import crypto from 'crypto';
 
 /**
  * Context 类型定义
  */
 interface CreateContextOptions {
     session: Session | null;
+    clientFingerprint: string;
+}
+
+/**
+ * 生成客户端指纹（用于浏览量防刷等场景）
+ */
+function generateClientFingerprint(req?: Request): string {
+    if (!req) {
+        return 'unknown';
+    }
+
+    // 从请求头提取标识信息
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+        || req.headers.get('x-real-ip') 
+        || 'unknown-ip';
+    const userAgent = req.headers.get('user-agent') || 'unknown-ua';
+
+    // 生成哈希指纹
+    const hash = crypto.createHash('sha256');
+    hash.update(`${ip}:${userAgent}`);
+    return hash.digest('hex').slice(0, 16);
 }
 
 /**
@@ -28,6 +50,7 @@ interface CreateContextOptions {
 export const createInnerTRPCContext = (opts: CreateContextOptions) => {
     return {
         session: opts.session,
+        clientFingerprint: opts.clientFingerprint,
         prisma,
     };
 };
@@ -35,11 +58,14 @@ export const createInnerTRPCContext = (opts: CreateContextOptions) => {
 /**
  * 创建 API Context
  */
-export const createTRPCContext = async (_opts: CreateNextContextOptions) => {
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
     const session = await auth();
+    const req = (opts as any).req as Request | undefined;
+    const clientFingerprint = generateClientFingerprint(req);
 
     return createInnerTRPCContext({
         session: session as Session | null,
+        clientFingerprint,
     });
 };
 
@@ -79,6 +105,37 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
             message: '请先登录',
         });
     }
+    return next({
+        ctx: {
+            ...ctx,
+            session: { ...ctx.session, user: ctx.session.user },
+        },
+    });
+});
+
+/**
+ * 运营人员 Procedure（需要运营或管理员权限）
+ */
+export const operatorProcedure = t.procedure.use(async ({ ctx, next }) => {
+    if (!ctx.session || !ctx.session.user) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: '请先登录',
+        });
+    }
+
+    const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.session.user.id },
+        select: { role: true },
+    });
+
+    if (user?.role !== 'ADMIN' && user?.role !== 'OPERATOR') {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: '需要运营人员或管理员权限',
+        });
+    }
+
     return next({
         ctx: {
             ...ctx,

@@ -179,8 +179,8 @@ export function ColorForm({ initialData, mode }: Props) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="colorFamily">色系分类</Label>
-                            <Select 
-                                value={formData.colorFamily || '__auto__'} 
+                            <Select
+                                value={formData.colorFamily || '__auto__'}
                                 onValueChange={(v) => handleChange('colorFamily', v === '__auto__' ? '' : v)}
                             >
                                 <SelectTrigger>

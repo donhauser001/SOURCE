@@ -94,12 +94,12 @@ function labToRgb(labL: number, labA: number, labB: number): string {
     b = Math.min(255, Math.max(0, Math.round(b * 255)));
 
     const result = `rgb(${r}, ${g}, ${b})`;
-    
+
     if (labToRgbCache.size > 1000) {
         const firstKey = labToRgbCache.keys().next().value;
         if (firstKey) labToRgbCache.delete(firstKey);
     }
-    
+
     labToRgbCache.set(key, result);
     return result;
 }
@@ -162,7 +162,7 @@ export const ColorListItem = memo(function ColorListItem({
         () => labToRgb(color.labL, color.labA, color.labB),
         [color.labL, color.labA, color.labB]
     );
-    
+
     // 根据明度动态计算边框透明度：浅色用高透明度，深色用低透明度
     // 明度 0-100，透明度映射为 0.15-0.6
     const borderColor = useMemo(() => {
@@ -172,7 +172,7 @@ export const ColorListItem = memo(function ColorListItem({
 
     const isVerified = color.auditStatus === 'VERIFIED';
     const isExperimental = color.status === 'EXPERIMENTAL';
-    
+
     // 根据明度判断悬停时文字颜色 - 所有元素保持一致
     const isLightBg = color.labL > 55;
     const hoverTextClass = isLightBg ? 'group-hover:text-gray-900' : 'group-hover:text-white';
@@ -198,14 +198,14 @@ export const ColorListItem = memo(function ColorListItem({
             }}
         >
             {/* 色块背景 - 悬停时铺满 */}
-            <div 
+            <div
                 className="absolute inset-0 w-1/3 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:w-full"
                 style={{ backgroundColor: bgColor }}
             />
-            
+
             {/* 白色背景层 */}
             <div className="absolute inset-0 bg-white transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:opacity-0" style={{ left: '33.333%' }} />
-            
+
             {/* 左侧色块占位 */}
             <div className="relative flex-shrink-0 w-1/3" />
 
@@ -226,7 +226,7 @@ export const ColorListItem = memo(function ColorListItem({
                         <HighlightText text={color.colorId} query={searchQuery} />
                     </span>
                 </div>
-                
+
                 {/* Lab 值 + 色系 */}
                 <div className={`flex items-center gap-2 mt-1 text-xs transition-colors duration-500 ease-out text-gray-500 ${hoverTextClass}`}>
                     {showLabValues && (
@@ -250,7 +250,7 @@ export const ColorListItem = memo(function ColorListItem({
                         实验中
                     </span>
                 )}
-                <ChevronRight 
+                <ChevronRight
                     className={`h-4 w-4 transition-all duration-300 ease-out opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 text-gray-400 ${hoverTextClass}`}
                 />
             </div>
