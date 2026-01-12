@@ -4,6 +4,30 @@ const nextConfig: NextConfig = {
     // 严格模式
     reactStrictMode: true,
 
+    // 页面重定向（旧路由 → 新路由）
+    async redirects() {
+        return [
+            // /works → /collab
+            {
+                source: '/works',
+                destination: '/collab',
+                permanent: true, // 301
+            },
+            // /works/:id → /collab/:id
+            {
+                source: '/works/:id',
+                destination: '/collab/:id',
+                permanent: true,
+            },
+            // /account/works → /account/contents
+            {
+                source: '/account/works',
+                destination: '/account/contents',
+                permanent: true,
+            },
+        ];
+    },
+
     // 图片域名白名单
     images: {
         remotePatterns: [

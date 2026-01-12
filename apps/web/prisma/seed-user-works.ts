@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 async function main() {
     const adminEmail = 'admin@source.ink';
-    
+
     // 查找用户
     const user = await prisma.user.findUnique({
         where: { email: adminEmail },
