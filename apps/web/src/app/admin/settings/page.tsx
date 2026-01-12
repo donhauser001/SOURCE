@@ -26,6 +26,15 @@ const CONFIG_KEYS = {
     API_RATE_LIMIT_PER_DAY: 'rateLimit.defaultPerDay',
     IMPORT_MAX_FILE_SIZE_MB: 'storage.importMaxFileSizeMB',
     EXPORT_MAX_RECORDS: 'storage.exportMaxRecords',
+    // 邮件配置
+    SMTP_HOST: 'email.smtpHost',
+    SMTP_PORT: 'email.smtpPort',
+    SMTP_USER: 'email.smtpUser',
+    SMTP_PASSWORD: 'email.smtpPassword',
+    SMTP_SECURE: 'email.smtpSecure',
+    EMAIL_FROM_ADDRESS: 'email.fromAddress',
+    EMAIL_FROM_NAME: 'email.fromName',
+    EMAIL_ENABLED: 'email.enabled',
 };
 
 // 配置分类
@@ -33,6 +42,7 @@ const CONFIG_CATEGORIES = {
     GENERAL: 'general',
     RATE_LIMIT: 'rate-limit',
     STORAGE: 'storage',
+    EMAIL: 'email',
 };
 
 export default function SettingsPage() {
@@ -45,7 +55,17 @@ export default function SettingsPage() {
     const [rateLimitPerDay, setRateLimitPerDay] = useState('10000');
     const [importMaxFileSizeMB, setImportMaxFileSizeMB] = useState('5');
     const [exportMaxRecords, setExportMaxRecords] = useState('10000');
-    
+
+    // 邮件配置状态
+    const [emailEnabled, setEmailEnabled] = useState(false);
+    const [smtpHost, setSmtpHost] = useState('');
+    const [smtpPort, setSmtpPort] = useState('587');
+    const [smtpUser, setSmtpUser] = useState('');
+    const [smtpPassword, setSmtpPassword] = useState('');
+    const [smtpSecure, setSmtpSecure] = useState(true);
+    const [emailFromAddress, setEmailFromAddress] = useState('');
+    const [emailFromName, setEmailFromName] = useState('');
+
     const [hasChanges, setHasChanges] = useState(false);
 
     // 获取所有配置
@@ -63,7 +83,7 @@ export default function SettingsPage() {
     useEffect(() => {
         if (configs) {
             const configMap = new Map(configs.map(c => [c.key, c.value]));
-            
+
             setSiteName((configMap.get(CONFIG_KEYS.SITE_NAME) as string) || 'SOURCE');
             setSiteLogoUrl((configMap.get(CONFIG_KEYS.SITE_LOGO_URL) as string) || '');
             setContactEmail((configMap.get(CONFIG_KEYS.CONTACT_EMAIL) as string) || '');
@@ -72,6 +92,16 @@ export default function SettingsPage() {
             setRateLimitPerDay(String(configMap.get(CONFIG_KEYS.API_RATE_LIMIT_PER_DAY) || 10000));
             setImportMaxFileSizeMB(String(configMap.get(CONFIG_KEYS.IMPORT_MAX_FILE_SIZE_MB) || 5));
             setExportMaxRecords(String(configMap.get(CONFIG_KEYS.EXPORT_MAX_RECORDS) || 10000));
+
+            // 邮件配置
+            setEmailEnabled(Boolean(configMap.get(CONFIG_KEYS.EMAIL_ENABLED)));
+            setSmtpHost((configMap.get(CONFIG_KEYS.SMTP_HOST) as string) || '');
+            setSmtpPort(String(configMap.get(CONFIG_KEYS.SMTP_PORT) || 587));
+            setSmtpUser((configMap.get(CONFIG_KEYS.SMTP_USER) as string) || '');
+            setSmtpPassword((configMap.get(CONFIG_KEYS.SMTP_PASSWORD) as string) || '');
+            setSmtpSecure(configMap.get(CONFIG_KEYS.SMTP_SECURE) !== false);
+            setEmailFromAddress((configMap.get(CONFIG_KEYS.EMAIL_FROM_ADDRESS) as string) || '');
+            setEmailFromName((configMap.get(CONFIG_KEYS.EMAIL_FROM_NAME) as string) || '');
         }
     }, [configs]);
 
@@ -87,6 +117,15 @@ export default function SettingsPage() {
                 { key: CONFIG_KEYS.API_RATE_LIMIT_PER_DAY, value: parseInt(rateLimitPerDay) || 10000, category: CONFIG_CATEGORIES.RATE_LIMIT },
                 { key: CONFIG_KEYS.IMPORT_MAX_FILE_SIZE_MB, value: parseInt(importMaxFileSizeMB) || 5, category: CONFIG_CATEGORIES.STORAGE },
                 { key: CONFIG_KEYS.EXPORT_MAX_RECORDS, value: parseInt(exportMaxRecords) || 10000, category: CONFIG_CATEGORIES.STORAGE },
+                // 邮件配置
+                { key: CONFIG_KEYS.EMAIL_ENABLED, value: emailEnabled, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.SMTP_HOST, value: smtpHost, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.SMTP_PORT, value: parseInt(smtpPort) || 587, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.SMTP_USER, value: smtpUser, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.SMTP_PASSWORD, value: smtpPassword, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.SMTP_SECURE, value: smtpSecure, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.EMAIL_FROM_ADDRESS, value: emailFromAddress, category: CONFIG_CATEGORIES.EMAIL },
+                { key: CONFIG_KEYS.EMAIL_FROM_NAME, value: emailFromName, category: CONFIG_CATEGORIES.EMAIL },
             ],
         });
     };
@@ -117,8 +156,8 @@ export default function SettingsPage() {
                         管理系统级配置参数
                     </p>
                 </div>
-                <Button 
-                    onClick={handleSave} 
+                <Button
+                    onClick={handleSave}
                     disabled={!hasChanges || saveMutation.isPending}
                 >
                     {saveMutation.isPending ? (
@@ -136,6 +175,10 @@ export default function SettingsPage() {
                     <TabsTrigger value="general" className="gap-2">
                         <Globe className="h-4 w-4" />
                         通用设置
+                    </TabsTrigger>
+                    <TabsTrigger value="email" className="gap-2">
+                        <Mail className="h-4 w-4" />
+                        邮件配置
                     </TabsTrigger>
                     <TabsTrigger value="rate-limit" className="gap-2">
                         <Shield className="h-4 w-4" />
@@ -215,6 +258,156 @@ export default function SettingsPage() {
                                         handleChange();
                                     }}
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 邮件配置 */}
+                <TabsContent value="email">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>邮件服务配置</CardTitle>
+                            <CardDescription>
+                                配置系统邮件发送服务（SMTP）
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* 启用开关 */}
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="emailEnabled">启用邮件服务</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        开启后系统将使用配置的 SMTP 服务发送邮件
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="emailEnabled"
+                                    checked={emailEnabled}
+                                    onCheckedChange={(checked) => {
+                                        setEmailEnabled(checked);
+                                        handleChange();
+                                    }}
+                                />
+                            </div>
+
+                            {/* SMTP 服务器配置 */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium">SMTP 服务器</h4>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="smtpHost">SMTP 服务器地址</Label>
+                                        <Input
+                                            id="smtpHost"
+                                            value={smtpHost}
+                                            onChange={(e) => {
+                                                setSmtpHost(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="smtp.example.com"
+                                            disabled={!emailEnabled}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="smtpPort">SMTP 端口</Label>
+                                        <Input
+                                            id="smtpPort"
+                                            type="number"
+                                            min="1"
+                                            max="65535"
+                                            value={smtpPort}
+                                            onChange={(e) => {
+                                                setSmtpPort(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="587"
+                                            disabled={!emailEnabled}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            常用端口：25（无加密）、465（SSL）、587（TLS）
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="smtpUser">SMTP 用户名</Label>
+                                        <Input
+                                            id="smtpUser"
+                                            value={smtpUser}
+                                            onChange={(e) => {
+                                                setSmtpUser(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="user@example.com"
+                                            disabled={!emailEnabled}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="smtpPassword">SMTP 密码</Label>
+                                        <Input
+                                            id="smtpPassword"
+                                            type="password"
+                                            value={smtpPassword}
+                                            onChange={(e) => {
+                                                setSmtpPassword(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="••••••••"
+                                            disabled={!emailEnabled}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="smtpSecure">使用安全连接 (TLS/SSL)</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            推荐开启，确保邮件传输安全
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="smtpSecure"
+                                        checked={smtpSecure}
+                                        onCheckedChange={(checked) => {
+                                            setSmtpSecure(checked);
+                                            handleChange();
+                                        }}
+                                        disabled={!emailEnabled}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 发件人信息 */}
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-medium">发件人信息</h4>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="emailFromAddress">发件人邮箱</Label>
+                                        <Input
+                                            id="emailFromAddress"
+                                            type="email"
+                                            value={emailFromAddress}
+                                            onChange={(e) => {
+                                                setEmailFromAddress(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="noreply@example.com"
+                                            disabled={!emailEnabled}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="emailFromName">发件人名称</Label>
+                                        <Input
+                                            id="emailFromName"
+                                            value={emailFromName}
+                                            onChange={(e) => {
+                                                setEmailFromName(e.target.value);
+                                                handleChange();
+                                            }}
+                                            placeholder="SOURCE 系统"
+                                            disabled={!emailEnabled}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

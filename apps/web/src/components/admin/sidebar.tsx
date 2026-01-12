@@ -28,6 +28,9 @@ import {
     Layers,
     Droplets,
     FlaskConical,
+    FolderTree,
+    FileStack,
+    Clock,
     type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,6 +89,26 @@ const navGroups: NavGroup[] = [
                 title: '油墨管理',
                 href: '/admin/inks',
                 icon: Droplets,
+            },
+        ],
+    },
+    {
+        label: '内容管理',
+        items: [
+            {
+                title: '内容列表',
+                href: '/admin/contents',
+                icon: FileStack,
+            },
+            {
+                title: '审核队列',
+                href: '/admin/content-review',
+                icon: Clock,
+            },
+            {
+                title: '内容分类',
+                href: '/admin/content-categories',
+                icon: FolderTree,
             },
         ],
     },
