@@ -271,6 +271,227 @@ export const apikeyRouter = createTRPCRouter({
 
             return { success: true };
         }),
+
+    /**
+     * 管理员：为指定用户生成 API 密钥
+     */
+    adminCreate: adminProcedure
+        .input(
+            z.object({
+                userId: z.string(),
+                name: z.string().min(1).max(100),
+                role: z.enum(['ai-readonly', 'ai-full', 'plugin-free', 'plugin-paid']).default('ai-readonly'),
+                expiresInDays: z.number().min(1).max(365).optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { userId, name, role, expiresInDays } = input;
+
+            // 验证用户存在
+            const user = await ctx.prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, email: true, name: true, isActive: true },
+            });
+
+            if (!user) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: '用户不存在',
+                });
+            }
+
+            if (!user.isActive) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: '无法为已禁用的用户生成密钥',
+                });
+            }
+
+            // 生成密钥
+            const { key, keyHash, keyPrefix } = generateApiKey();
+
+            // 获取角色对应的权限
+            const scopes = ROLE_SCOPES[role] || [];
+
+            // 映射到数据库角色
+            const dbRole = ROLE_MAP[role] || ApiKeyRole.READONLY;
+
+            // 计算过期时间
+            const expiresAt = expiresInDays
+                ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+                : null;
+
+            // 获取默认限流策略
+            const defaultPolicy = await ctx.prisma.rateLimitPolicy.findFirst({
+                where: { name: '标准' },
+            });
+
+            // 创建密钥记录
+            const apiKey = await ctx.prisma.apiKey.create({
+                data: {
+                    keyHash,
+                    keyPrefix,
+                    name,
+                    scopes,
+                    role: dbRole,
+                    ownerUserId: userId,
+                    rateLimitPolicyId: defaultPolicy?.id,
+                    expiresAt,
+                },
+                select: {
+                    id: true,
+                    keyPrefix: true,
+                    name: true,
+                    scopes: true,
+                    role: true,
+                    expiresAt: true,
+                    createdAt: true,
+                },
+            });
+
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'CREATE',
+                targetType: AUDIT_TARGET_TYPES.API_KEY,
+                targetId: apiKey.id,
+                changes: {
+                    after: {
+                        keyPrefix: apiKey.keyPrefix,
+                        name: apiKey.name,
+                        role: apiKey.role,
+                        ownerUserId: userId,
+                    },
+                },
+                metadata: { forUserEmail: user.email },
+            });
+
+            // 返回完整密钥（仅此一次）
+            return {
+                ...apiKey,
+                key,
+                user: { id: user.id, email: user.email, name: user.name },
+            };
+        }),
+
+    /**
+     * 管理员：重新颁发 API 密钥（撤销旧密钥 + 生成新密钥）
+     */
+    adminReissue: adminProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const oldApiKey = await ctx.prisma.apiKey.findUnique({
+                where: { id: input.id },
+                include: {
+                    ownerUser: { select: { id: true, email: true, name: true, isActive: true } },
+                    rateLimitPolicy: true,
+                },
+            });
+
+            if (!oldApiKey) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'API 密钥不存在',
+                });
+            }
+
+            if (oldApiKey.ownerUser && !oldApiKey.ownerUser.isActive) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: '无法为已禁用的用户重新颁发密钥',
+                });
+            }
+
+            // 生成新密钥
+            const { key, keyHash, keyPrefix } = generateApiKey();
+
+            // 使用事务：撤销旧密钥 + 创建新密钥
+            const newApiKey = await ctx.prisma.$transaction(async (tx) => {
+                // 撤销旧密钥
+                await tx.apiKey.update({
+                    where: { id: input.id },
+                    data: { revokedAt: new Date() },
+                });
+
+                // 创建新密钥，继承旧密钥的配置
+                return tx.apiKey.create({
+                    data: {
+                        keyHash,
+                        keyPrefix,
+                        name: oldApiKey.name,
+                        scopes: oldApiKey.scopes,
+                        role: oldApiKey.role,
+                        ownerUserId: oldApiKey.ownerUserId,
+                        rateLimitPolicyId: oldApiKey.rateLimitPolicyId,
+                        expiresAt: oldApiKey.expiresAt,
+                    },
+                    select: {
+                        id: true,
+                        keyPrefix: true,
+                        name: true,
+                        scopes: true,
+                        role: true,
+                        expiresAt: true,
+                        createdAt: true,
+                    },
+                });
+            });
+
+            // 记录审计日志
+            await logAdminAction({
+                userId: ctx.session.user.id,
+                userEmail: ctx.session.user.email ?? '',
+                action: 'UPDATE',
+                targetType: AUDIT_TARGET_TYPES.API_KEY,
+                targetId: newApiKey.id,
+                changes: {
+                    before: { id: input.id, keyPrefix: oldApiKey.keyPrefix },
+                    after: { id: newApiKey.id, keyPrefix: newApiKey.keyPrefix },
+                },
+                metadata: {
+                    action: 'reissue',
+                    oldKeyId: input.id,
+                    ownerEmail: oldApiKey.ownerUser?.email,
+                },
+            });
+
+            return {
+                ...newApiKey,
+                key,
+                user: oldApiKey.ownerUser ? {
+                    id: oldApiKey.ownerUser.id,
+                    email: oldApiKey.ownerUser.email,
+                    name: oldApiKey.ownerUser.name,
+                } : null,
+            };
+        }),
+
+    /**
+     * 管理员：搜索用户（用于选择密钥所有者）
+     */
+    adminSearchUsers: adminProcedure
+        .input(z.object({ search: z.string().min(1) }))
+        .query(async ({ ctx, input }) => {
+            const users = await ctx.prisma.user.findMany({
+                where: {
+                    isActive: true,
+                    OR: [
+                        { email: { contains: input.search, mode: 'insensitive' } },
+                        { name: { contains: input.search, mode: 'insensitive' } },
+                    ],
+                },
+                take: 10,
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                },
+                orderBy: { email: 'asc' },
+            });
+
+            return users;
+        }),
 });
 
 /**
