@@ -21,6 +21,8 @@ import { paperTypeRouter } from './paper-type';
 import { inkRouter } from './ink';
 import { recipeRouter } from './recipe';
 import { systemConfigRouter } from './system-config';
+import { contentCategoryRouter } from './content-category';
+import { contentRouter, contentAdminRouter } from './content';
 
 export const appRouter = createTRPCRouter({
     color: colorRouter,
@@ -39,6 +41,9 @@ export const appRouter = createTRPCRouter({
     ink: inkRouter,
     recipe: recipeRouter,
     systemConfig: systemConfigRouter,
+    contentCategory: contentCategoryRouter,
+    content: contentRouter,
+    contentAdmin: contentAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;

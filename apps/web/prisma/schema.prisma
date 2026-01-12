@@ -50,6 +50,10 @@ model User {
   
   // 用户作品
   works         UserWork[]
+  
+  // ColLab 内容系统
+  contents      Content[]
+  contentReviews ContentReview[]
 
   // 账户状态
   isActive      Boolean   @default(true)
@@ -338,6 +342,9 @@ model Color {
   
   // 关联 - 用户作品
   userWorkColors       UserWorkColor[]
+  
+  // 关联 - ColLab 内容
+  contentColors        ContentColor[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -424,6 +431,9 @@ model ColorBook {
   
   // 引用此色彩簿的作品
   works         UserWork[]
+  
+  // ColLab 内容关联
+  contents      Content[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -1345,4 +1355,189 @@ enum ImportJobStatus {
   PROCESSING  // 处理中
   COMPLETED   // 完成
   FAILED      // 失败
+}
+
+// =============================================================================
+// ColLab 内容系统
+// =============================================================================
+
+// 内容类型
+enum ContentType {
+  WORK      // 作品
+  TUTORIAL  // 教程
+  ARTICLE   // 文章
+}
+
+// 内容状态
+enum ContentStatus {
+  DRAFT     // 草稿（默认）
+  PENDING   // 待审核
+  PUBLISHED // 已发布
+  REJECTED  // 已拒绝
+  ARCHIVED  // 已归档
+}
+
+// 推荐等级
+enum FeaturedLevel {
+  NONE        // 普通内容
+  EDITOR_PICK // 编辑推荐
+  HOMEPAGE    // 首页推荐（网站首页展示）
+  HERO        // 首焦图推荐（ColLab 顶部轮播）
+}
+
+// 审核操作类型
+enum ReviewAction {
+  APPROVE        // 通过
+  REJECT         // 拒绝
+  REQUEST_CHANGE // 退回修改
+  SET_FEATURED   // 设置推荐
+  UNSET_FEATURED // 取消推荐
+  ARCHIVE        // 归档
+  RESTORE        // 恢复
+}
+
+// 统一内容表
+model Content {
+  id              String         @id @default(cuid())
+  contentId       String         @unique  // 唯一编号，如 "CL-W-0001"
+  
+  // 内容类型
+  contentType     ContentType
+  
+  // 基本信息
+  title           String
+  summary         String?        @db.Text  // 摘要
+  body            String         @db.Text  // 正文（Markdown/HTML）
+  
+  // 媒体
+  coverImageUrl   String                   // 封面图
+  galleryImages   String[]                 // 图片集（作品/教程适用）
+  externalUrl     String?                  // 外部链接
+  
+  // 状态与推荐
+  status          ContentStatus  @default(DRAFT)
+  featuredLevel   FeaturedLevel  @default(NONE)
+  
+  // 作者
+  authorId        String
+  author          User           @relation(fields: [authorId], references: [id])
+  
+  // 分类
+  categoryId      String?
+  category        ContentCategory? @relation(fields: [categoryId], references: [id])
+  
+  // 标签
+  tags            String[]
+  
+  // 关联 - 颜色
+  colors          ContentColor[]
+  
+  // 关联 - 色彩簿（作品适用）
+  colorBookId     String?
+  colorBook       ColorBook?     @relation(fields: [colorBookId], references: [id])
+  
+  // 统计
+  viewCount       Int            @default(0)
+  likeCount       Int            @default(0)
+  commentCount    Int            @default(0)
+  
+  // 审核信息
+  publishedAt     DateTime?               // 首次发布时间
+  reviewedAt      DateTime?               // 最近审核时间
+  reviewedBy      String?                 // 审核人
+  rejectReason    String?                 // 拒绝原因
+  
+  // 审核记录
+  reviews         ContentReview[]
+  
+  // 时间戳
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([contentId])
+  @@index([contentType, status])
+  @@index([status, featuredLevel])
+  @@index([authorId, status])
+  @@index([categoryId, status])
+  @@index([publishedAt])
+}
+
+// 多级分类
+model ContentCategory {
+  id              String         @id @default(cuid())
+  name            String                   // 分类名称
+  slug            String         @unique   // URL 标识
+  description     String?                  // 描述
+  icon            String?                  // 图标（Lucide icon name）
+  
+  // 层级
+  parentId        String?
+  parent          ContentCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children        ContentCategory[] @relation("CategoryHierarchy")
+  level           Int            @default(0)  // 层级深度（根节点为 0）
+  
+  // 适用的内容类型（可多选）
+  contentTypes    ContentType[]
+  
+  // 管理
+  order           Int            @default(0)
+  isActive        Boolean        @default(true)
+  
+  // 关联
+  contents        Content[]
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive, order])
+}
+
+// 内容-颜色关联
+model ContentColor {
+  id              String         @id @default(cuid())
+  
+  contentId       String
+  content         Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  colorId         String
+  color           Color          @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  
+  note            String?                  // 颜色在内容中的说明
+  order           Int            @default(0)
+  
+  createdAt       DateTime       @default(now())
+
+  @@unique([contentId, colorId])
+  @@index([contentId])
+  @@index([colorId])
+}
+
+// 审核记录
+model ContentReview {
+  id              String         @id @default(cuid())
+  
+  // 内容
+  contentId       String
+  content         Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  // 审核人
+  reviewerId      String
+  reviewer        User           @relation(fields: [reviewerId], references: [id])
+  
+  // 审核操作
+  action          ReviewAction
+  
+  // 审核详情
+  reason          String?                  // 原因（拒绝/退回时必填）
+  note            String?                  // 内部备注
+  
+  // 审核前状态
+  previousStatus  ContentStatus
+  
+  createdAt       DateTime       @default(now())
+
+  @@index([contentId])
+  @@index([reviewerId, createdAt])
 }
