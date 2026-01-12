@@ -115,10 +115,10 @@ export function ColorBookColorList({ entries }: Props) {
     // 根据视图模式设置每页数量
     const pageSize = useMemo(() => {
         switch (viewMode) {
-            case 'cards': return 12;
-            case 'minimal': return 32;
-            case 'list': return 20;
-            default: return 12;
+            case 'cards': return 30;      // 5列 x 6行
+            case 'minimal': return 32;    // 8列 x 4行
+            case 'list': return 20;       // 2列 x 10行
+            default: return 30;
         }
     }, [viewMode]);
 
@@ -461,33 +461,12 @@ export function ColorBookColorList({ entries }: Props) {
                 </div>
             </div>
 
-            {/* 结果统计 */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>
-                    {hasFilters ? (
-                        <>找到 <strong className="text-gray-900">{filteredColors.length}</strong> 个结果</>
-                    ) : (
-                        <>共 <strong className="text-gray-900">{entries.length}</strong> 种色彩</>
-                    )}
-                    {totalPages > 1 && (
-                        <span className="ml-2">
-                            · 第 <strong className="text-gray-900">{currentPage}</strong> / {totalPages} 页
-                        </span>
-                    )}
-                </span>
-                <span className="text-xs">
-                    {viewMode === 'cards' && '卡片视图'}
-                    {viewMode === 'minimal' && '极简视图'}
-                    {viewMode === 'list' && '列表视图'}
-                </span>
-            </div>
-
             {/* 色彩列表 */}
             {filteredColors.length > 0 ? (
                 <>
                     {/* 卡片视图 */}
                     {viewMode === 'cards' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
                             {paginatedColors.map((entry) => (
                                 <StandardColorCard
                                     key={entry.id}

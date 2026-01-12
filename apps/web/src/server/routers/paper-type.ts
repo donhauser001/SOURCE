@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { createTRPCRouter, publicProcedure, adminProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { logAdminAction } from '@/lib/admin-audit';
-import { PaperCategory } from '@prisma/client';
+import { PaperCategory, Prisma } from '@prisma/client';
 
 // ============================================================================
 // Validation Schemas
@@ -275,10 +275,14 @@ export const paperTypeRouter = createTRPCRouter({
         }
       }
 
+      // 处理 suitableFor 的 null 值，Prisma Json 类型需要使用 Prisma.DbNull
+      const { suitableFor, ...restData } = data;
+
       const paperType = await ctx.prisma.paperTypeOption.update({
         where: { id },
         data: {
-          ...data,
+          ...restData,
+          suitableFor: suitableFor === null ? Prisma.DbNull : suitableFor,
           suppliers: supplierIds !== undefined
             ? {
                 set: [], // 先清空

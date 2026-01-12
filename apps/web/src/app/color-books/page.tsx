@@ -18,6 +18,7 @@ async function getColorBooks() {
         where: { status: 'ACTIVE' },
         orderBy: { createdAt: 'desc' },
         include: {
+            category: true,
             _count: {
                 select: { entries: true },
             },
@@ -37,7 +38,7 @@ export default async function ColorBooksPage() {
         <>
             <SiteHeader />
             <main className="min-h-screen pt-16 bg-background">
-                <div className="max-w-6xl mx-auto px-6 py-12">
+                <div className="max-w-[1600px] mx-auto px-6 py-12">
                     {/* 页面标题 */}
                     <header className="mb-12 text-center">
                         <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">

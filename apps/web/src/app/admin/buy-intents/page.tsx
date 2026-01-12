@@ -62,6 +62,9 @@ async function getTopSkus(limit: number = 10) {
             color: {
                 select: { colorId: true, name: true },
             },
+            paperType: {
+                select: { code: true, name: true },
+            },
         },
     });
 
@@ -86,6 +89,9 @@ async function getRecentIntents(limit: number = 20) {
                 include: {
                     color: {
                         select: { colorId: true, name: true },
+                    },
+                    paperType: {
+                        select: { code: true, name: true },
                     },
                 },
             },
@@ -189,7 +195,7 @@ export default async function BuyIntentsPage() {
                                                     {item.sku?.color.colorId || '未知'}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">
-                                                    {item.sku?.color.name} / {PAPER_TYPE_LABELS[item.sku?.paperType || ''] || item.sku?.paperType}
+                                                    {item.sku?.color.name} / {PAPER_TYPE_LABELS[item.sku?.paperType?.code || ''] || item.sku?.paperType?.name}
                                                 </div>
                                             </div>
                                         </div>
@@ -224,7 +230,7 @@ export default async function BuyIntentsPage() {
                                     >
                                         <div>
                                             <div className="font-medium">
-                                                {intent.proofingPack.color.colorId} / {PAPER_TYPE_LABELS[intent.proofingPack.paperType] || intent.proofingPack.paperType}
+                                                {intent.proofingPack.color.colorId} / {PAPER_TYPE_LABELS[intent.proofingPack.paperType?.code || ''] || intent.proofingPack.paperType?.name}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                                 {intent.user?.email || '匿名用户'}

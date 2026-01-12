@@ -265,6 +265,7 @@ export async function generateRecommendations(
         include: {
             color: true,
             batch: true,
+            paperType: true,
         },
     });
 
@@ -281,7 +282,7 @@ export async function generateRecommendations(
 
     // 为每种纸张计算得分
     for (const paperType of paperTypes) {
-        const relevantProfiles = paperProfiles.filter((p) => p.paperType === paperType);
+        const relevantProfiles = paperProfiles.filter((p) => p.paperType.code === paperType);
         const relevantAuditNotes = auditNotes.filter((n) => relevantProfiles.some((p) => p.id === n.targetId));
 
         // 收集证据

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,7 @@ import {
     Palette,
     ExternalLink,
 } from 'lucide-react';
+import { PartnerColorGrid } from './partner-color-grid';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -133,7 +134,7 @@ export default async function PartnerPage({ params }: Props) {
         <>
             <SiteHeader />
             <main className="min-h-screen pt-16 bg-background">
-                <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="max-w-[1600px] mx-auto px-6 py-8">
                     {/* 顶部导航 */}
                     <div className="mb-6">
                         <Link href="/partners">
@@ -194,73 +195,49 @@ export default async function PartnerPage({ params }: Props) {
                         {/* 左侧：详细信息 */}
                         <div className="md:col-span-2 space-y-6">
                             {/* 参与的颜色 */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Palette className="h-5 w-5" />
-                                        参与的颜色
-                                    </CardTitle>
-                                    <CardDescription>
-                                        共参与 {partner._count.colorParticipations} 个颜色项目
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {Object.keys(participationsByRole).length > 0 ? (
-                                        <div className="space-y-6">
-                                            {Object.entries(participationsByRole).map(([role, participations]) => (
-                                                <div key={role}>
-                                                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-                                                        {roleLabels[role] || role}（{participations.length}）
-                                                    </h4>
-                                                    <div className="grid gap-2 sm:grid-cols-2">
-                                                        {participations.map((p) => (
-                                                            <Link
-                                                                key={p.id}
-                                                                href={`/color/${p.color.colorId}`}
-                                                                className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                                                            >
-                                                                {/* 色块 */}
-                                                                <div
-                                                                    className="w-10 h-10 rounded-lg border shadow-sm shrink-0"
-                                                                    style={{
-                                                                        backgroundColor: `lab(${p.color.labL}% ${p.color.labA} ${p.color.labB})`,
-                                                                    }}
-                                                                />
-                                                                <div className="min-w-0">
-                                                                    <div className="font-medium truncate">
-                                                                        {p.color.name}
-                                                                    </div>
-                                                                    <div className="text-xs text-muted-foreground font-mono">
-                                                                        {p.color.colorId}
-                                                                    </div>
-                                                                </div>
-                                                            </Link>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground text-center py-8">
-                                            暂无参与记录
-                                        </p>
-                                    )}
+                            <Card className="rounded-3xl border-black/10 shadow-none overflow-hidden">
+                                <CardContent className="p-6 space-y-5">
+                                    {/* 标题区 */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Palette className="h-5 w-5 text-gray-400" />
+                                        <h3 className="font-semibold text-gray-900">参与的颜色</h3>
+                                        {Object.keys(participationsByRole).map((role) => (
+                                            <span
+                                                key={role}
+                                                className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600"
+                                            >
+                                                {roleLabels[role] || role}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    {/* 颜色网格 */}
+                                    <PartnerColorGrid
+                                        colors={partner.colorParticipations.map((p) => ({
+                                            id: p.color.id,
+                                            colorId: p.color.colorId,
+                                            name: p.color.name,
+                                            labL: p.color.labL,
+                                            labA: p.color.labA,
+                                            labB: p.color.labB,
+                                        }))}
+                                        pageSize={24}
+                                    />
                                 </CardContent>
                             </Card>
 
                             {/* 资质认证 */}
                             {partner.certifications.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Award className="h-5 w-5" />
-                                            资质认证
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
+                                <Card className="rounded-3xl border-black/10 shadow-none overflow-hidden">
+                                    <CardContent className="p-6 space-y-5">
+                                        {/* 标题区 */}
+                                        <div className="flex items-center gap-2">
+                                            <Award className="h-5 w-5 text-gray-400" />
+                                            <h3 className="font-semibold text-gray-900">资质认证</h3>
+                                        </div>
+                                        {/* 认证列表 */}
                                         <div className="flex flex-wrap gap-2">
                                             {partner.certifications.map((cert, idx) => (
-                                                <Badge key={idx} variant="outline">
+                                                <Badge key={idx} variant="outline" className="rounded-full">
                                                     {cert}
                                                 </Badge>
                                             ))}
@@ -272,11 +249,12 @@ export default async function PartnerPage({ params }: Props) {
 
                         {/* 右侧：联系信息 */}
                         <div className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>联系方式</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
+                            <Card className="rounded-3xl border-black/10 shadow-none overflow-hidden">
+                                <CardContent className="p-6 space-y-5">
+                                    {/* 标题区 */}
+                                    <h3 className="font-semibold text-gray-900">联系方式</h3>
+                                    {/* 联系信息 */}
+                                    <div className="space-y-4">
                                     {partner.region && (
                                         <div className="flex items-start gap-3">
                                             <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -344,28 +322,31 @@ export default async function PartnerPage({ params }: Props) {
                                             </div>
                                         </div>
                                     )}
+                                    </div>
                                 </CardContent>
                             </Card>
 
                             {/* 统计 */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>统计</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">参与颜色</span>
-                                        <span className="font-medium">{partner._count.colorParticipations}</span>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">执行批次</span>
-                                        <span className="font-medium">{partner._count.batches}</span>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">测试报告</span>
-                                        <span className="font-medium">{partner._count.testReports}</span>
+                            <Card className="rounded-3xl border-black/10 shadow-none overflow-hidden">
+                                <CardContent className="p-6 space-y-5">
+                                    {/* 标题区 */}
+                                    <h3 className="font-semibold text-gray-900">统计</h3>
+                                    {/* 统计数据 */}
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">参与颜色</span>
+                                            <span className="font-medium">{partner._count.colorParticipations}</span>
+                                        </div>
+                                        <Separator />
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">执行批次</span>
+                                            <span className="font-medium">{partner._count.batches}</span>
+                                        </div>
+                                        <Separator />
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">测试报告</span>
+                                            <span className="font-medium">{partner._count.testReports}</span>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>

@@ -206,7 +206,6 @@ export default async function AdminDashboard() {
                             {recentPartners.map((partner) => (
                                 <Link
                                     key={partner.id}
-                                    // @ts-expect-error - Next.js 15 strict route types
                                     href={`/admin/partners/${partner.id}/edit`}
                                     className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors"
                                 >

@@ -45,13 +45,19 @@ export const proofingPackRouter = createTRPCRouter({
                             labB: true,
                         },
                     },
+                    paperType: true,
                 },
             });
         } else if (input.colorId && input.paperType) {
-            // 先找到 color
-            const color = await ctx.prisma.color.findUnique({
-                where: { colorId: input.colorId },
-            });
+            // 先找到 color 和 paperType
+            const [color, paperTypeOption] = await Promise.all([
+                ctx.prisma.color.findUnique({
+                    where: { colorId: input.colorId },
+                }),
+                ctx.prisma.paperTypeOption.findUnique({
+                    where: { code: input.paperType },
+                }),
+            ]);
 
             if (!color) {
                 throw new TRPCError({
@@ -60,11 +66,18 @@ export const proofingPackRouter = createTRPCRouter({
                 });
             }
 
+            if (!paperTypeOption) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: `纸型不存在: ${input.paperType}`,
+                });
+            }
+
             proofingPack = await ctx.prisma.proofingPack.findUnique({
                 where: {
-                    colorId_paperType: {
+                    colorId_paperTypeId: {
                         colorId: color.id,
-                        paperType: input.paperType,
+                        paperTypeId: paperTypeOption.id,
                     },
                 },
                 include: {
@@ -78,6 +91,7 @@ export const proofingPackRouter = createTRPCRouter({
                             labB: true,
                         },
                     },
+                    paperType: true,
                 },
             });
         }
@@ -96,7 +110,7 @@ export const proofingPackRouter = createTRPCRouter({
      * 获取打样包列表
      */
     list: publicProcedure.input(listProofingPacksSchema).query(async ({ ctx, input }) => {
-        const { colorId, paperType, isActive, limit, cursor } = input;
+        const { colorId, paperTypeId, isActive, limit, cursor } = input;
 
         // 构建查询条件
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,8 +126,8 @@ export const proofingPackRouter = createTRPCRouter({
             }
         }
 
-        if (paperType) {
-            where.paperType = paperType;
+        if (paperTypeId) {
+            where.paperTypeId = paperTypeId;
         }
 
         if (isActive !== undefined) {
@@ -126,7 +140,7 @@ export const proofingPackRouter = createTRPCRouter({
             cursor: cursor ? { id: cursor } : undefined,
             orderBy: [
                 { color: { colorId: 'asc' } },
-                { paperType: 'asc' },
+                { paperType: { order: 'asc' } },
             ],
             include: {
                 color: {
@@ -204,10 +218,15 @@ export const proofingPackRouter = createTRPCRouter({
     create: adminProcedure
         .input(createProofingPackSchema)
         .mutation(async ({ ctx, input }) => {
-            // 验证 color 存在
-            const color = await ctx.prisma.color.findUnique({
-                where: { id: input.colorId },
-            });
+            // 验证 color 和 paperType 存在
+            const [color, paperTypeOption] = await Promise.all([
+                ctx.prisma.color.findUnique({
+                    where: { id: input.colorId },
+                }),
+                ctx.prisma.paperTypeOption.findUnique({
+                    where: { id: input.paperTypeId },
+                }),
+            ]);
 
             if (!color) {
                 throw new TRPCError({
@@ -216,12 +235,19 @@ export const proofingPackRouter = createTRPCRouter({
                 });
             }
 
+            if (!paperTypeOption) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: '纸型不存在',
+                });
+            }
+
             // 检查是否已存在相同的 SKU
             const existing = await ctx.prisma.proofingPack.findUnique({
                 where: {
-                    colorId_paperType: {
+                    colorId_paperTypeId: {
                         colorId: input.colorId,
-                        paperType: input.paperType,
+                        paperTypeId: input.paperTypeId,
                     },
                 },
             });
@@ -236,7 +262,7 @@ export const proofingPackRouter = createTRPCRouter({
             const proofingPack = await ctx.prisma.proofingPack.create({
                 data: {
                     colorId: input.colorId,
-                    paperType: input.paperType,
+                    paperTypeId: input.paperTypeId,
                     price: input.price,
                     externalUrl: input.externalUrl,
                     isActive: input.isActive ?? true,
@@ -244,6 +270,9 @@ export const proofingPackRouter = createTRPCRouter({
                 include: {
                     color: {
                         select: { colorId: true, name: true },
+                    },
+                    paperType: {
+                        select: { code: true, name: true },
                     },
                 },
             });
@@ -258,7 +287,7 @@ export const proofingPackRouter = createTRPCRouter({
                 changes: {
                     after: {
                         colorId: color.colorId,
-                        paperType: proofingPack.paperType,
+                        paperType: proofingPack.paperType.code,
                         price: proofingPack.price,
                     },
                 },
@@ -323,7 +352,10 @@ export const proofingPackRouter = createTRPCRouter({
             // 验证存在
             const existing = await ctx.prisma.proofingPack.findUnique({
                 where: { id: input.id },
-                include: { color: { select: { colorId: true } } },
+                include: {
+                    color: { select: { colorId: true } },
+                    paperType: { select: { code: true } },
+                },
             });
 
             if (!existing) {
@@ -374,7 +406,7 @@ export const proofingPackRouter = createTRPCRouter({
                 changes: {
                     before: {
                         colorId: existing.color.colorId,
-                        paperType: existing.paperType,
+                        paperType: existing.paperType.code,
                     },
                 },
             });
@@ -426,10 +458,18 @@ export const proofingPackRouter = createTRPCRouter({
 
         // 按纸张类型统计
         const byPaperType = await ctx.prisma.proofingPack.groupBy({
-            by: ['paperType'],
+            by: ['paperTypeId'],
             _count: { _all: true },
             where: { isActive: true },
         });
+
+        // 获取纸型名称
+        const paperTypeIds = byPaperType.map(item => item.paperTypeId);
+        const paperTypes = await ctx.prisma.paperTypeOption.findMany({
+            where: { id: { in: paperTypeIds } },
+            select: { id: true, code: true, name: true },
+        });
+        const paperTypeMap = new Map(paperTypes.map(p => [p.id, p]));
 
         return {
             total,
@@ -437,7 +477,9 @@ export const proofingPackRouter = createTRPCRouter({
             inactive,
             totalIntents,
             byPaperType: byPaperType.map(item => ({
-                paperType: item.paperType,
+                paperTypeId: item.paperTypeId,
+                paperType: paperTypeMap.get(item.paperTypeId)?.code ?? 'UNKNOWN',
+                paperTypeName: paperTypeMap.get(item.paperTypeId)?.name ?? '未知',
                 count: item._count._all,
             })),
         };

@@ -193,7 +193,7 @@ export function ColorForm({ initialData, mode }: Props) {
                                             <div className="flex items-center gap-2">
                                                 <span
                                                     className="w-3 h-3 rounded-full"
-                                                    style={{ backgroundColor: COLOR_FAMILY_COLORS[value] || '#6B7280' }}
+                                                    style={{ backgroundColor: COLOR_FAMILY_COLORS[value as keyof typeof COLOR_FAMILY_COLORS] || '#6B7280' }}
                                                 />
                                                 {label}
                                             </div>

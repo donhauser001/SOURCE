@@ -11,25 +11,17 @@ import { SiteHeader } from '@/components/site-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Book, Calendar, Palette, ArrowLeft } from 'lucide-react';
-import type { ColorBookCategory } from '@prisma/client';
 import { ColorBookColorList } from './color-book-color-list';
 
 interface Props {
     params: Promise<{ slug: string }>;
 }
 
-const CATEGORY_LABELS: Record<ColorBookCategory, string> = {
-    CLASSIC: '经典系列',
-    SEASONAL: '季节系列',
-    THEMED: '主题系列',
-    REGIONAL: '地域系列',
-    CUSTOM: '定制系列',
-};
-
 async function getColorBook(slug: string) {
     const book = await prisma.colorBook.findUnique({
         where: { slug },
         include: {
+            category: true,
             entries: {
                 orderBy: { order: 'asc' },
                 include: {
@@ -88,7 +80,7 @@ export default async function ColorBookPage({ params }: Props) {
             <SiteHeader />
             <main className="min-h-screen pt-16 bg-background">
                 {/* 返回按钮 */}
-                <div className="max-w-6xl mx-auto px-6 pt-6">
+                <div className="max-w-[1600px] mx-auto px-6 pt-6">
                     <Link href="/color-books">
                         <Button variant="ghost" size="sm" className="gap-2">
                             <ArrowLeft className="w-4 h-4" />
@@ -98,7 +90,7 @@ export default async function ColorBookPage({ params }: Props) {
                 </div>
 
                 {/* 头部区域 */}
-                <header className="max-w-6xl mx-auto px-6 py-8">
+                <header className="max-w-[1600px] mx-auto px-6 py-8">
                     <div className="flex flex-col md:flex-row gap-8">
                         {/* 封面 */}
                         <div className="w-full md:w-72 flex-shrink-0">
@@ -121,7 +113,7 @@ export default async function ColorBookPage({ params }: Props) {
                         {/* 信息 */}
                         <div className="flex-1">
                             <Badge variant="secondary" className="mb-4">
-                                {CATEGORY_LABELS[book.category]}
+                                {book.category.name}
                             </Badge>
 
                             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -161,7 +153,7 @@ export default async function ColorBookPage({ params }: Props) {
                 </header>
 
                 {/* 色彩列表 - 使用客户端组件支持搜索和筛选 */}
-                <section className="max-w-6xl mx-auto px-6 pb-16">
+                <section className="max-w-[1600px] mx-auto px-6 pb-16">
                     <ColorBookColorList entries={book.entries} />
                 </section>
             </main>

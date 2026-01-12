@@ -101,6 +101,7 @@ export const AUDIT_TARGET_TYPES = {
     ACTIVATION_CODE: 'activationCode',
     AUDIT_NOTE: 'auditNote',
     PAPER_PROFILE: 'paperProfile',
+    SYSTEM_CONFIG: 'systemConfig',
 } as const;
 
 export type AuditTargetType = typeof AUDIT_TARGET_TYPES[keyof typeof AUDIT_TARGET_TYPES];

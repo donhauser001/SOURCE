@@ -23,15 +23,6 @@ import {
 } from '@/components/ui/select';
 import { trpc } from '@/lib/trpc';
 
-// 纸张类型选项
-const PAPER_TYPE_OPTIONS = [
-    { value: 'PREMIUM_MATTE', label: '高阶映画' },
-    { value: 'UNCOATED', label: '纯质纸' },
-    { value: 'COATED', label: '铜版纸' },
-    { value: 'OFFSET', label: '双胶纸' },
-    { value: 'LIGHTWEIGHT', label: '轻型纸' },
-];
-
 export default function NewProofingPackPage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,13 +30,18 @@ export default function NewProofingPackPage() {
 
     // 表单状态
     const [colorId, setColorId] = useState('');
-    const [paperType, setPaperType] = useState('');
+    const [paperTypeId, setPaperTypeId] = useState('');
     const [price, setPrice] = useState('');
     const [externalUrl, setExternalUrl] = useState('');
 
     // 获取色彩列表用于选择
     const { data: colors, isLoading: colorsLoading } = trpc.color.list.useQuery({
         limit: 200,
+    });
+
+    // 获取纸型列表用于选择
+    const { data: paperTypes, isLoading: paperTypesLoading } = trpc.paperType.list.useQuery({
+        includeInactive: false,
     });
 
     // 创建 mutation
@@ -63,7 +59,7 @@ export default function NewProofingPackPage() {
         e.preventDefault();
         setError(null);
 
-        if (!colorId || !paperType || !price) {
+        if (!colorId || !paperTypeId || !price) {
             setError('请填写必填字段');
             return;
         }
@@ -78,7 +74,7 @@ export default function NewProofingPackPage() {
 
         createMutation.mutate({
             colorId,
-            paperType: paperType as 'PREMIUM_MATTE' | 'UNCOATED' | 'COATED' | 'OFFSET' | 'LIGHTWEIGHT',
+            paperTypeId,
             price: priceInCents,
             externalUrl: externalUrl || null,
         });
@@ -127,14 +123,14 @@ export default function NewProofingPackPage() {
                         {/* 纸张类型 */}
                         <div className="space-y-2">
                             <Label htmlFor="paperType">纸张类型 *</Label>
-                            <Select value={paperType} onValueChange={setPaperType}>
+                            <Select value={paperTypeId} onValueChange={setPaperTypeId}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="选择纸张类型" />
+                                    <SelectValue placeholder={paperTypesLoading ? '加载中...' : '选择纸张类型'} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {PAPER_TYPE_OPTIONS.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
+                                    {paperTypes?.map((pt) => (
+                                        <SelectItem key={pt.id} value={pt.id}>
+                                            {pt.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

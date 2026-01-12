@@ -111,7 +111,7 @@ export default async function ColorsPage() {
         <>
             <SiteHeader />
             <main className="min-h-screen pt-16 bg-background">
-                <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="max-w-[1600px] mx-auto px-6 py-8">
                     {/* 简洁标题 */}
                     <header className="mb-8">
                         <h1 className="text-4xl font-bold tracking-tight text-foreground">色彩库</h1>

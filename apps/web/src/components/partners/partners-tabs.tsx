@@ -405,32 +405,12 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
                 </div>
             </div>
 
-            {/* 结果统计 */}
-            <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>
-                    {hasFilters ? (
-                        <>找到 <strong className="text-gray-900">{filteredPartners.length}</strong> 个结果</>
-                    ) : (
-                        <>共 <strong className="text-gray-900">{partners.length}</strong> 个合作者</>
-                    )}
-                    {totalPages > 1 && (
-                        <span className="ml-2">
-                            · 第 <strong className="text-gray-900">{currentPage}</strong> / {totalPages} 页
-                        </span>
-                    )}
-                </span>
-                <span className="text-xs">
-                    {viewMode === 'cards' && '卡片视图'}
-                    {viewMode === 'list' && '列表视图'}
-                </span>
-            </div>
-
             {/* 合作者列表 */}
             {filteredPartners.length > 0 ? (
                 <>
                     {/* 卡片视图 */}
                     {viewMode === 'cards' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                             {paginatedPartners.map((partner) => (
                                 <PartnerCard key={partner.id} partner={partner} />
                             ))}

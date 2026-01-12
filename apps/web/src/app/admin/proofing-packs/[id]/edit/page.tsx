@@ -172,7 +172,7 @@ export default function EditProofingPackPage() {
                     <div>
                         <Label className="text-muted-foreground">纸张类型</Label>
                         <div className="font-medium">
-                            {PAPER_TYPE_LABELS[pack.paperType] || pack.paperType}
+                            {PAPER_TYPE_LABELS[pack.paperType?.code || ''] || pack.paperType?.name}
                         </div>
                     </div>
                 </CardContent>

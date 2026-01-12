@@ -44,7 +44,6 @@ export default async function BatchDetailPage({ params }: PageProps) {
             paperProfiles: {
                 select: {
                     id: true,
-                    paperType: true,
                     recommendation: true,
                     color: {
                         select: {
@@ -52,9 +51,14 @@ export default async function BatchDetailPage({ params }: PageProps) {
                             name: true,
                         },
                     },
+                    paperType: {
+                        select: {
+                            code: true,
+                            name: true,
+                        },
+                    },
                 },
                 orderBy: { paperType: { order: 'asc' } },
-                include: { paperType: true },
             },
         },
     });
@@ -153,10 +157,6 @@ export default async function BatchDetailPage({ params }: PageProps) {
                         </div>
                         <div>{new Date(batch.createdAt).toLocaleString('zh-CN')}</div>
                     </div>
-                    <div>
-                        <div className="text-sm text-muted-foreground mb-1">更新时间</div>
-                        <div>{new Date(batch.updatedAt).toLocaleString('zh-CN')}</div>
-                    </div>
                     {batch.notes && (
                         <div className="col-span-2">
                             <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
@@ -218,7 +218,7 @@ export default async function BatchDetailPage({ params }: PageProps) {
                                     >
                                         <div>
                                             <div className="font-medium">{profile.color.colorId}</div>
-                                            <div className="text-sm text-muted-foreground">{profile.paperType}</div>
+                                            <div className="text-sm text-muted-foreground">{profile.paperType.name}</div>
                                         </div>
                                         <Badge variant="outline">{profile.recommendation}</Badge>
                                     </div>

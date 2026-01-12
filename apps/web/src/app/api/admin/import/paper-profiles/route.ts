@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { logAdminAction, AUDIT_TARGET_TYPES } from '@/lib/admin-audit';
 
 // 有效的枚举值
 const PAPER_TYPES = ['PREMIUM_MATTE', 'UNCOATED', 'COATED', 'OFFSET', 'LIGHTWEIGHT'] as const;
@@ -80,13 +81,23 @@ export async function POST(request: NextRequest) {
             errors: [] as string[],
         };
 
-        // 预先获取所有涉及的 color
+        // 预先获取所有涉及的 color 和 paperType
         const colorIds = [...new Set(paperProfiles.map(p => p.colorId))];
-        const colors = await prisma.color.findMany({
-            where: { colorId: { in: colorIds } },
-            select: { id: true, colorId: true },
-        });
+        const paperTypeCodes = [...new Set(paperProfiles.map(p => p.paperType))];
+        
+        const [colors, paperTypes] = await Promise.all([
+            prisma.color.findMany({
+                where: { colorId: { in: colorIds } },
+                select: { id: true, colorId: true },
+            }),
+            prisma.paperTypeOption.findMany({
+                where: { code: { in: paperTypeCodes } },
+                select: { id: true, code: true },
+            }),
+        ]);
+        
         const colorMap = new Map(colors.map(c => [c.colorId, c.id]));
+        const paperTypeMap = new Map(paperTypes.map(p => [p.code, p.id]));
 
         // 逐条导入
         for (const profile of paperProfiles) {
@@ -99,11 +110,19 @@ export async function POST(request: NextRequest) {
                     continue;
                 }
 
+                // 检查 paperType 是否存在
+                const paperTypeId = paperTypeMap.get(profile.paperType);
+                if (!paperTypeId) {
+                    results.failed++;
+                    results.errors.push(`${profile.colorId}/${profile.paperType}: 纸型不存在`);
+                    continue;
+                }
+
                 // 检查是否已存在相同的 paperProfile
                 const existing = await prisma.paperProfile.findFirst({
                     where: {
                         colorId: colorDbId,
-                        paperType: profile.paperType,
+                        paperTypeId: paperTypeId,
                     },
                 });
 
@@ -128,7 +147,7 @@ export async function POST(request: NextRequest) {
                     await prisma.paperProfile.create({
                         data: {
                             colorId: colorDbId,
-                            paperType: profile.paperType,
+                            paperTypeId: paperTypeId,
                             labL: profile.labL,
                             labA: profile.labA,
                             labB: profile.labB,
@@ -151,8 +170,22 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // TODO: 记录审计日志（需要先添加 AuditLog 模型）
-        // 暂时跳过审计日志记录
+        // 记录审计日志
+        if (results.success > 0) {
+            await logAdminAction({
+                userId: session.user.id,
+                userEmail: session.user.email ?? '',
+                action: 'IMPORT',
+                targetType: AUDIT_TARGET_TYPES.PAPER_PROFILE,
+                targetId: null,
+                metadata: {
+                    total: paperProfiles.length,
+                    success: results.success,
+                    failed: results.failed,
+                    colorIds: colorIds,
+                },
+            });
+        }
 
         return NextResponse.json({
             ok: true,

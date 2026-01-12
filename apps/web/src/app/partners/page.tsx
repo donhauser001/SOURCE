@@ -49,7 +49,7 @@ export default async function PartnersPage() {
         <>
             <SiteHeader />
             <main className="min-h-screen pt-16 bg-background">
-                <div className="container mx-auto px-4 py-8 max-w-6xl">
+                <div className="max-w-[1600px] mx-auto px-6 py-8">
                     {/* 头部 */}
                     <header className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight mb-2">合作者库</h1>

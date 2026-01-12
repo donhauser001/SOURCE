@@ -26,32 +26,32 @@ import { signOut } from 'next-auth/react';
 const navigation = [
     {
         name: '概览',
-        href: '/account',
+        href: '/account' as const,
         icon: LayoutDashboard,
     },
     {
         name: '色彩资产',
-        href: '/account/assets',
+        href: '/account/assets' as const,
         icon: Palette,
     },
     {
         name: '我的作品',
-        href: '/account/works',
+        href: '/account/works' as const,
         icon: ImageIcon,
     },
     {
         name: '个人资料',
-        href: '/account/profile',
+        href: '/account/profile' as const,
         icon: User,
     },
     {
         name: '安全设置',
-        href: '/account/security',
+        href: '/account/security' as const,
         icon: Shield,
     },
     {
         name: 'API 密钥',
-        href: '/account/api-keys',
+        href: '/account/api-keys' as const,
         icon: Key,
     },
 ];

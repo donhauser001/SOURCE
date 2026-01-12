@@ -219,12 +219,12 @@ export async function getReport(reportId: string): Promise<AnalysisReportData | 
 
     return {
         id: report.id,
-        summary: report.summary as AnalysisReportData['summary'],
-        printIntent: report.printIntent as PrintIntent | undefined,
-        colorAnalysis: report.colorAnalysis as MappedColorItem[],
-        risks: report.risks as RiskItem[],
-        recommendations: report.recommendations as PaperRecommendationItem[],
-        avoidList: report.avoidList as AvoidItem[],
+        summary: report.summary as unknown as AnalysisReportData['summary'],
+        printIntent: report.printIntent as unknown as PrintIntent | undefined,
+        colorAnalysis: report.colorAnalysis as unknown as MappedColorItem[],
+        risks: report.risks as unknown as RiskItem[],
+        recommendations: report.recommendations as unknown as PaperRecommendationItem[],
+        avoidList: report.avoidList as unknown as AvoidItem[],
         citations: report.citations,
         createdAt: report.createdAt.toISOString(),
         expiresAt: report.expiresAt.toISOString(),
@@ -263,12 +263,12 @@ export async function getUserReports(
     return {
         reports: reports.map((report) => ({
             id: report.id,
-            summary: report.summary as AnalysisReportData['summary'],
-            printIntent: report.printIntent as PrintIntent | undefined,
-            colorAnalysis: report.colorAnalysis as MappedColorItem[],
-            risks: report.risks as RiskItem[],
-            recommendations: report.recommendations as PaperRecommendationItem[],
-            avoidList: report.avoidList as AvoidItem[],
+            summary: report.summary as unknown as AnalysisReportData['summary'],
+            printIntent: report.printIntent as unknown as PrintIntent | undefined,
+            colorAnalysis: report.colorAnalysis as unknown as MappedColorItem[],
+            risks: report.risks as unknown as RiskItem[],
+            recommendations: report.recommendations as unknown as PaperRecommendationItem[],
+            avoidList: report.avoidList as unknown as AvoidItem[],
             citations: report.citations,
             createdAt: report.createdAt.toISOString(),
             expiresAt: report.expiresAt.toISOString(),
@@ -336,7 +336,7 @@ export async function getReportEvidence(reportId: string): Promise<{
     // 查询 PaperProfile
     const paperProfiles = await prisma.paperProfile.findMany({
         where: { id: { in: citations } },
-        include: { color: true },
+        include: { color: true, paperType: true },
     });
 
     // 查询 Batch
@@ -354,7 +354,7 @@ export async function getReportEvidence(reportId: string): Promise<{
             id: p.id,
             colorId: p.color.colorId,
             colorName: p.color.name,
-            paperType: p.paperType,
+            paperType: p.paperType.code,
             deltaE: p.deltaE,
             recommendation: p.recommendation,
         })),

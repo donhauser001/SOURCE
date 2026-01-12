@@ -239,7 +239,7 @@ export function validateSourcePack(input: unknown): SourcePackValidationResult {
 
     return {
         success: false,
-        errors: result.error.errors.map((err) => ({
+        errors: result.error.issues.map((err) => ({
             path: err.path.join('.'),
             message: err.message,
         })),
@@ -315,6 +315,7 @@ export const exampleSourcePack: SourcePack = {
             rgb: { r: 128, g: 128, b: 128 },
             usage: ['fill'],
             occurrenceCount: 8,
+            riskTags: [],
         },
     ],
 };

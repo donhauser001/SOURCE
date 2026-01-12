@@ -24,7 +24,7 @@ import { ColorBookStatus } from '@prisma/client';
 const STATUS_LABELS: Record<ColorBookStatus, string> = {
     DRAFT: '草稿',
     ACTIVE: '已发布',
-    DISCONTINUED: '已停刊',
+    ARCHIVED: '已归档',
 };
 
 export default function AdminColorBooksPage() {

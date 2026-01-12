@@ -187,7 +187,7 @@ export const getColorSchema = z.object({
  */
 export const createPaperProfileSchema = z.object({
     colorId: z.string(),
-    paperType: PaperTypeEnum,
+    paperTypeId: z.string().min(1, '请选择纸型'),  // 改为 paperTypeId
     labL: z.number().min(0).max(100),
     labA: z.number().min(-128).max(127),
     labB: z.number().min(-128).max(127),
@@ -224,7 +224,7 @@ export const updatePaperProfileSchema = z.object({
  */
 export const listPaperProfilesSchema = z.object({
     colorId: z.string().optional(),
-    paperType: PaperTypeEnum.optional(),
+    paperTypeId: z.string().optional(),  // 改为 paperTypeId
     recommendation: RecommendationEnum.optional(),
     limit: z.number().min(1).max(100).optional().default(50),
 });

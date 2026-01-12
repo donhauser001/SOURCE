@@ -41,7 +41,7 @@ import { ColorBookStatus } from '@prisma/client';
 const STATUS_OPTIONS: { value: ColorBookStatus; label: string }[] = [
     { value: 'DRAFT', label: '草稿' },
     { value: 'ACTIVE', label: '已发布' },
-    { value: 'DISCONTINUED', label: '已停刊' },
+    { value: 'ARCHIVED', label: '已归档' },
 ];
 
 interface ColorBookFormProps {

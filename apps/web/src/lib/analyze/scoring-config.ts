@@ -303,7 +303,7 @@ export function calculateSuitabilityScore(
     // 特殊工艺扣分
     for (const process of specialProcesses) {
         const requirement = SPECIAL_PROCESS_REQUIREMENTS[process as SpecialProcess];
-        if (requirement?.incompatible.includes(paperType)) {
+        if (requirement?.incompatible.some((p) => p === paperType)) {
             score -= requirement.penalty;
             incompatibilities.push(process);
         }

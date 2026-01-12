@@ -53,6 +53,9 @@ export async function GET(
                         batch: {
                             select: { batchNo: true },
                         },
+                        paperType: {
+                            select: { code: true },
+                        },
                     },
                 },
             },
@@ -81,18 +84,8 @@ export async function GET(
                 },
                 status: color.status,
                 auditStatus: color.auditStatus,
-                paperProfiles: color.paperProfiles.map((p: {
-                    paperType: string;
-                    labL: number;
-                    labA: number;
-                    labB: number;
-                    deltaE: number | null;
-                    gamutCoverage: number;
-                    recommendation: string;
-                    cautionNote: string | null;
-                    batch: { batchNo: string } | null;
-                }) => ({
-                    paperType: p.paperType,
+                paperProfiles: color.paperProfiles.map((p) => ({
+                    paperType: p.paperType.code,
                     labL: p.labL,
                     labA: p.labA,
                     labB: p.labB,
@@ -100,7 +93,7 @@ export async function GET(
                     gamutCoverage: p.gamutCoverage,
                     recommendation: p.recommendation,
                     cautionNote: p.cautionNote,
-                    batch: p.batch?.batchNo,
+                    batch: p.batch?.batchNo ?? null,
                 })),
             },
             [

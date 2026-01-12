@@ -132,14 +132,14 @@ export const buyIntentRouter = createTRPCRouter({
                 select: { proofingPackId: true },
             });
 
-            // 获取对应的 SKU
+            // 获取对应的 SKU（包含纸型关联）
             const skuIds = [...new Set(intents.map(i => i.proofingPackId))];
             const skus = await ctx.prisma.proofingPack.findMany({
                 where: { id: { in: skuIds } },
-                select: { id: true, paperType: true },
+                select: { id: true, paperType: { select: { code: true, name: true } } },
             });
 
-            const skuPaperMap = new Map(skus.map(s => [s.id, s.paperType]));
+            const skuPaperMap = new Map(skus.map(s => [s.id, s.paperType?.code || 'UNKNOWN']));
 
             // 按纸张类型统计
             const typeCount = new Map<string, number>();
