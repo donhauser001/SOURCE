@@ -1,14 +1,10 @@
 'use client';
 
 /**
- * 登录/注册页面
+ * 注册页面
  * 
- * 使用邮箱魔法链接登录，新用户首次登录自动注册
- * 
- * 设计风格：
- * - 全圆角卡片
- * - 简约黑白配色
- * - 微妙动画效果
+ * 使用邮箱魔法链接注册，与登录流程一致
+ * 新用户首次使用邮箱时自动创建账户
  */
 
 import { useState, useEffect } from 'react';
@@ -17,44 +13,36 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
     ArrowLeft, 
-    Mail, 
+    ArrowRight,
     Loader2, 
-    Shield, 
-    Sparkles,
     CheckCircle2,
-    ArrowRight
+    Sparkles,
+    Users,
+    Palette,
+    FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
 
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isDevLoading, setIsDevLoading] = useState(false);
-    const [isAdminDevLoading, setIsAdminDevLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
-    // 已登录用户根据角色跳转
+    // 已登录用户跳转
     useEffect(() => {
         if (status === 'authenticated' && session?.user) {
             const callbackUrl = searchParams.get('callbackUrl');
-            const role = session.user.role;
-            const isAdmin = role === 'ADMIN' || role === 'OPERATOR';
-
-            if (callbackUrl) {
-                window.location.href = callbackUrl;
-            } else {
-                window.location.href = isAdmin ? '/admin' : '/';
-            }
+            window.location.href = callbackUrl || '/';
         }
     }, [status, session, router, searchParams]);
 
-    const handleEmailLogin = async (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
@@ -78,42 +66,6 @@ export default function LoginPage() {
         }
     };
 
-    // 开发环境：普通用户登录
-    const handleDevLogin = async () => {
-        setIsDevLoading(true);
-        setError('');
-
-        try {
-            await signIn('dev-credentials', {
-                email: email || 'user@source.ink',
-                redirect: false,
-            });
-            router.refresh();
-        } catch {
-            setError('登录失败');
-        } finally {
-            setIsDevLoading(false);
-        }
-    };
-
-    // 开发环境：管理员登录
-    const handleAdminDevLogin = async () => {
-        setIsAdminDevLoading(true);
-        setError('');
-
-        try {
-            await signIn('dev-credentials', {
-                email: 'admin@source.ink',
-                redirect: false,
-            });
-            router.refresh();
-        } catch {
-            setError('登录失败');
-        } finally {
-            setIsAdminDevLoading(false);
-        }
-    };
-
     // 加载中
     if (status === 'loading') {
         return (
@@ -126,7 +78,7 @@ export default function LoginPage() {
         );
     }
 
-    // 邮件发送成功
+    // 注册成功
     if (success) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -139,17 +91,17 @@ export default function LoginPage() {
                                 <div className="h-20 w-20 rounded-full bg-emerald-100 flex items-center justify-center">
                                     <CheckCircle2 className="h-10 w-10 text-emerald-600" />
                                 </div>
-                                <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center animate-bounce">
-                                    <Mail className="h-3 w-3 text-white" />
+                                <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                                    <Sparkles className="h-3 w-3 text-white" />
                                 </div>
                             </div>
                         </div>
 
                         <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
-                            查收邮件
+                            验证邮件已发送
                         </h1>
                         <p className="text-center text-gray-500 mb-6">
-                            登录链接已发送至
+                            点击邮件中的链接完成注册
                         </p>
                         
                         {/* 邮箱显示 */}
@@ -165,19 +117,19 @@ export default function LoginPage() {
                                 <div className="h-5 w-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-xs font-medium text-gray-600">1</span>
                                 </div>
-                                <p>点击邮件中的链接即可登录</p>
+                                <p>检查收件箱或垃圾邮件文件夹</p>
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="h-5 w-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-xs font-medium text-gray-600">2</span>
                                 </div>
-                                <p>链接有效期 24 小时</p>
+                                <p>点击链接后自动完成注册</p>
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="h-5 w-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <span className="text-xs font-medium text-gray-600">3</span>
                                 </div>
-                                <p>如未收到，请检查垃圾邮件</p>
+                                <p>链接有效期 24 小时</p>
                             </div>
                         </div>
 
@@ -211,7 +163,7 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex bg-gray-50">
             {/* 左侧装饰区 - 桌面端显示 */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gray-900 relative overflow-hidden">
+            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 to-gray-800 relative overflow-hidden">
                 {/* 装饰图案 */}
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-20 left-20 h-64 w-64 rounded-full bg-white blur-3xl" />
@@ -230,32 +182,32 @@ export default function LoginPage() {
                     </div>
                     
                     <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
-                        印刷色彩管理<br />
-                        从这里开始
+                        加入 SOURCE<br />
+                        探索色彩世界
                     </h2>
                     <p className="text-lg text-gray-400 mb-8 max-w-md">
-                        SOURCE 是专业的印刷色彩身份证平台，帮助设计师和印刷从业者精准管理专色
+                        免费注册，即刻获得专业印刷色彩管理工具
                     </p>
 
                     {/* 特性列表 */}
                     <div className="space-y-4">
                         {[
-                            '精准的 Lab 色值数据',
-                            '全面的纸张适配信息',
-                            '专业的油墨配方支持',
+                            { icon: Palette, text: '浏览完整色彩库' },
+                            { icon: FileText, text: '查看详细色彩身份证' },
+                            { icon: Users, text: '参与色彩社区讨论' },
                         ].map((feature, idx) => (
                             <div key={idx} className="flex items-center gap-3 text-gray-300">
-                                <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center">
-                                    <Sparkles className="h-3 w-3 text-white" />
+                                <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center">
+                                    <feature.icon className="h-5 w-5 text-white" />
                                 </div>
-                                <span>{feature}</span>
+                                <span>{feature.text}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* 右侧登录区 */}
+            {/* 右侧注册区 */}
             <div className="flex-1 flex items-center justify-center p-4 lg:p-8">
                 <div className="w-full max-w-md">
                     {/* 移动端 Logo */}
@@ -268,15 +220,15 @@ export default function LoginPage() {
                         </Link>
                     </div>
 
-                    {/* 登录卡片 */}
+                    {/* 注册卡片 */}
                     <div className="bg-white rounded-3xl border border-black/10 p-8 shadow-sm">
                         {/* 标题 */}
                         <div className="text-center mb-8">
                             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                欢迎使用 SOURCE
+                                创建账户
                             </h1>
                             <p className="text-gray-500">
-                                输入邮箱，获取登录链接
+                                输入邮箱，开始你的色彩之旅
                             </p>
                         </div>
 
@@ -291,7 +243,7 @@ export default function LoginPage() {
                         )}
 
                         {/* 邮箱表单 */}
-                        <form onSubmit={handleEmailLogin} className="space-y-4">
+                        <form onSubmit={handleRegister} className="space-y-4">
                             <div>
                                 <Input
                                     id="email"
@@ -316,7 +268,7 @@ export default function LoginPage() {
                                     </>
                                 ) : (
                                     <>
-                                        继续
+                                        免费注册
                                         <ArrowRight className="ml-2 h-4 w-4" />
                                     </>
                                 )}
@@ -325,7 +277,7 @@ export default function LoginPage() {
 
                         {/* 说明文字 */}
                         <p className="text-center text-xs text-gray-400 mt-4">
-                            新用户首次登录将自动创建账户
+                            我们将发送一封验证邮件到你的邮箱
                         </p>
 
                         {/* 分隔线 */}
@@ -335,72 +287,18 @@ export default function LoginPage() {
                             </div>
                             <div className="relative flex justify-center">
                                 <span className="bg-white px-3 text-xs text-gray-400">
-                                    或者
+                                    已有账户？
                                 </span>
                             </div>
                         </div>
 
-                        {/* 注册和找回密码链接 */}
-                        <div className="flex items-center justify-center gap-4 text-sm">
-                            <Link
-                                href="/register"
-                                className="text-gray-500 hover:text-gray-900 transition-colors"
-                            >
-                                创建账户
-                            </Link>
-                            <span className="text-gray-200">|</span>
-                            <Link
-                                href="/forgot-password"
-                                className="text-gray-500 hover:text-gray-900 transition-colors"
-                            >
-                                忘记密码？
-                            </Link>
-                        </div>
-
-                        {/* 开发环境快捷登录 */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <>
-                                <div className="relative my-6">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-100" />
-                                    </div>
-                                    <div className="relative flex justify-center">
-                                        <span className="bg-white px-3 text-xs text-gray-400">
-                                            开发环境快捷登录
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Button
-                                        variant="outline"
-                                        className="h-11 rounded-xl border-gray-200 hover:bg-gray-50"
-                                        onClick={handleDevLogin}
-                                        disabled={isDevLoading || isAdminDevLoading}
-                                    >
-                                        {isDevLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            '普通用户'
-                                        )}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="h-11 rounded-xl border-gray-200 hover:bg-gray-900 hover:text-white"
-                                        onClick={handleAdminDevLogin}
-                                        disabled={isDevLoading || isAdminDevLoading}
-                                    >
-                                        {isAdminDevLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <>
-                                                <Shield className="mr-1.5 h-4 w-4" />
-                                                管理员
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </>
-                        )}
+                        {/* 登录链接 */}
+                        <Link
+                            href="/login"
+                            className="flex items-center justify-center w-full h-11 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            登录
+                        </Link>
                     </div>
 
                     {/* 返回链接 */}
@@ -416,7 +314,7 @@ export default function LoginPage() {
 
                     {/* 条款 */}
                     <p className="text-center text-xs text-gray-400 mt-4">
-                        登录即表示同意{' '}
+                        注册即表示同意{' '}
                         <Link href="/docs" className="underline hover:text-gray-600">
                             服务条款
                         </Link>

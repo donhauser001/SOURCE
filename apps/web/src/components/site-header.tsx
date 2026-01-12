@@ -27,9 +27,10 @@ import { useSession } from 'next-auth/react';
 const navItems = [
     { href: '/colors', label: '色彩库' },
     { href: '/color-books', label: '色彩簿' },
-    { href: '/partners', label: '合作者' },
+    { href: '/works', label: '社区' },
+    { href: '/partners', label: '共建' },
     { href: '/analyze', label: '分析' },
-    { href: '/docs', label: '文档' },
+    { href: '/docs', label: '支持' },
 ];
 
 export function SiteHeader({ isDark = false }: { isDark?: boolean }) {

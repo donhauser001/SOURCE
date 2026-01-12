@@ -44,6 +44,12 @@ model User {
 
   // 颜色参与记录（作为个人）
   colorParticipations ColorParticipation[]
+  
+  // 用户自建色彩簿
+  colorBooks    ColorBook[] @relation("UserColorBooks")
+  
+  // 用户作品
+  works         UserWork[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -323,6 +329,9 @@ model Color {
   
   // 关联 - 色彩簿
   colorBookEntries     ColorBookEntry[]
+  
+  // 关联 - 用户作品
+  userWorkColors       UserWorkColor[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -399,8 +408,16 @@ model ColorBook {
   // 状态
   status        ColorBookStatus @default(DRAFT)
   
+  // 所有者（用户自建色彩簿）
+  ownerId       String?           // 所有者用户 ID（null 表示系统/官方色彩簿）
+  owner         User?     @relation("UserColorBooks", fields: [ownerId], references: [id])
+  isPublic      Boolean   @default(false)  // 是否公开（用户色彩簿默认私有）
+  
   // 关联
   entries       ColorBookEntry[]
+  
+  // 引用此色彩簿的作品
+  works         UserWork[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -409,6 +426,7 @@ model ColorBook {
   @@index([slug])
   @@index([status])
   @@index([categoryId])
+  @@index([ownerId])
 }
 
 model ColorBookCategoryOption {
@@ -1201,4 +1219,70 @@ enum AdminAction {
   IMPORT
   EXPORT
   STATUS_CHANGE
+}
+
+// =============================================================================
+// 用户作品
+// =============================================================================
+
+model UserWork {
+  id            String    @id @default(cuid())
+  
+  // 所有者
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 作品信息
+  title         String              // 作品标题
+  description   String?   @db.Text  // 作品描述
+  imageUrl      String              // 作品图片 URL
+  
+  // 关联色彩簿（可选，单个）
+  colorBookId   String?
+  colorBook     ColorBook? @relation(fields: [colorBookId], references: [id], onDelete: SetNull)
+  
+  // 关联颜色（多对多）
+  colors        UserWorkColor[]
+  
+  // 外部链接
+  externalUrl   String?             // 外部链接（如 Behance、Dribbble）
+  
+  // 标签
+  tags          String[]
+  
+  // 可见性
+  isPublic      Boolean   @default(false)
+  
+  // 统计
+  viewCount     Int       @default(0)
+  likeCount     Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([isPublic, createdAt])
+}
+
+// 作品-颜色关联表
+model UserWorkColor {
+  id          String    @id @default(cuid())
+  
+  workId      String
+  work        UserWork  @relation(fields: [workId], references: [id], onDelete: Cascade)
+  
+  colorId     String
+  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  
+  // 颜色在作品中的描述（可选）
+  note        String?
+  
+  // 排序
+  order       Int       @default(0)
+  
+  createdAt   DateTime  @default(now())
+
+  @@unique([workId, colorId])
+  @@index([workId])
+  @@index([colorId])
 }
