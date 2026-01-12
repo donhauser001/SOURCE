@@ -7,7 +7,7 @@
  * 可以关联某个色彩簿或色彩
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { 
@@ -518,7 +518,7 @@ function WorkFormDialog({
     };
 
     // 当 work 变化时更新表单
-    useState(() => {
+    useEffect(() => {
         if (work) {
             setTitle(work.title);
             setDescription(work.description || '');
@@ -529,7 +529,7 @@ function WorkFormDialog({
             setTags(work.tags.join(', '));
             setIsPublic(work.isPublic);
         }
-    });
+    }, [work]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
