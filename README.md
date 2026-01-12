@@ -64,6 +64,7 @@ CLI 是系统接口，不是玩具
 SOURCE/
 ├── 文档/                          # 项目文档（中文命名）
 │   ├── 技术架构规划.md            # 功能与技术设计
+│   ├── 产品设计/                  # 产品规范文档
 │   ├── 开发进度管理/
 │   │   └── 版本计划表.md          # 版本节奏与验收目标
 │   └── 运营思路/
@@ -235,6 +236,15 @@ pnpm cli search "青"
 # 纸张推荐
 pnpm cli color recommend CN-Song-04 --goal fidelity
 
+# 成本估算
+pnpm cli cost estimate --paper art-coated --quantity 1000 --size A4 --colors 4
+
+# 工程分析
+pnpm cli analyze --file ./my-design.sourcepack.json
+
+# 审计日志
+pnpm cli audit list --limit 10
+
 # 查看可用工具
 pnpm cli config tools
 ```
@@ -245,7 +255,7 @@ pnpm cli config tools
 # 所有命令都支持 --json 参数
 pnpm cli --json color get CN-Song-04
 pnpm cli --json search "青"
-pnpm cli --json config show
+pnpm cli --json analyze --file ./design.json
 ```
 
 ---
@@ -275,25 +285,31 @@ pnpm cli --json config show
 | 版本 | 代号 | 核心目标 | 状态 |
 |------|------|---------|------|
 | 0.1.x | Foundation | 项目脚手架、基础框架、AI-ready 基建 | ✅ 完成 |
-| 0.2.x | Identity | 色彩身份证 + 数据录入 | 🚧 进行中 |
-| 0.3.x | Bridge | 履约桥（SKU + 购买意图） | 待开发 |
-| 0.4.x | Access | 权限体系、插件授权 | 待开发 |
-| 0.5.x | Admin | 管理后台 | 待开发 |
-| 0.6.x | Analyze | 工程色彩分析系统 | 待开发 |
-| 1.0.0 | Genesis | 正式版发布 | 待开发 |
+| 0.2.x | Identity | 色彩身份证 + 数据录入 | ✅ 完成 |
+| 0.3.x | Bridge | 履约桥（SKU + 购买意图） | ✅ 完成 |
+| 0.4.x | Access | 权限体系、插件授权 | ✅ 完成 |
+| 0.5.x | Admin | 管理后台 | ✅ 完成 |
+| 0.6.x | Analyze | 工程色彩分析系统 | ✅ 完成 |
+| 1.0.0 | Genesis | 正式版发布 | 🚧 准备中 |
 
-### 当前进度 (v0.2.1)
+### 当前进度 (v0.6.3)
 
-- [x] v0.1.0 项目脚手架
-- [x] v0.1.1 数据库与 ORM
-- [x] v0.1.2 API 层与认证
-- [x] v0.1.3 AI-ready 基建
-- [x] v0.1.4 SOURCE CLI 骨架
-- [x] v0.2.0 色彩数据 CRUD
-- [x] v0.2.1 色彩身份证页面
-- [ ] v0.2.2 色彩搜索
-- [ ] v0.2.3 CLI 色彩命令
-- [ ] v0.2.4 数据录入工具
+**已完成功能：**
+
+- [x] 色彩身份证系统（双模式：设计师/专家）
+- [x] 色彩库（搜索、筛选、三种视图模式）
+- [x] 色彩簿管理
+- [x] 社区作品展示
+- [x] 用户账户系统
+- [x] 共建者体系（印厂/纸商/油墨商/实验室/顾问）
+- [x] 数据录入工具（CSV/JSON 导入）
+- [x] 履约桥（SKU + 购买意图）
+- [x] 激活码系统
+- [x] 插件授权 API
+- [x] SOURCE CLI（15+ 命令）
+- [x] 管理后台（完整数据管理）
+- [x] 工程色彩分析（上传、推荐、报告）
+- [x] E2E 测试（5 测试套件）
 
 详见 [版本计划表](./文档/开发进度管理/版本计划表.md)
 
@@ -301,18 +317,61 @@ pnpm cli --json config show
 
 ## 页面路由
 
+### 前台页面
+
 | 路由 | 说明 |
 |------|------|
 | `/` | 首页 |
 | `/colors` | 色彩库列表 |
 | `/color/[id]` | 色彩身份证详情 |
-| `/analyze` | 工程分析（占位） |
-| `/docs` | 文档首页 |
+| `/color-books` | 色彩簿列表 |
+| `/color-book/[slug]` | 色彩簿详情 |
+| `/works` | 社区作品 |
+| `/partners` | 共建者列表 |
+| `/partners/[id]` | 共建者详情 |
+| `/analyze` | 工程分析 |
+| `/analyze/[id]` | 分析报告 |
+| `/docs` | 支持文档首页 |
 | `/docs/color-identity` | 色彩身份证文档 |
 | `/docs/cli` | CLI 命令参考 |
 | `/docs/api` | API 参考 |
-| `/login` | 登录页面 |
+
+### 用户账户
+
+| 路由 | 说明 |
+|------|------|
+| `/login` | 登录 |
+| `/register` | 注册 |
+| `/forgot-password` | 忘记密码 |
+| `/activate` | 激活码激活 |
+| `/account` | 账户概览 |
+| `/account/profile` | 个人资料 |
+| `/account/security` | 安全设置 |
+| `/account/api-keys` | API 密钥管理 |
+| `/account/assets` | 色彩资产 |
+| `/account/works` | 我的作品 |
 | `/settings` | 用户设置 |
+
+### 管理后台
+
+| 路由 | 说明 |
+|------|------|
+| `/admin` | 仪表盘 |
+| `/admin/colors` | 色彩管理 |
+| `/admin/color-books` | 色彩簿管理 |
+| `/admin/partners` | 共建者管理 |
+| `/admin/recipes` | 配方管理 |
+| `/admin/inks` | 油墨管理 |
+| `/admin/paper-types` | 纸张类型管理 |
+| `/admin/batches` | 批次管理 |
+| `/admin/proofing-packs` | 打样包管理 |
+| `/admin/users` | 用户管理 |
+| `/admin/api-keys` | API 密钥管理 |
+| `/admin/activation-codes` | 激活码管理 |
+| `/admin/buy-intents` | 购买意图统计 |
+| `/admin/audit-logs` | 审计日志 |
+| `/admin/audit-notes` | 审计注记 |
+| `/admin/import` | 数据导入 |
 
 ---
 
@@ -323,6 +382,10 @@ pnpm cli --json config show
 | [技术架构规划](./文档/技术架构规划.md) | 功能设计、技术选型、数据模型 |
 | [版本计划表](./文档/开发进度管理/版本计划表.md) | 版本节奏、验收标准、时间线 |
 | [色彩身份证字段规范](./文档/产品设计/色彩身份证字段规范.md) | Color Identity v1.0 字段定义 |
+| [列表页面视觉交互规范](./文档/产品设计/列表页面视觉交互规范.md) | 前台列表页设计标准 |
+| [部署指南](./文档/部署指南.md) | 生产环境部署说明 |
+
+---
 
 ## 用户角色体系
 
@@ -334,7 +397,7 @@ pnpm cli --json config show
 | 合作方用户 | `PARTNER` | 关联到 Partner，查看相关数据 |
 | 普通用户 | `USER` | 基础访问 |
 
-## 合作者体系
+## 共建者体系
 
 | 类型 | 代码 | 说明 |
 |------|------|------|
@@ -363,4 +426,3 @@ Private - All Rights Reserved
 ---
 
 *不被定义的色彩：一个基于现实验证的色彩体系*
-
