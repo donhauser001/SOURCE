@@ -23,8 +23,10 @@ import { recipeRouter } from './recipe';
 import { systemConfigRouter } from './system-config';
 import { contentCategoryRouter } from './content-category';
 import { contentRouter, contentAdminRouter } from './content';
+import { homeRouter } from './home';
 
 export const appRouter = createTRPCRouter({
+    home: homeRouter,
     color: colorRouter,
     batch: batchRouter,
     user: userRouter,

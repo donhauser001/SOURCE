@@ -409,9 +409,9 @@ pnpm cli --json analyze --file ./design.json
 
 ### 颜色参与关联（ColorParticipation）
 
-核心关联表，记录任何"人/机构/合作者"与 Color ID 的参与关系：
+核心关联表，记录任何"人/机构/共建者"与 Color ID 的参与关系：
 
-- **entityType**: 参与者类型（Partner / User / External）
+- **entityType**: 共建者类型（Partner / User / External）
 - **roleInColor**: 在该颜色中承担的角色（印厂/纸商/油墨商/审计/共建/测试）
 - **scope**: 参与范围（身份证/配方/批次/研究）
 - **status**: 状态（active / inactive / revoked / expired）

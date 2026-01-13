@@ -15,14 +15,14 @@ export function ParticipantsTab({ participations }: ParticipantsTabProps) {
             <Card className="backdrop-blur-xl border shadow-none overflow-hidden rounded-3xl bg-white border-black/10">
                 <CardContent className="py-12 text-center">
                     <Users className="h-12 w-12 mx-auto mb-4 text-black/30" />
-                    <p className="text-black/50">暂无参与者记录</p>
-                    <p className="text-sm mt-2 text-black/30">参与者信息将在合作确认后发布</p>
+                    <p className="text-black/50">暂无共建者记录</p>
+                    <p className="text-sm mt-2 text-black/30">共建者信息将在合作确认后发布</p>
                 </CardContent>
             </Card>
         );
     }
 
-    // 按角色分组参与者
+    // 按角色分组共建者
     const groupedByRole = participations.reduce((acc, p) => {
         const role = p.roleInColor;
         if (!acc[role]) acc[role] = [];
@@ -44,14 +44,14 @@ export function ParticipantsTab({ participations }: ParticipantsTabProps) {
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-black/70" />
                             <h3 className="text-sm font-bold uppercase tracking-[0.15em] text-black/70">
-                                参与者
+                                共建者
                             </h3>
                         </div>
                         <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-black/5 text-black/50">
-                            {participations.length} 位参与者
+                            {participations.length} 位共建者
                         </span>
                     </div>
-                    <p className="text-xs text-black/40">参与此颜色验证、配方开发、数据审计的合作者</p>
+                    <p className="text-xs text-black/40">参与此颜色验证、配方开发、数据审计的共建者</p>
 
                     {/* 角色分组 */}
                     <div className="grid gap-6 md:grid-cols-2">
@@ -97,7 +97,7 @@ function RoleGroup({ role, participants }: { role: string; participants: Partici
                 </span>
             </div>
 
-            {/* 参与者列表 */}
+            {/* 共建者列表 */}
             <div className="space-y-2">
                 {participants.map((p) => (
                     <ParticipantItem key={p.id} participant={p} />
@@ -107,7 +107,7 @@ function RoleGroup({ role, participants }: { role: string; participants: Partici
     );
 }
 
-// 参与者条目
+// 共建者条目
 function ParticipantItem({ participant: p }: { participant: Participation }) {
     return (
         <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] border border-black/5">

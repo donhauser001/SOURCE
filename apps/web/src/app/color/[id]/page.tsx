@@ -209,7 +209,7 @@ export default async function ColorPage({ params }: Props) {
                 },
             },
         }),
-        // 参与者数据
+        // 共建者数据
         prisma.colorParticipation.findMany({
             where: { colorId: color.id, status: 'ACTIVE' },
             include: {
@@ -400,7 +400,7 @@ export default async function ColorPage({ params }: Props) {
             mitigation: risk.mitigation,
         })),
 
-        // v0.2.2 新增：参与者数据（使用并行查询获取的数据）
+        // v0.2.2 新增：共建者数据（使用并行查询获取的数据）
         participations: participations.map((p) => ({
             id: p.id,
             entityType: p.entityType,

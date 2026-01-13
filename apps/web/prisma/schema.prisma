@@ -1,6 +1,6 @@
 // =============================================================================
 // SOURCE 数据模型
-// 版本: 0.2.2 - 共建合作者体系 + 用户角色体系
+// 版本: 0.2.2 - 共建共建者体系 + 用户角色体系
 // =============================================================================
 
 generator client {
@@ -121,17 +121,17 @@ enum UserTier {
 }
 
 // =============================================================================
-// 合作者库（Partners）- 印厂/纸商/油墨商统一抽象
+// 共建者（Partners）- 印厂/纸商/油墨商统一抽象
 // =============================================================================
 
 model Partner {
   id            String   @id @default(cuid())
-  partnerId     String   @unique  // 合作者编号，如 "PRINTER-BJ-001"
-  name          String            // 合作者名称
+  partnerId     String   @unique  // 共建者编号，如 "PRINTER-BJ-001"
+  name          String            // 共建者名称
   shortName     String?           // 简称
 
-  // 合作者类型（可多选，用数组）
-  types         PartnerType[]     // 印厂/纸商/油墨商（一个合作者可能多重身份）
+  // 共建者类型（可多选，用数组）
+  types         PartnerType[]     // 印厂/纸商/油墨商（一个共建者可能多重身份）
 
   // 基本信息
   description   String?           // 简介
@@ -197,7 +197,7 @@ model ColorParticipation {
   // 参与实体类型
   entityType    ParticipantEntityType
 
-  // 参与者（根据 entityType 关联不同表）
+  // 共建者（根据 entityType 关联不同表）
   partnerId     String?
   partner       Partner? @relation(fields: [partnerId], references: [id])
 
@@ -334,7 +334,7 @@ model Color {
   paperRecommendations PaperRecommendation[]
   risks                ColorRisk[]
 
-  // 关联 - 合作者参与记录
+  // 关联 - 共建者参与记录
   participations       ColorParticipation[]
   
   // 关联 - 色彩簿

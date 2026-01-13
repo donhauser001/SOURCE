@@ -128,7 +128,7 @@ export const auditStatusFilterConfig: FilterConfig = {
 };
 
 /**
- * 合作者状态筛选配置
+ * 共建者状态筛选配置
  */
 export const partnerStatusFilterConfig: FilterConfig = {
     key: 'status',
@@ -140,7 +140,7 @@ export const partnerStatusFilterConfig: FilterConfig = {
 };
 
 /**
- * 合作者类型筛选配置
+ * 共建者类型筛选配置
  */
 export const partnerTypeFilterConfig: FilterConfig = {
     key: 'type',

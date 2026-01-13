@@ -124,7 +124,7 @@ export const ADMIN_ACTION_LABELS: Record<AdminAction, string> = {
  */
 export const TARGET_TYPE_LABELS: Record<string, string> = {
     color: '色彩',
-    partner: '合作者',
+    partner: '共建者',
     user: '用户',
     batch: '批次',
     proofingPack: '打样包',

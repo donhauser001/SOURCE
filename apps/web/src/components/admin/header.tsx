@@ -18,8 +18,8 @@ const pathTitles: Record<string, string> = {
     '/admin/colors/new': '添加色彩',
     '/admin/color-books': '色彩簿管理',
     '/admin/color-books/new': '新建色彩簿',
-    '/admin/partners': '合作者管理',
-    '/admin/partners/new': '添加合作者',
+    '/admin/partners': '共建者管理',
+    '/admin/partners/new': '添加共建者',
     '/admin/paper-types': '纸型管理',
     '/admin/paper-types/new': '新增纸型',
     '/admin/inks': '油墨管理',
@@ -50,7 +50,7 @@ export function AdminHeader() {
         if (pathTitles[pathname]) {
             return pathTitles[pathname];
         }
-        
+
         // 动态路由匹配 - 处理编辑页面等
         if (pathname.match(/^\/admin\/colors\/[^/]+\/edit$/)) {
             return '编辑色彩';
@@ -59,7 +59,7 @@ export function AdminHeader() {
             return '编辑色彩簿';
         }
         if (pathname.match(/^\/admin\/partners\/[^/]+\/edit$/)) {
-            return '编辑合作者';
+            return '编辑共建者';
         }
         if (pathname.match(/^\/admin\/paper-types\/[^/]+\/edit$/)) {
             return '编辑纸型';
@@ -76,7 +76,7 @@ export function AdminHeader() {
         if (pathname.match(/^\/admin\/proofing-packs\/[^/]+\/edit$/)) {
             return '编辑打样包';
         }
-        
+
         // 前缀匹配
         for (const [path, title] of Object.entries(pathTitles)) {
             if (path !== '/admin' && pathname.startsWith(path)) {

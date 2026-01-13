@@ -121,12 +121,20 @@ export function SiteHeader({ isDark = false }: { isDark?: boolean }) {
                             <Link
                                 href="/"
                                 className={cn(
-                                    "text-lg font-bold tracking-[0.15em] uppercase transition-colors mr-8",
+                                    "text-lg font-bold tracking-[0.15em] uppercase transition-colors",
                                     isDark ? "text-white hover:text-white/80" : "text-foreground/90 hover:text-foreground"
                                 )}
                             >
                                 SOURCE
                             </Link>
+                            <span className={cn(
+                                "ml-2 mr-6 px-2 py-0.5 text-[10px] font-medium rounded-full border",
+                                isDark
+                                    ? "text-white/60 border-white/20 bg-white/5"
+                                    : "text-foreground/50 border-foreground/15 bg-foreground/5"
+                            )}>
+                                v0.6.0 | 测试版
+                            </span>
 
                             <span className={cn(
                                 "hidden md:block w-px h-5 mr-6",
@@ -299,13 +307,18 @@ export function SiteHeader({ isDark = false }: { isDark?: boolean }) {
                 >
                     {/* 菜单头部 */}
                     <div className="flex items-center justify-between p-5 border-b">
-                        <Link
-                            href="/"
-                            onClick={handleNavClick}
-                            className="text-base font-bold tracking-[0.15em] uppercase"
-                        >
-                            SOURCE
-                        </Link>
+                        <div className="flex items-center">
+                            <Link
+                                href="/"
+                                onClick={handleNavClick}
+                                className="text-base font-bold tracking-[0.15em] uppercase"
+                            >
+                                SOURCE
+                            </Link>
+                            <span className="ml-2 px-1.5 py-0.5 text-[9px] font-medium rounded-full border text-foreground/50 border-foreground/15 bg-foreground/5">
+                                v0.6.0 | 测试版
+                            </span>
+                        </div>
                         <button
                             onClick={() => setIsMenuOpen(false)}
                             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors"

@@ -1,5 +1,5 @@
 /**
- * 合作者列表页（前台）- 选项卡视图
+ * 共建者列表页（前台）- 选项卡视图
  */
 
 import { Metadata } from 'next';
@@ -8,10 +8,10 @@ import { SiteHeader } from '@/components/site-header';
 import { PartnersTabs } from '@/components/partners/partners-tabs';
 
 export const metadata: Metadata = {
-    title: '合作者库 | SOURCE',
+    title: '共建者 | SOURCE',
     description: '查看 SOURCE 的合作印厂、纸商、油墨商等合作伙伴信息。',
     openGraph: {
-        title: '合作者库 | SOURCE',
+        title: '共建者 | SOURCE',
         description: '查看 SOURCE 的合作伙伴信息。',
     },
 };
@@ -52,7 +52,7 @@ export default async function PartnersPage() {
                 <div className="max-w-[1600px] mx-auto px-6 py-8">
                     {/* 头部 */}
                     <header className="mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight mb-2">合作者库</h1>
+                        <h1 className="text-3xl font-bold tracking-tight mb-2">共建者</h1>
                         <p className="text-muted-foreground">
                             SOURCE 色彩体系的共建伙伴，共同打造高品质印刷色彩标准
                         </p>

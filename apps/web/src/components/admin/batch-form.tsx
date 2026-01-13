@@ -68,7 +68,7 @@ export function BatchForm({ initialData, mode }: Props) {
         }
     );
 
-    // 获取合作者列表
+    // 获取共建者列表
     const { data: partnersData } = trpc.partner.list.useQuery({
         limit: 100,
     });
@@ -241,13 +241,13 @@ export function BatchForm({ initialData, mode }: Props) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="partnerId">关联合作者</Label>
+                            <Label htmlFor="partnerId">关联共建者</Label>
                             <Select
                                 value={formData.partnerId || 'none'}
                                 onValueChange={(value) => handleChange('partnerId', value === 'none' ? '' : value)}
                             >
                                 <SelectTrigger id="partnerId">
-                                    <SelectValue placeholder="选择合作者（可选）" />
+                                    <SelectValue placeholder="选择共建者（可选）" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">无</SelectItem>

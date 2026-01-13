@@ -63,7 +63,7 @@ export const COLOR_FAMILY_COLORS: Record<ColorFamily, string> = {
 };
 
 // =============================================================================
-// 合作者状态
+// 共建者状态
 // =============================================================================
 
 export const PARTNER_STATUS_LABELS = {
@@ -76,7 +76,7 @@ export const PARTNER_STATUS_LABELS = {
 export type PartnerStatus = keyof typeof PARTNER_STATUS_LABELS;
 
 // =============================================================================
-// 合作者类型
+// 共建者类型
 // =============================================================================
 
 export const PARTNER_TYPE_LABELS = {

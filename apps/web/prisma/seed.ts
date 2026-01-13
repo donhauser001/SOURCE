@@ -15,7 +15,7 @@ import {
     ConclusionLevel,
     RiskType,
     ConfidenceLevel,
-    // 新增合作者相关枚举
+    // 新增共建者相关枚举
     PartnerType,
     PartnerStatus,
     ParticipantEntityType,
@@ -62,7 +62,7 @@ async function main() {
 
     console.log('✅ 限流策略创建完成');
 
-    // 2. 创建合作者数据（印厂/纸商/油墨商）
+    // 2. 创建共建者数据（印厂/纸商/油墨商）
     const partners = [
         // 印厂
         {
@@ -164,7 +164,7 @@ async function main() {
         createdPartners[partner.partnerId] = created;
     }
 
-    console.log('✅ 合作者数据创建完成');
+    console.log('✅ 共建者数据创建完成');
 
     // 3. 创建示例验证批次（关联合作方）
     const batch1 = await prisma.batch.upsert({
@@ -909,7 +909,7 @@ async function main() {
 
     // 17. 创建颜色参与关联数据（Color Participation）
     const colorParticipations = [
-        // 烟雨青的参与者
+        // 烟雨青的共建者
         {
             colorId: colorYanyuQing.id,
             entityType: ParticipantEntityType.PARTNER,
@@ -954,7 +954,7 @@ async function main() {
             note: '作为审计顾问参与色彩验证',
             createdBy: 'system',
         },
-        // 朱砂红的参与者
+        // 朱砂红的共建者
         {
             colorId: colorZhushaHong.id,
             entityType: ParticipantEntityType.PARTNER,
@@ -1017,7 +1017,7 @@ async function main() {
 
     console.log('\n🎉 种子数据播种完成！');
     console.log('   - 2 个限流策略');
-    console.log(`   - ${partners.length} 个合作者（印厂/纸商/油墨商/实验室）`);
+    console.log(`   - ${partners.length} 个共建者（印厂/纸商/油墨商/实验室）`);
     console.log('   - 3 个验证批次');
     console.log('   - 5 种纸张数据');
     console.log(`   - ${totalColors} 个示例颜色（含完整 v1.0 字段）`);

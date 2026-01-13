@@ -1,5 +1,5 @@
 /**
- * 扩展基础数据 - 合作者、油墨、批次、色彩簿
+ * 扩展基础数据 - 共建者、油墨、批次、色彩簿
  */
 
 import {
@@ -15,7 +15,7 @@ import {
 
 const prisma = new PrismaClient();
 
-// ========== 扩展合作者数据 ==========
+// ========== 扩展共建者数据 ==========
 const partners = [
     // 印厂
     {
@@ -152,29 +152,29 @@ const inks = [
     { code: 'PANTONE-RHODAMINE-RED', name: '玫红', brand: 'Pantone', colorSeries: '红色系', inkType: InkType.BASE, order: 12 },
     { code: 'DIC-116', name: 'DIC 红 116', brand: 'DIC', colorSeries: '红色系', inkType: InkType.SPOT, order: 13 },
     { code: 'DIC-159', name: 'DIC 红 159', brand: 'DIC', colorSeries: '红色系', inkType: InkType.SPOT, order: 14 },
-    
+
     { code: 'PANTONE-ORANGE-021', name: '橙色 021', brand: 'Pantone', colorSeries: '橙色系', inkType: InkType.BASE, order: 20 },
     { code: 'DIC-122', name: 'DIC 橙 122', brand: 'DIC', colorSeries: '橙色系', inkType: InkType.SPOT, order: 21 },
-    
+
     { code: 'PANTONE-YELLOW', name: '黄', brand: 'Pantone', colorSeries: '黄色系', inkType: InkType.BASE, order: 30 },
     { code: 'PANTONE-BRIGHT-YELLOW', name: '亮黄', brand: 'Pantone', colorSeries: '黄色系', inkType: InkType.BASE, order: 31 },
     { code: 'DIC-109', name: 'DIC 黄 109', brand: 'DIC', colorSeries: '黄色系', inkType: InkType.SPOT, order: 32 },
-    
+
     { code: 'PANTONE-GREEN', name: '绿', brand: 'Pantone', colorSeries: '绿色系', inkType: InkType.BASE, order: 40 },
     { code: 'PANTONE-BRIGHT-GREEN', name: '亮绿', brand: 'Pantone', colorSeries: '绿色系', inkType: InkType.BASE, order: 41 },
     { code: 'DIC-635', name: 'DIC 绿 635', brand: 'DIC', colorSeries: '绿色系', inkType: InkType.SPOT, order: 42 },
-    
+
     { code: 'PANTONE-REFLEX-BLUE', name: '反射蓝', brand: 'Pantone', colorSeries: '蓝色系', inkType: InkType.BASE, order: 50 },
     { code: 'PANTONE-PROCESS-BLUE', name: '过程蓝', brand: 'Pantone', colorSeries: '蓝色系', inkType: InkType.BASE, order: 51 },
     { code: 'DIC-178', name: 'DIC 蓝 178', brand: 'DIC', colorSeries: '蓝色系', inkType: InkType.SPOT, order: 52 },
-    
+
     { code: 'PANTONE-PURPLE', name: '紫', brand: 'Pantone', colorSeries: '紫色系', inkType: InkType.BASE, order: 60 },
     { code: 'PANTONE-VIOLET', name: '紫罗兰', brand: 'Pantone', colorSeries: '紫色系', inkType: InkType.BASE, order: 61 },
     { code: 'DIC-200', name: 'DIC 紫 200', brand: 'DIC', colorSeries: '紫色系', inkType: InkType.SPOT, order: 62 },
-    
+
     { code: 'PANTONE-BROWN', name: '棕', brand: 'Pantone', colorSeries: '棕色系', inkType: InkType.BASE, order: 70 },
     { code: 'DIC-274', name: 'DIC 棕 274', brand: 'DIC', colorSeries: '棕色系', inkType: InkType.SPOT, order: 71 },
-    
+
     // 冲淡剂和辅料
     { code: 'OPAQUE-WHITE', name: '不透明白', brand: '通用', colorSeries: '辅料', inkType: InkType.EXTENDER, order: 101 },
     { code: 'MIXING-WHITE', name: '调墨白', brand: '通用', colorSeries: '辅料', inkType: InkType.EXTENDER, order: 102 },
@@ -299,8 +299,8 @@ const colorBooks = [
 async function main() {
     console.log('🏭 开始扩展基础数据...\n');
 
-    // 1. 创建合作者
-    console.log('📋 创建合作者数据...');
+    // 1. 创建共建者
+    console.log('📋 创建共建者数据...');
     let partnersCreated = 0;
     for (const partner of partners) {
         const existing = await prisma.partner.findUnique({
@@ -400,7 +400,7 @@ async function main() {
             console.log(`  ⏭️  跳过: ${book.bookId}`);
             continue;
         }
-        
+
         // 根据名称匹配分类
         let categoryId = createdCategories['中国传统色'];
         if (book.bookId.includes('NATURE')) {
@@ -427,7 +427,7 @@ async function main() {
 
     console.log('\n' + '='.repeat(50));
     console.log('🎉 基础数据扩展完成！');
-    console.log(`   合作者: +${partnersCreated} (总计 ${totalPartners})`);
+    console.log(`   共建者: +${partnersCreated} (总计 ${totalPartners})`);
     console.log(`   油墨:   +${inksCreated} (总计 ${totalInks})`);
     console.log(`   批次:   +${batchesCreated} (总计 ${totalBatches})`);
     console.log(`   色彩簿: +${booksCreated} (总计 ${totalBooks})`);

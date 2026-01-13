@@ -1,5 +1,5 @@
 /**
- * 添加新合作者页面
+ * 添加新共建者页面
  */
 
 import { PartnerForm } from '@/components/admin/partner-form';

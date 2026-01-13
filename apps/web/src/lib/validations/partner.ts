@@ -1,5 +1,5 @@
 /**
- * 合作者（Partner）验证 Schemas
+ * 共建者（Partner）验证 Schemas
  *
  * 印厂/纸商/油墨商统一抽象
  */
@@ -53,12 +53,12 @@ export const PartnerStatusLabels: Record<PartnerStatus, string> = {
 export const CreatePartnerSchema = z.object({
     partnerId: z
         .string()
-        .min(1, '合作者编号不能为空')
-        .max(50, '合作者编号不能超过 50 字符')
-        .regex(/^[A-Z0-9-]+$/, '合作者编号只能包含大写字母、数字和连字符'),
+        .min(1, '共建者编号不能为空')
+        .max(50, '共建者编号不能超过 50 字符')
+        .regex(/^[A-Z0-9-]+$/, '共建者编号只能包含大写字母、数字和连字符'),
     name: z.string().min(1, '名称不能为空').max(100, '名称不能超过 100 字符'),
     shortName: z.string().max(20, '简称不能超过 20 字符').optional(),
-    types: z.array(PartnerTypeEnum).min(1, '至少选择一个合作者类型'),
+    types: z.array(PartnerTypeEnum).min(1, '至少选择一个共建者类型'),
     description: z.string().max(500, '描述不能超过 500 字符').optional(),
     logoUrl: z.string().url('Logo URL 格式不正确').optional(),
     websiteUrl: z.string().url('官网 URL 格式不正确').optional(),
@@ -81,7 +81,7 @@ export const UpdatePartnerSchema = z.object({
     id: z.string().min(1, 'ID 不能为空'),
     name: z.string().min(1, '名称不能为空').max(100, '名称不能超过 100 字符').optional(),
     shortName: z.string().max(20, '简称不能超过 20 字符').nullish(),
-    types: z.array(PartnerTypeEnum).min(1, '至少选择一个合作者类型').optional(),
+    types: z.array(PartnerTypeEnum).min(1, '至少选择一个共建者类型').optional(),
     description: z.string().max(500, '描述不能超过 500 字符').nullish(),
     logoUrl: z.string().url('Logo URL 格式不正确').nullish(),
     websiteUrl: z.string().url('官网 URL 格式不正确').nullish(),

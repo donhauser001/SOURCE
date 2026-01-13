@@ -1,5 +1,5 @@
 /**
- * 合作者详情页
+ * 共建者详情页
  */
 
 import { Metadata } from 'next';
@@ -30,7 +30,7 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-// 合作者类型标签
+// 共建者类型标签
 const partnerTypeLabels: Record<string, string> = {
     PRINTER: '印厂',
     PAPER_VENDOR: '纸商',
@@ -86,13 +86,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const partner = await getPartner(id);
 
     if (!partner) {
-        return { title: '合作者不存在 | SOURCE' };
+        return { title: '共建者不存在 | SOURCE' };
     }
 
     const typeLabels = partner.types.map(t => partnerTypeLabels[t] || t).join('、');
 
     return {
-        title: `${partner.name} | SOURCE 合作者`,
+        title: `${partner.name} | SOURCE 共建者`,
         description: `查看 ${partner.name}（${typeLabels}）的详细信息和参与的颜色项目。`,
     };
 }
@@ -140,7 +140,7 @@ export default async function PartnerPage({ params }: Props) {
                         <Link href="/partners">
                             <Button variant="ghost" size="sm" className="gap-2">
                                 <ArrowLeft className="h-4 w-4" />
-                                返回合作者列表
+                                返回共建者列表
                             </Button>
                         </Link>
                     </div>
@@ -255,73 +255,73 @@ export default async function PartnerPage({ params }: Props) {
                                     <h3 className="font-semibold text-gray-900">联系方式</h3>
                                     {/* 联系信息 */}
                                     <div className="space-y-4">
-                                    {partner.region && (
-                                        <div className="flex items-start gap-3">
-                                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">地区</div>
-                                                <div>{partner.region}</div>
+                                        {partner.region && (
+                                            <div className="flex items-start gap-3">
+                                                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">地区</div>
+                                                    <div>{partner.region}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {partner.address && (
-                                        <div className="flex items-start gap-3">
-                                            <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">地址</div>
-                                                <div>{partner.address}</div>
+                                        )}
+                                        {partner.address && (
+                                            <div className="flex items-start gap-3">
+                                                <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">地址</div>
+                                                    <div>{partner.address}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {partner.contactEmail && (
-                                        <div className="flex items-start gap-3">
-                                            <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">邮箱</div>
-                                                <a
-                                                    href={`mailto:${partner.contactEmail}`}
-                                                    className="text-primary hover:underline"
-                                                >
-                                                    {partner.contactEmail}
-                                                </a>
+                                        )}
+                                        {partner.contactEmail && (
+                                            <div className="flex items-start gap-3">
+                                                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">邮箱</div>
+                                                    <a
+                                                        href={`mailto:${partner.contactEmail}`}
+                                                        className="text-primary hover:underline"
+                                                    >
+                                                        {partner.contactEmail}
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {partner.contactPhone && (
-                                        <div className="flex items-start gap-3">
-                                            <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">电话</div>
-                                                <div>{partner.contactPhone}</div>
+                                        )}
+                                        {partner.contactPhone && (
+                                            <div className="flex items-start gap-3">
+                                                <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">电话</div>
+                                                    <div>{partner.contactPhone}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {partner.websiteUrl && (
-                                        <div className="flex items-start gap-3">
-                                            <Globe className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">网站</div>
-                                                <a
-                                                    href={partner.websiteUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-primary hover:underline inline-flex items-center gap-1"
-                                                >
-                                                    访问官网
-                                                    <ExternalLink className="h-3 w-3" />
-                                                </a>
+                                        )}
+                                        {partner.websiteUrl && (
+                                            <div className="flex items-start gap-3">
+                                                <Globe className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">网站</div>
+                                                    <a
+                                                        href={partner.websiteUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-primary hover:underline inline-flex items-center gap-1"
+                                                    >
+                                                        访问官网
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {partner.establishedYear && (
-                                        <div className="flex items-start gap-3">
-                                            <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <div className="text-sm text-muted-foreground">成立年份</div>
-                                                <div>{partner.establishedYear} 年</div>
+                                        )}
+                                        {partner.establishedYear && (
+                                            <div className="flex items-start gap-3">
+                                                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                                <div>
+                                                    <div className="text-sm text-muted-foreground">成立年份</div>
+                                                    <div>{partner.establishedYear} 年</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 合作者颜色网格组件 - 带分页
+ * 共建者颜色网格组件 - 带分页
  */
 
 import { useState, useMemo } from 'react';

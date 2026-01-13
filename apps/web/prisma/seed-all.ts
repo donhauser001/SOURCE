@@ -2,7 +2,7 @@
  * 主数据种子脚本 - 按顺序执行所有 seed 脚本
  * 
  * 执行顺序：
- * 1. seed.ts - 基础数据（用户、合作者、批次、纸张字典）
+ * 1. seed.ts - 基础数据（用户、共建者、批次、纸张字典）
  * 2. seed-materials.ts - 纸型和油墨选项
  * 3. seed-base-extended.ts - 扩展基础数据
  * 4. seed-colors-extended.ts - 扩展色彩数据
@@ -19,9 +19,9 @@ async function runSeedScript(scriptName: string) {
     console.log(`\n${'='.repeat(60)}`);
     console.log(`🚀 执行: ${scriptName}`);
     console.log('='.repeat(60));
-    
+
     const scriptPath = path.join(__dirname, scriptName);
-    
+
     try {
         execSync(`npx tsx ${scriptPath}`, {
             stdio: 'inherit',
@@ -36,8 +36,8 @@ async function runSeedScript(scriptName: string) {
 
 async function main() {
     console.log('🌱 SOURCE 数据播种开始');
-    console.log('=' .repeat(60));
-    
+    console.log('='.repeat(60));
+
     const startTime = Date.now();
 
     // 按顺序执行所有 seed 脚本
@@ -74,8 +74,8 @@ async function main() {
     console.log(`   📄 纸张表现:   ${totalPaperProfiles} 条`);
     console.log(`   🧪 配方:       ${totalRecipes} 条`);
     console.log(`   📦 打样包:     ${totalProofingPacks} 条`);
-    console.log(`   🤝 参与者:     ${totalParticipations} 条`);
-    console.log(`   🏭 合作者:     ${totalPartners} 个`);
+    console.log(`   🤝 共建者:     ${totalParticipations} 条`);
+    console.log(`   🏭 共建者:     ${totalPartners} 个`);
     console.log(`   🖌️ 油墨:       ${totalInks} 种`);
     console.log(`   📋 批次:       ${totalBatches} 个`);
     console.log(`   📚 色彩簿:     ${totalColorBooks} 本`);

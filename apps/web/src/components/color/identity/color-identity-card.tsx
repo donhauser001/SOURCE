@@ -33,7 +33,7 @@ export function ColorIdentityCard({ color }: Props) {
     // 计算当前颜色的 RGB 值
     const colorRgb = labToRgb(color.trueSource.labL, color.trueSource.labA, color.trueSource.labB);
     const bgColor = `rgb(${colorRgb.r}, ${colorRgb.g}, ${colorRgb.b})`;
-    
+
     // 使用 WCAG 相对亮度计算，决定使用白色还是黑色文字
     // 相对亮度公式考虑人眼对不同颜色的敏感度差异
     const isDark = shouldUseLightText(colorRgb.r, colorRgb.g, colorRgb.b);
@@ -218,15 +218,15 @@ export function ColorIdentityCard({ color }: Props) {
                                         { value: 'recipes', label: '配方', icon: FlaskConical },
                                         { value: 'evidence', label: '验证', icon: ShieldCheck },
                                         { value: 'risks', label: '风险', icon: AlertTriangle },
-                                        { value: 'participants', label: '参与者', icon: Users },
+                                        { value: 'participants', label: '共建者', icon: Users },
                                     ].map((tab) => (
                                         <TabsTrigger
                                             key={tab.value}
                                             value={tab.value}
                                             className={cn(
                                                 "px-5 py-1.5 rounded-full transition-all duration-300 text-sm font-medium shadow-none flex items-center gap-1.5",
-                                                isDark 
-                                                    ? "text-white/50 data-[state=active]:bg-white/15 data-[state=active]:text-white data-[state=active]:shadow-none" 
+                                                isDark
+                                                    ? "text-white/50 data-[state=active]:bg-white/15 data-[state=active]:text-white data-[state=active]:shadow-none"
                                                     : "text-black/50 data-[state=active]:bg-black/10 data-[state=active]:text-black data-[state=active]:shadow-none"
                                             )}
                                         >
@@ -356,16 +356,16 @@ function shouldUseLightText(r: number, g: number, b: number): boolean {
     const rs = r / 255;
     const gs = g / 255;
     const bs = b / 255;
-    
+
     // Gamma 校正逆运算（sRGB -> Linear RGB）
     const rLinear = rs <= 0.03928 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
     const gLinear = gs <= 0.03928 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
     const bLinear = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
-    
+
     // 计算相对亮度 (WCAG 2.1 定义)
     // 人眼对绿色最敏感 (0.7152)，对红色次之 (0.2126)，对蓝色最不敏感 (0.0722)
     const luminance = 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
-    
+
     // 阈值 0.179 对应 WCAG AA 级别 4.5:1 的对比度要求
     // 低于此亮度，白色文字对比度更好；高于此亮度，黑色文字对比度更好
     return luminance < 0.179;

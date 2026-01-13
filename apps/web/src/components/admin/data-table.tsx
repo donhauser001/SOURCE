@@ -26,17 +26,17 @@ export interface DataTableProps<T> {
     emptyMessage?: string;
     onRowClick?: (row: T) => void;
     rowKey?: (row: T) => string;
-    
+
     // 选择功能
     selectable?: boolean;
     selectedIds?: Set<string>;
     onSelectChange?: (ids: Set<string>) => void;
-    
+
     // 分页
     hasMore?: boolean;
     onLoadMore?: () => void;
     isLoadingMore?: boolean;
-    
+
     className?: string;
 }
 
@@ -132,9 +132,8 @@ export function DataTable<T>({
                             return (
                                 <tr
                                     key={key}
-                                    className={`border-b hover:bg-muted/50 ${
-                                        onRowClick ? 'cursor-pointer' : ''
-                                    } ${isSelected ? 'bg-muted/30' : ''}`}
+                                    className={`border-b hover:bg-muted/50 ${onRowClick ? 'cursor-pointer' : ''
+                                        } ${isSelected ? 'bg-muted/30' : ''}`}
                                     onClick={() => onRowClick?.(row)}
                                 >
                                     {selectable && (
@@ -245,7 +244,7 @@ export function AuditStatusBadge({ status }: { status: AuditStatus }) {
 }
 
 /**
- * 合作者状态 Badge
+ * 共建者状态 Badge
  */
 export function PartnerStatusBadge({ status }: { status: PartnerStatus }) {
     return (
@@ -293,26 +292,26 @@ export function UserTierBadge({ tier }: { tier: UserTier }) {
  */
 export function DateTimeCell({ date, format = 'datetime' }: { date: string | Date | null; format?: 'datetime' | 'date' | 'relative' }) {
     if (!date) return <span className="text-muted-foreground">-</span>;
-    
+
     const d = new Date(date);
-    
+
     if (format === 'relative') {
         const now = new Date();
         const diff = now.getTime() - d.getTime();
         const minutes = Math.floor(diff / 60000);
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
-        
+
         if (minutes < 1) return '刚刚';
         if (minutes < 60) return `${minutes} 分钟前`;
         if (hours < 24) return `${hours} 小时前`;
         if (days < 30) return `${days} 天前`;
     }
-    
+
     const options: Intl.DateTimeFormatOptions = format === 'date'
         ? { year: 'numeric', month: '2-digit', day: '2-digit' }
         : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-    
+
     return <span className="text-muted-foreground whitespace-nowrap">{d.toLocaleString('zh-CN', options)}</span>;
 }
 
@@ -321,9 +320,9 @@ export function DateTimeCell({ date, format = 'datetime' }: { date: string | Dat
  */
 export function CodeCell({ value, maxWidth = 150 }: { value: string | null; maxWidth?: number }) {
     if (!value) return <span className="text-muted-foreground">-</span>;
-    
+
     return (
-        <code 
+        <code
             className="text-xs bg-muted px-1.5 py-0.5 rounded truncate inline-block"
             style={{ maxWidth }}
             title={value}

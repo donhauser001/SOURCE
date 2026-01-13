@@ -37,7 +37,7 @@ export default function AdminAuditLogsPage() {
     const [actionFilter, setActionFilter] = useState<string>('all');
     const [targetTypeFilter, setTargetTypeFilter] = useState<string>('all');
     const [search, setSearch] = useState('');
-    
+
     // 详情弹窗
     const [selectedLog, setSelectedLog] = useState<any>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -177,7 +177,7 @@ export default function AdminAuditLogsPage() {
                                 <SelectContent>
                                     <SelectItem value="all">全部类型</SelectItem>
                                     <SelectItem value="color">色彩</SelectItem>
-                                    <SelectItem value="partner">合作者</SelectItem>
+                                    <SelectItem value="partner">共建者</SelectItem>
                                     <SelectItem value="user">用户</SelectItem>
                                     <SelectItem value="proofingPack">打样包</SelectItem>
                                     <SelectItem value="apiKey">API 密钥</SelectItem>

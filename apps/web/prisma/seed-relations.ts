@@ -6,7 +6,7 @@
  * - Recipe 配方
  * - RecipeIngredient 配方成分
  * - ProofingPack 打样包
- * - ColorParticipation 参与者
+ * - ColorParticipation 共建者
  * - FitMatrix 适配矩阵
  * - ColorBookEntry 色彩簿关联
  */
@@ -144,7 +144,7 @@ async function main() {
     console.log(`   - 色彩: ${colors.length} 个`);
     console.log(`   - 纸型: ${paperTypes.length} 种`);
     console.log(`   - 油墨: ${inks.length} 种`);
-    console.log(`   - 合作者: ${partners.length} 个`);
+    console.log(`   - 共建者: ${partners.length} 个`);
     console.log(`   - 批次: ${batches.length} 个`);
     console.log(`   - 色彩簿: ${colorBooks.length} 本`);
     console.log(`   - 纸张: ${papers.length} 种\n`);
@@ -159,7 +159,7 @@ async function main() {
     const spotInks = inks.filter(i => i.inkType === InkType.SPOT);
     const extenderInks = inks.filter(i => i.inkType === InkType.EXTENDER);
 
-    // 分类合作者
+    // 分类共建者
     const printers = partners.filter(p => p.types.includes('PRINTER'));
     const paperVendors = partners.filter(p => p.types.includes('PAPER_VENDOR'));
     const inkVendors = partners.filter(p => p.types.includes('INK_VENDOR'));
@@ -365,7 +365,7 @@ async function main() {
             }
         }
 
-        // 6. 创建参与者关联 (每个色彩 2-4 个参与者)
+        // 6. 创建共建者关联 (每个色彩 2-4 个共建者)
         if (partners.length > 0) {
             const participantCount = 2 + Math.floor(seededRandom(color.colorId + 'part') * 3);
 
@@ -523,7 +523,7 @@ async function main() {
     console.log(`   配方:     +${stats.recipes.created} (跳过 ${stats.recipes.skipped})`);
     console.log(`   配方成分: +${stats.ingredients.created}`);
     console.log(`   打样包:   +${stats.proofingPacks.created} (跳过 ${stats.proofingPacks.skipped})`);
-    console.log(`   参与者:   +${stats.participations.created} (跳过 ${stats.participations.skipped})`);
+    console.log(`   共建者:   +${stats.participations.created} (跳过 ${stats.participations.skipped})`);
     console.log(`   适配矩阵: +${stats.fitMatrix.created} (跳过 ${stats.fitMatrix.skipped})`);
     console.log(`   色彩簿:   +${stats.colorBookEntries.created} (跳过 ${stats.colorBookEntries.skipped})`);
     console.log('='.repeat(60));

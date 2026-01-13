@@ -130,7 +130,7 @@ export const getCachedRecipes = unstable_cache(
 );
 
 /**
- * 获取色彩的参与者（缓存版本）
+ * 获取色彩的共建者（缓存版本）
  */
 export const getCachedParticipations = unstable_cache(
     async (colorId: string) => {

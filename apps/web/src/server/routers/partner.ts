@@ -1,5 +1,5 @@
 /**
- * 合作者 Router
+ * 共建者 Router
  *
  * 印厂/纸商/油墨商统一管理
  */
@@ -23,7 +23,7 @@ export const partnerRouter = createTRPCRouter({
     // ============================================================================
 
     /**
-     * 获取单个合作者
+     * 获取单个共建者
      */
     get: publicProcedure.input(GetPartnerSchema).query(async ({ ctx, input }) => {
         const where = input.id
@@ -47,7 +47,7 @@ export const partnerRouter = createTRPCRouter({
         if (!partner) {
             throw new TRPCError({
                 code: 'NOT_FOUND',
-                message: `合作者不存在: ${input.partnerId || input.id}`,
+                message: `共建者不存在: ${input.partnerId || input.id}`,
             });
         }
 
@@ -62,7 +62,7 @@ export const partnerRouter = createTRPCRouter({
 
         // 构建查询条件
         const where: any = {
-            status: 'ACTIVE', // 公开列表只显示活跃合作者
+            status: 'ACTIVE', // 公开列表只显示活跃共建者
         };
 
         if (types && types.length > 0) {
@@ -234,7 +234,7 @@ export const partnerRouter = createTRPCRouter({
         }),
 
     /**
-     * 创建合作者
+     * 创建共建者
      */
     create: adminProcedure.input(CreatePartnerSchema).mutation(async ({ ctx, input }) => {
         // 检查 partnerId 是否已存在
@@ -245,11 +245,11 @@ export const partnerRouter = createTRPCRouter({
         if (existing) {
             throw new TRPCError({
                 code: 'CONFLICT',
-                message: `合作者编号已存在: ${input.partnerId}`,
+                message: `共建者编号已存在: ${input.partnerId}`,
             });
         }
 
-        // 创建合作者
+        // 创建共建者
         const partner = await ctx.prisma.partner.create({
             data: {
                 ...input,
@@ -271,12 +271,12 @@ export const partnerRouter = createTRPCRouter({
     }),
 
     /**
-     * 更新合作者
+     * 更新共建者
      */
     update: adminProcedure.input(UpdatePartnerSchema).mutation(async ({ ctx, input }) => {
         const { id, ...data } = input;
 
-        // 检查合作者是否存在
+        // 检查共建者是否存在
         const existing = await ctx.prisma.partner.findUnique({
             where: { id },
         });
@@ -284,11 +284,11 @@ export const partnerRouter = createTRPCRouter({
         if (!existing) {
             throw new TRPCError({
                 code: 'NOT_FOUND',
-                message: '合作者不存在',
+                message: '共建者不存在',
             });
         }
 
-        // 更新合作者
+        // 更新共建者
         const partner = await ctx.prisma.partner.update({
             where: { id },
             data,
@@ -311,7 +311,7 @@ export const partnerRouter = createTRPCRouter({
     }),
 
     /**
-     * 删除合作者
+     * 删除共建者
      */
     delete: adminProcedure
         .input(z.object({ id: z.string() }))
@@ -334,7 +334,7 @@ export const partnerRouter = createTRPCRouter({
             if (!partner) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: '合作者不存在',
+                    message: '共建者不存在',
                 });
             }
 
@@ -348,11 +348,11 @@ export const partnerRouter = createTRPCRouter({
             if (hasRelations) {
                 throw new TRPCError({
                     code: 'PRECONDITION_FAILED',
-                    message: '该合作者有关联数据，无法删除。建议将状态设为"停止合作"。',
+                    message: '该共建者有关联数据，无法删除。建议将状态设为"停止合作"。',
                 });
             }
 
-            // 删除合作者
+            // 删除共建者
             await ctx.prisma.partner.delete({
                 where: { id: input.id },
             });
@@ -376,7 +376,7 @@ export const partnerRouter = createTRPCRouter({
     batchUpdateStatus: adminProcedure
         .input(
             z.object({
-                ids: z.array(z.string()).min(1, '至少选择一个合作者'),
+                ids: z.array(z.string()).min(1, '至少选择一个共建者'),
                 status: PartnerStatusEnum,
             })
         )

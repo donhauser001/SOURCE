@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 合作者列表客户端组件
+ * 共建者列表客户端组件
  * 
  * 遵循 SOURCE 列表页面视觉交互规范
  * - 全圆角工具栏
@@ -13,10 +13,10 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-    Search, X, ChevronDown, ChevronLeft, ChevronRight, 
+import {
+    Search, X, ChevronDown, ChevronLeft, ChevronRight,
     LayoutGrid, List, Check,
-    Building2, MapPin, Globe, Award, Printer, FileText, Droplets, FlaskConical, Users 
+    Building2, MapPin, Globe, Award, Printer, FileText, Droplets, FlaskConical, Users
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -141,7 +141,7 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
         return Array.from(regions).sort();
     }, [partners]);
 
-    // 筛选合作者
+    // 筛选共建者
     const filteredPartners = useMemo(() => {
         let result = partners;
 
@@ -157,7 +157,7 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
 
         // 类型筛选
         if (typeFilters.length > 0) {
-            result = result.filter(p => 
+            result = result.filter(p =>
                 typeFilters.some(t => p.types.includes(t))
             );
         }
@@ -249,7 +249,7 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <Input
                             type="search"
-                            placeholder="搜索合作者名称..."
+                            placeholder="搜索共建者名称..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onBlur={() => {
@@ -306,8 +306,8 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
                                                 `}
                                             >
                                                 <span className="flex items-center gap-2">
-                                                    <Icon className="h-4 w-4" style={{ 
-                                                        color: typeFilters.includes(type) ? 'white' : PARTNER_TYPE_COLORS[type] 
+                                                    <Icon className="h-4 w-4" style={{
+                                                        color: typeFilters.includes(type) ? 'white' : PARTNER_TYPE_COLORS[type]
                                                     }} />
                                                     {PARTNER_TYPE_LABELS[type] || type}
                                                 </span>
@@ -405,7 +405,7 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
                 </div>
             </div>
 
-            {/* 合作者列表 */}
+            {/* 共建者列表 */}
             {filteredPartners.length > 0 ? (
                 <>
                     {/* 卡片视图 */}
@@ -518,7 +518,7 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
                         <Building2 className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 mb-4">没有找到匹配的合作者</p>
+                    <p className="text-gray-500 mb-4">没有找到匹配的共建者</p>
                     {hasFilters && (
                         <Button variant="outline" onClick={clearFilters} className="border-gray-300 text-gray-700 hover:bg-gray-50">
                             清除筛选条件
@@ -531,17 +531,17 @@ export function PartnersTabs({ partners, stats }: PartnersTabsProps) {
 }
 
 // =============================================================================
-// 合作者卡片组件
+// 共建者卡片组件
 // =============================================================================
 
 function PartnerCard({ partner }: { partner: PartnerWithCount }) {
     // 获取主类型颜色
     const mainType = partner.types[0];
     const mainColor = PARTNER_TYPE_COLORS[mainType] || '#6B7280';
-    
+
     return (
         <Link href={`/partners/${partner.partnerId}`} className="group block">
-            <div 
+            <div
                 className="relative overflow-hidden rounded-3xl p-6 h-full flex flex-col bg-white border border-gray-200 transition-all duration-300 ease-out group-hover:border-gray-300 group-hover:shadow-sm"
             >
                 {/* 头部：名称 + 类型图标 */}
@@ -554,7 +554,7 @@ function PartnerCard({ partner }: { partner: PartnerWithCount }) {
                             <p className="text-sm text-gray-500 truncate">{partner.shortName}</p>
                         )}
                     </div>
-                    <div 
+                    <div
                         className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ml-3"
                         style={{ backgroundColor: `${mainColor}15` }}
                     >
@@ -610,7 +610,7 @@ function PartnerCard({ partner }: { partner: PartnerWithCount }) {
 }
 
 // =============================================================================
-// 合作者表格行组件
+// 共建者表格行组件
 // =============================================================================
 
 function PartnerTableRow({ partner }: { partner: PartnerWithCount }) {
@@ -627,7 +627,7 @@ function PartnerTableRow({ partner }: { partner: PartnerWithCount }) {
                     )}
                 </Link>
             </td>
-            
+
             {/* 类型 */}
             <td className="px-4 py-3 hidden sm:table-cell">
                 <div className="flex flex-wrap gap-1">
@@ -641,21 +641,21 @@ function PartnerTableRow({ partner }: { partner: PartnerWithCount }) {
                     ))}
                 </div>
             </td>
-            
+
             {/* 地区 */}
             <td className="px-4 py-3 hidden md:table-cell">
                 <span className="text-sm text-gray-600">
                     {partner.region || '-'}
                 </span>
             </td>
-            
+
             {/* 资质 */}
             <td className="px-4 py-3 hidden lg:table-cell">
                 <span className="text-sm text-gray-600">
                     {partner.certifications.length > 0 ? `${partner.certifications.length} 项` : '-'}
                 </span>
             </td>
-            
+
             {/* 参与颜色 */}
             <td className="px-4 py-3 text-right">
                 {partner._count.colorParticipations > 0 ? (

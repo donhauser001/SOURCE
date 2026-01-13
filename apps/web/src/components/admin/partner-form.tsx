@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * 合作者表单组件
- * 用于创建和编辑合作者
+ * 共建者表单组件
+ * 用于创建和编辑共建者
  */
 
 import { useState } from 'react';
@@ -212,13 +212,13 @@ export function PartnerForm({ initialData, mode }: Props) {
             <Card>
                 <CardHeader>
                     <CardTitle>基本信息</CardTitle>
-                    <CardDescription>合作者的基本档案信息</CardDescription>
+                    <CardDescription>共建者的基本档案信息</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="partnerId">
-                                合作者编号 <span className="text-destructive">*</span>
+                                共建者编号 <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="partnerId"
@@ -277,7 +277,7 @@ export function PartnerForm({ initialData, mode }: Props) {
 
                     <div className="space-y-2">
                         <Label>
-                            合作者类型 <span className="text-destructive">*</span>
+                            共建者类型 <span className="text-destructive">*</span>
                         </Label>
                         <div className="grid grid-cols-3 gap-4">
                             {Object.entries(PartnerTypeLabels).map(([value, label]) => (
@@ -294,7 +294,7 @@ export function PartnerForm({ initialData, mode }: Props) {
                             ))}
                         </div>
                         {formData.types.length === 0 && (
-                            <p className="text-xs text-destructive">至少选择一个合作者类型</p>
+                            <p className="text-xs text-destructive">至少选择一个共建者类型</p>
                         )}
                     </div>
 
@@ -304,7 +304,7 @@ export function PartnerForm({ initialData, mode }: Props) {
                             id="description"
                             value={formData.description}
                             onChange={(e) => handleChange('description', e.target.value)}
-                            placeholder="合作者的详细介绍..."
+                            placeholder="共建者的详细介绍..."
                             rows={3}
                         />
                     </div>
@@ -315,7 +315,7 @@ export function PartnerForm({ initialData, mode }: Props) {
             <Card>
                 <CardHeader>
                     <CardTitle>联系信息</CardTitle>
-                    <CardDescription>合作者的联系方式和地址</CardDescription>
+                    <CardDescription>共建者的联系方式和地址</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">

@@ -1,7 +1,7 @@
 /**
  * 颜色参与关联（ColorParticipation）验证 Schemas
  *
- * 核心关联层：任何"人/机构/合作者"与 Color ID 的参与关系
+ * 核心关联层：任何"人/机构/共建者"与 Color ID 的参与关系
  */
 
 import { z } from 'zod';
@@ -179,7 +179,7 @@ export const ListColorParticipationsSchema = z.object({
 export type ListColorParticipationsInput = z.infer<typeof ListColorParticipationsSchema>;
 
 // =============================================================================
-// 查询某颜色的所有参与者
+// 查询某颜色的所有共建者
 // =============================================================================
 
 export const GetColorParticipantsSchema = z.object({

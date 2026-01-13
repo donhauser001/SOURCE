@@ -90,9 +90,9 @@ export default async function AdminDashboard() {
             color: 'text-blue-500',
         },
         {
-            title: '合作者',
+            title: '共建者',
             value: stats.partnerCount,
-            description: `${stats.activePartnerCount} 个活跃合作者`,
+            description: `${stats.activePartnerCount} 个活跃共建者`,
             icon: Building2,
             href: '/admin/partners',
             color: 'text-amber-500',
@@ -124,7 +124,7 @@ export default async function AdminDashboard() {
         {
             title: '参与记录',
             value: stats.participationCount,
-            description: '合作者参与关联',
+            description: '共建者参与关联',
             icon: ShieldCheck,
             href: '/admin/colors',
             color: 'text-cyan-500',
@@ -195,10 +195,10 @@ export default async function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                {/* 最近添加的合作者 */}
+                {/* 最近添加的共建者 */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">最近添加的合作者</CardTitle>
+                        <CardTitle className="text-lg">最近添加的共建者</CardTitle>
                         <CardDescription>最新 5 条记录</CardDescription>
                     </CardHeader>
                     <CardContent>

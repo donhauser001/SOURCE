@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 合作者管理列表页
+ * 共建者管理列表页
  *
  * v0.5.1 - Admin 阶段
  * 使用 tRPC 统一架构
@@ -103,7 +103,7 @@ export default function AdminPartnersPage() {
                 <Button asChild>
                     <Link href="/admin/partners/new">
                         <Plus className="h-4 w-4 mr-2" />
-                        添加合作者
+                        添加共建者
                     </Link>
                 </Button>
             </div>
@@ -156,7 +156,7 @@ export default function AdminPartnersPage() {
             {/* 数据表格 */}
             <Card>
                 <CardHeader>
-                    <CardTitle>合作者列表</CardTitle>
+                    <CardTitle>共建者列表</CardTitle>
                     <CardDescription>
                         {isLoading ? '加载中...' : `共 ${filteredPartners.length} 条记录`}
                     </CardDescription>
@@ -252,7 +252,7 @@ export default function AdminPartnersPage() {
                                             <td colSpan={10} className="py-8 text-center text-muted-foreground">
                                                 {search || typeFilter !== 'all' || statusFilter !== 'all'
                                                     ? '没有匹配的记录'
-                                                    : '暂无数据，点击右上角添加合作者'}
+                                                    : '暂无数据，点击右上角添加共建者'}
                                             </td>
                                         </tr>
                                     )}

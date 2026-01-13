@@ -1,258 +1,468 @@
-'use client';
+/**
+ * SOURCE 首页
+ * 
+ * 功能导向型首页，8 个板块：
+ * 1. Hero + 快速入口
+ * 2. 精选色彩
+ * 3. 色彩簿推荐
+ * 4. 产品特性
+ * 5. 共建者展示
+ * 6. ColLab 精选
+ * 7. 实时统计
+ * 8. Footer
+ */
 
 import Link from 'next/link';
-import type { Route } from 'next';
-import { ArrowRight, Sparkles, Palette, BookOpen, FileText, Eye, ThumbsUp } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, BookOpen, FileText, Terminal, Search, Users, ShieldCheck, FlaskConical } from 'lucide-react';
+import { prisma } from '@/lib/db';
 import { SiteHeader } from '@/components/site-header';
-import { trpc } from '@/lib/trpc';
-import { labToRgb } from '@/lib/color';
+import { FeaturedColors } from './home/featured-colors';
+import { FeaturedColorBooks } from './home/featured-color-books';
+import { PartnersSection } from './home/partners-section';
+import { CollabSection } from './home/collab-section';
 
-// 内容类型图标
-const typeIcons = {
-    WORK: Palette,
-    TUTORIAL: BookOpen,
-    ARTICLE: FileText,
-};
+// =============================================================================
+// 数据获取
+// =============================================================================
 
-export default function HomePage() {
-    // 获取首页推荐内容
-    const { data: homepageData } = trpc.content.publicList.useQuery({
-        featuredLevel: 2, // HOMEPAGE = 首页推荐
-        limit: 6,
-    });
+async function getHomeData() {
+    const [
+        stats,
+        featuredColors,
+        featuredColorBooks,
+        partners,
+        featuredContents,
+    ] = await Promise.all([
+        // 统计数据
+        Promise.all([
+            prisma.color.count({ where: { auditStatus: 'VERIFIED' } }),
+            prisma.color.count(),
+            prisma.colorBook.count({ where: { status: 'ACTIVE' } }),
+            prisma.partner.count({ where: { status: 'ACTIVE' } }),
+            prisma.content.count({ where: { status: 'PUBLISHED' } }),
+        ]).then(([verifiedColors, totalColors, colorBooks, partners, contents]) => ({
+            verifiedColors,
+            totalColors,
+            colorBooks,
+            partners,
+            contents,
+            cliCommands: 15,
+        })),
 
-    const homepageItems = homepageData?.items || [];
+        // 精选色彩（5列 x 3行 = 15个）
+        prisma.color.findMany({
+            where: { status: 'ACTIVE' },
+            take: 15,
+            orderBy: { updatedAt: 'desc' },
+            select: {
+                id: true,
+                colorId: true,
+                name: true,
+                labL: true,
+                labA: true,
+                labB: true,
+                status: true,
+                auditStatus: true,
+                colorFamily: true,
+            },
+        }),
+
+        // 色彩簿
+        prisma.colorBook.findMany({
+            where: { status: 'ACTIVE', isPublic: true },
+            take: 4,
+            orderBy: { totalColors: 'desc' },
+            select: {
+                id: true,
+                bookId: true,
+                name: true,
+                slug: true,
+                shortDesc: true,
+                coverImageUrl: true,
+                publishedYear: true,
+                totalColors: true,
+                category: { select: { name: true } },
+            },
+        }),
+
+        // 共建者
+        prisma.partner.findMany({
+            where: { status: 'ACTIVE' },
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                partnerId: true,
+                name: true,
+                shortName: true,
+                types: true,
+                logoUrl: true,
+                websiteUrl: true,
+            },
+        }),
+
+        // ColLab 精选
+        prisma.content.findMany({
+            where: {
+                status: 'PUBLISHED',
+                featuredLevel: { in: ['HOMEPAGE', 'HERO', 'EDITOR_PICK'] },
+            },
+            take: 6,
+            orderBy: { publishedAt: 'desc' },
+            select: {
+                id: true,
+                contentId: true,
+                contentType: true,
+                title: true,
+                summary: true,
+                coverImageUrl: true,
+                viewCount: true,
+                likeCount: true,
+                author: {
+                    select: { id: true, name: true, image: true },
+                },
+                colors: {
+                    take: 4,
+                    select: {
+                        color: {
+                            select: {
+                                id: true,
+                                colorId: true,
+                                name: true,
+                                labL: true,
+                                labA: true,
+                                labB: true,
+                            },
+                        },
+                    },
+                },
+            },
+        }),
+    ]);
+
+    // 共建者统计
+    const partnerStats = {
+        printers: partners.filter(p => p.types.includes('PRINTER')).length,
+        paperVendors: partners.filter(p => p.types.includes('PAPER_VENDOR')).length,
+        inkVendors: partners.filter(p => p.types.includes('INK_VENDOR')).length,
+        labs: partners.filter(p => p.types.includes('LAB')).length,
+        consultants: partners.filter(p => p.types.includes('CONSULTANT')).length,
+    };
+
+    return {
+        stats,
+        featuredColors,
+        featuredColorBooks,
+        partners,
+        partnerStats,
+        featuredContents,
+    };
+}
+
+// =============================================================================
+// 页面组件
+// =============================================================================
+
+export default async function HomePage() {
+    const data = await getHomeData();
 
     return (
         <div className="min-h-screen bg-background">
             <SiteHeader />
 
-            {/* Hero - 极简全屏 */}
             <main className="relative">
-                {/* 背景纹理 */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] bg-[length:24px_24px]" />
+                {/* ============================================================= */}
+                {/* 1. Hero 区 - 左右分栏布局 */}
+                {/* ============================================================= */}
+                <section className="relative pt-20 pb-16 px-6 lg:px-12">
+                    <div className="max-w-[1600px] mx-auto">
+                        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                            {/* 左侧：文字内容 */}
+                            <div className="space-y-6 lg:pr-8">
+                                {/* 标签 */}
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.02]">
+                                    <Sparkles className="h-3 w-3 text-foreground/40" />
+                                    <span className="text-[11px] tracking-wide text-foreground/50 uppercase">
+                                        实体印刷色彩实操体系
+                                    </span>
+                                </div>
 
-                <section className="relative min-h-screen flex flex-col items-center justify-center px-4">
-                    {/* 主标题区 */}
-                    <div className="text-center space-y-8 max-w-3xl">
-                        {/* 标签 */}
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.02]">
-                            <Sparkles className="h-3 w-3 text-foreground/40" />
-                            <span className="text-[11px] tracking-wide text-foreground/50">
-                                实体印刷色彩实操体系
-                            </span>
+                                {/* 主标题 */}
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground leading-[1.1]">
+                                    不被定义的
+                                    <br />
+                                    <span className="text-foreground/60">色彩</span>
+                                </h1>
+
+                                {/* 副标题 */}
+                                <p className="text-lg text-foreground/50 leading-relaxed max-w-md">
+                                    基于现实验证的色彩标准系统，连接数字设计与实体印刷，让每一个色彩都可追溯、可复现。
+                                </p>
+
+                                {/* CTA 按钮组 */}
+                                <div className="flex flex-wrap items-center gap-3 pt-2">
+                                    <Link
+                                        href="/colors"
+                                        className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-foreground text-background text-sm font-medium transition-all hover:opacity-90"
+                                    >
+                                        <Palette className="h-4 w-4" />
+                                        探索色彩库
+                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    </Link>
+                                    <Link
+                                        href="/analyze"
+                                        className="group inline-flex items-center gap-2 px-6 py-3 rounded-full border border-foreground/20 text-foreground/70 text-sm font-medium transition-all hover:bg-foreground/5"
+                                    >
+                                        <Search className="h-4 w-4" />
+                                        工程分析
+                                    </Link>
+                                </div>
+
+                                {/* 快捷入口 */}
+                                <div className="flex items-center gap-6 pt-4 text-sm">
+                                    <Link href="/docs" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
+                                        <FileText className="h-4 w-4" />
+                                        文档
+                                    </Link>
+                                    <Link href="/docs/cli" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
+                                        <Terminal className="h-4 w-4" />
+                                        CLI
+                                    </Link>
+                                    <Link href="/docs/api" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
+                                        <span className="font-mono text-xs">API</span>
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* 右侧：色彩展示 */}
+                            <div className="relative">
+                                {/* 装饰背景 */}
+                                <div className="absolute -inset-4 bg-gradient-to-br from-foreground/[0.02] to-transparent rounded-3xl" />
+                                
+                                {/* 色彩卡片网格 */}
+                                <div className="relative grid grid-cols-3 gap-3">
+                                    {data.featuredColors.slice(0, 6).map((color, index) => {
+                                        const labToRgb = (l: number, a: number, b: number) => {
+                                            const y = (l + 16) / 116;
+                                            const x = a / 500 + y;
+                                            const z = y - b / 200;
+                                            const x3 = x * x * x, y3 = y * y * y, z3 = z * z * z;
+                                            const xn = x3 > 0.008856 ? x3 : (x - 16/116) / 7.787;
+                                            const yn = y3 > 0.008856 ? y3 : (y - 16/116) / 7.787;
+                                            const zn = z3 > 0.008856 ? z3 : (z - 16/116) / 7.787;
+                                            let r = xn * 95.047 * 3.2406 + yn * 100 * -1.5372 + zn * 108.883 * -0.4986;
+                                            let g = xn * 95.047 * -0.9689 + yn * 100 * 1.8758 + zn * 108.883 * 0.0415;
+                                            let bVal = xn * 95.047 * 0.0557 + yn * 100 * -0.204 + zn * 108.883 * 1.057;
+                                            r = r > 0.0031308 ? 1.055 * Math.pow(r/100, 1/2.4) - 0.055 : 12.92 * r / 100;
+                                            g = g > 0.0031308 ? 1.055 * Math.pow(g/100, 1/2.4) - 0.055 : 12.92 * g / 100;
+                                            bVal = bVal > 0.0031308 ? 1.055 * Math.pow(bVal/100, 1/2.4) - 0.055 : 12.92 * bVal / 100;
+                                            return `rgb(${Math.round(Math.min(255, Math.max(0, r * 255)))}, ${Math.round(Math.min(255, Math.max(0, g * 255)))}, ${Math.round(Math.min(255, Math.max(0, bVal * 255)))})`;
+                                        };
+                                        const bgColor = labToRgb(color.labL, color.labA, color.labB);
+                                        const isLight = color.labL > 60;
+                                        
+                                        return (
+                                            <Link
+                                                key={color.id}
+                                                href={`/color/${color.colorId}`}
+                                                className="group aspect-square rounded-2xl p-4 flex flex-col justify-end transition-transform hover:scale-[1.02]"
+                                                style={{ backgroundColor: bgColor }}
+                                            >
+                                                <span className={`text-xs font-medium truncate ${isLight ? 'text-black/70' : 'text-white/80'}`}>
+                                                    {color.name}
+                                                </span>
+                                                <span className={`text-[10px] font-mono ${isLight ? 'text-black/40' : 'text-white/50'}`}>
+                                                    {color.colorId}
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* 统计信息 */}
+                                <div className="mt-6 flex items-center justify-between px-2">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-center">
+                                            <div className="text-2xl font-semibold text-foreground/80 tabular-nums">{data.stats.totalColors}</div>
+                                            <div className="text-[10px] text-foreground/40 uppercase tracking-wide">色彩</div>
+                                        </div>
+                                        <div className="w-px h-8 bg-foreground/10" />
+                                        <div className="text-center">
+                                            <div className="text-2xl font-semibold text-foreground/80 tabular-nums">{data.stats.colorBooks}</div>
+                                            <div className="text-[10px] text-foreground/40 uppercase tracking-wide">色彩簿</div>
+                                        </div>
+                                        <div className="w-px h-8 bg-foreground/10" />
+                                        <div className="text-center">
+                                            <div className="text-2xl font-semibold text-foreground/80 tabular-nums">{data.stats.partners}</div>
+                                            <div className="text-[10px] text-foreground/40 uppercase tracking-wide">共建者</div>
+                                        </div>
+                                    </div>
+                                    <Link
+                                        href="/colors"
+                                        className="text-xs text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1"
+                                    >
+                                        查看全部
+                                        <ArrowRight className="h-3 w-3" />
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
-
-                        {/* 主标题 */}
-                        <h1 className="text-5xl sm:text-6xl md:text-7xl font-light tracking-tight text-foreground/90">
-                            不被定义的色彩
-                        </h1>
-
-                        {/* 副标题 */}
-                        <p className="text-lg sm:text-xl text-foreground/40 font-light max-w-xl mx-auto leading-relaxed">
-                            一个基于现实验证的色彩体系
-                            <br />
-                            <span className="text-foreground/25">连接数字设计与实体印刷</span>
-                        </p>
-
-                        {/* CTA */}
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                            <Link
-                                href="/colors"
-                                className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-foreground text-background text-sm font-medium transition-all hover:opacity-90"
-                            >
-                                探索色彩
-                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                            </Link>
-                            <Link
-                                href="/docs"
-                                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm text-foreground/50 hover:text-foreground/70 transition-colors"
-                            >
-                                了解更多
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* 滚动提示 */}
-                    <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
-                        <div className="w-px h-12 bg-gradient-to-b from-transparent via-foreground/10 to-foreground/20" />
                     </div>
                 </section>
 
-                {/* 首页推荐 */}
-                {homepageItems.length > 0 && (
-                    <section className="relative py-24 px-4 border-t border-foreground/5">
-                        <div className="max-w-6xl mx-auto">
-                            {/* 标题 */}
-                            <div className="flex items-center justify-between mb-12">
+                {/* ============================================================= */}
+                {/* 2. 精选色彩 */}
+                {/* ============================================================= */}
+                {data.featuredColors.length > 0 && (
+                    <section className="py-16 px-4 border-t border-foreground/5">
+                        <div className="max-w-[1600px] mx-auto">
+                            <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
-                                    <Sparkles className="h-5 w-5 text-amber-500" />
-                                    <h2 className="text-2xl font-light text-foreground/80">精选推荐</h2>
+                                    <Palette className="h-5 w-5 text-foreground/40" />
+                                    <h2 className="text-xl font-medium text-foreground/80">精选色彩</h2>
+                                    <span className="text-xs text-foreground/30 bg-foreground/5 px-2 py-0.5 rounded-full">
+                                        {data.stats.totalColors} 个
+                                    </span>
                                 </div>
                                 <Link
-                                    href="/collab"
+                                    href="/colors"
                                     className="group inline-flex items-center gap-1.5 text-sm text-foreground/40 hover:text-foreground/60 transition-colors"
                                 >
-                                    探索更多
+                                    查看全部
                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                                 </Link>
                             </div>
 
-                            {/* 内容网格 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {homepageItems.map((item) => {
-                                    const Icon = typeIcons[item.contentType as keyof typeof typeIcons];
-                                    const colors = item.colors?.slice(0, 4) || [];
-
-                                    return (
-                                        <Link
-                                            key={item.id}
-                                            href={`/collab/${item.id}` as Route}
-                                            className="group block"
-                                        >
-                                            <article className="relative overflow-hidden rounded-2xl border border-foreground/5 bg-foreground/[0.02] hover:bg-foreground/[0.04] transition-all duration-300">
-                                                {/* 封面图 */}
-                                                <div className="aspect-[16/10] overflow-hidden bg-foreground/5">
-                                                    {item.coverImageUrl ? (
-                                                        <img
-                                                            src={item.coverImageUrl}
-                                                            alt={item.title}
-                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            <Icon className="h-12 w-12 text-foreground/10" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 内容 */}
-                                                <div className="p-5">
-                                                    {/* 类型标签 */}
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/5 text-[10px] text-foreground/50">
-                                                            <Icon className="h-3 w-3" />
-                                                            {item.contentTypeLabel}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* 标题 */}
-                                                    <h3 className="text-base font-medium text-foreground/80 line-clamp-2 group-hover:text-foreground transition-colors">
-                                                        {item.title}
-                                                    </h3>
-
-                                                    {/* 摘要 */}
-                                                    {item.summary && (
-                                                        <p className="mt-2 text-sm text-foreground/40 line-clamp-2">
-                                                            {item.summary}
-                                                        </p>
-                                                    )}
-
-                                                    {/* 底部信息 */}
-                                                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-foreground/5">
-                                                        {/* 作者 */}
-                                                        <div className="flex items-center gap-2">
-                                                            {item.author.image ? (
-                                                                <img
-                                                                    src={item.author.image}
-                                                                    alt={item.author.name || ''}
-                                                                    className="h-6 w-6 rounded-full"
-                                                                />
-                                                            ) : (
-                                                                <div className="h-6 w-6 rounded-full bg-foreground/10 flex items-center justify-center text-[10px] font-medium text-foreground/40">
-                                                                    {(item.author.name || '?')[0].toUpperCase()}
-                                                                </div>
-                                                            )}
-                                                            <span className="text-xs text-foreground/40">
-                                                                {item.author.name || '匿名'}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* 关联色彩 */}
-                                                        {colors.length > 0 && (
-                                                            <div className="flex items-center gap-1">
-                                                                {colors.map(({ color }) => {
-                                                                    const rgb = labToRgb(color.labL, color.labA, color.labB);
-                                                                    return (
-                                                                        <div
-                                                                            key={color.id}
-                                                                            className="h-4 w-4 rounded-full border border-foreground/10"
-                                                                            style={{ backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` }}
-                                                                            title={color.name}
-                                                                        />
-                                                                    );
-                                                                })}
-                                                                {(item.colors?.length || 0) > 4 && (
-                                                                    <span className="text-[10px] text-foreground/30 ml-0.5">
-                                                                        +{(item.colors?.length || 0) - 4}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </article>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
+                            <FeaturedColors colors={data.featuredColors} />
                         </div>
                     </section>
                 )}
 
-                {/* 特性区 - 极简卡片 */}
-                <section className="relative py-32 px-4">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="grid md:grid-cols-3 gap-1">
+                {/* ============================================================= */}
+                {/* 3. 色彩簿推荐 */}
+                {/* ============================================================= */}
+                {data.featuredColorBooks.length > 0 && (
+                    <section className="py-16 px-4 bg-foreground/[0.02]">
+                        <div className="max-w-[1600px] mx-auto">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <BookOpen className="h-5 w-5 text-foreground/40" />
+                                    <h2 className="text-xl font-medium text-foreground/80">色彩簿</h2>
+                                    <span className="text-xs text-foreground/30 bg-foreground/5 px-2 py-0.5 rounded-full">
+                                        {data.stats.colorBooks} 本
+                                    </span>
+                                </div>
+                                <Link
+                                    href="/color-books"
+                                    className="group inline-flex items-center gap-1.5 text-sm text-foreground/40 hover:text-foreground/60 transition-colors"
+                                >
+                                    查看全部
+                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                </Link>
+                            </div>
+
+                            <FeaturedColorBooks colorBooks={data.featuredColorBooks} />
+                        </div>
+                    </section>
+                )}
+
+                {/* ============================================================= */}
+                {/* 4. 产品特性 */}
+                {/* ============================================================= */}
+                <section className="py-20 px-4">
+                    <div className="max-w-[1600px] mx-auto">
+                        <div className="text-center mb-12">
+                            <h2 className="text-2xl font-light text-foreground/80 mb-3">为什么选择 SOURCE？</h2>
+                            <p className="text-sm text-foreground/40">基于现实验证的色彩标准系统</p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[
                                 {
-                                    num: '01',
+                                    icon: ShieldCheck,
                                     title: '色彩身份证',
-                                    desc: '每个色号拥有专属页面，真源 Lab 数据、纸张表现、油墨配方。',
+                                    desc: '每个色号拥有专属页面，真源 Lab 数据、纸张表现、油墨配方一应俱全',
+                                    href: '/docs/color-identity',
                                 },
                                 {
-                                    num: '02',
-                                    title: '系统接口',
-                                    desc: 'AI 与脚本可调用的结构化命令，审计日志完整可追溯。',
+                                    icon: Terminal,
+                                    title: 'CLI 接口',
+                                    desc: 'AI 与脚本可调用的结构化命令，审计日志完整可追溯',
+                                    href: '/docs/cli',
                                 },
                                 {
-                                    num: '03',
+                                    icon: Search,
                                     title: '工程分析',
-                                    desc: '上传工程文件，解析用色、识别风险、推荐材料。',
+                                    desc: '上传工程文件，解析用色、识别风险、智能推荐材料',
+                                    href: '/analyze',
+                                },
+                                {
+                                    icon: Users,
+                                    title: '共建体系',
+                                    desc: '印厂、纸商、油墨商、实验室共同参与，数据可追溯',
+                                    href: '/partners',
                                 },
                             ].map((item) => (
-                                <div
-                                    key={item.num}
-                                    className="group p-8 border-l border-foreground/5 hover:bg-foreground/[0.02] transition-colors"
+                                <Link
+                                    key={item.title}
+                                    href={item.href}
+                                    className="group p-6 rounded-2xl border border-foreground/5 bg-background hover:bg-foreground/[0.02] hover:border-foreground/10 transition-all"
                                 >
-                                    <span className="text-[10px] font-mono text-foreground/20 tracking-widest">
-                                        {item.num}
-                                    </span>
-                                    <h3 className="mt-4 text-lg font-medium text-foreground/80">
-                                        {item.title}
-                                    </h3>
-                                    <p className="mt-2 text-sm text-foreground/40 leading-relaxed">
-                                        {item.desc}
-                                    </p>
-                                </div>
+                                    <item.icon className="h-8 w-8 text-foreground/30 mb-4 group-hover:text-foreground/50 transition-colors" />
+                                    <h3 className="text-base font-medium text-foreground/80 mb-2">{item.title}</h3>
+                                    <p className="text-sm text-foreground/40 leading-relaxed">{item.desc}</p>
+                                </Link>
                             ))}
                         </div>
                     </div>
                 </section>
 
-                {/* 数据区 */}
-                <section className="relative py-24 px-4 border-t border-foreground/5">
-                    <div className="max-w-5xl mx-auto">
+                {/* ============================================================= */}
+                {/* 5. 共建者展示 */}
+                {/* ============================================================= */}
+                <section className="py-20 px-4 border-t border-foreground/5 bg-gradient-to-b from-foreground/[0.01] to-transparent">
+                    <div className="max-w-[1600px] mx-auto">
+                        <PartnersSection partners={data.partners} stats={data.partnerStats} />
+                    </div>
+                </section>
+
+                {/* ============================================================= */}
+                {/* 6. ColLab 精选 */}
+                {/* ============================================================= */}
+                <section className="py-16 px-4 bg-foreground/[0.02]">
+                    <div className="max-w-[1600px] mx-auto">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <FlaskConical className="h-5 w-5 text-foreground/40" />
+                                <h2 className="text-xl font-medium text-foreground/80">ColLab 精选</h2>
+                            </div>
+                            <Link
+                                href="/collab"
+                                className="group inline-flex items-center gap-1.5 text-sm text-foreground/40 hover:text-foreground/60 transition-colors"
+                            >
+                                探索更多
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                        </div>
+
+                        <CollabSection contents={data.featuredContents} />
+                    </div>
+                </section>
+
+                {/* ============================================================= */}
+                {/* 7. 实时统计 */}
+                {/* ============================================================= */}
+                <section className="py-20 px-4 border-t border-foreground/5">
+                    <div className="max-w-[1600px] mx-auto">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                             {[
-                                { value: '3+', label: '验证色彩' },
-                                { value: '7+', label: '合作伙伴' },
-                                { value: '5', label: '纸张类型' },
-                                { value: '∞', label: '可能性' },
+                                { value: data.stats.totalColors, label: '色彩数据', suffix: '' },
+                                { value: data.stats.colorBooks, label: '色彩簿', suffix: '' },
+                                { value: data.stats.partners, label: '共建者', suffix: '' },
+                                { value: `${data.stats.cliCommands}+`, label: 'CLI 命令', suffix: '' },
                             ].map((stat) => (
                                 <div key={stat.label} className="text-center">
-                                    <div className="text-3xl sm:text-4xl font-light text-foreground/70">
-                                        {stat.value}
+                                    <div className="text-3xl sm:text-4xl font-light text-foreground/70 tabular-nums">
+                                        {stat.value}{stat.suffix}
                                     </div>
                                     <div className="mt-1 text-[11px] text-foreground/30 tracking-wide">
                                         {stat.label}
@@ -264,33 +474,51 @@ export default function HomePage() {
                 </section>
             </main>
 
-            {/* Footer - 极简 */}
-            <footer className="py-8 px-4 border-t border-foreground/5">
-                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <span className="text-[11px] text-foreground/30 tracking-wide">
-                        SOURCE v0.2.2
-                    </span>
-                    <div className="flex items-center gap-6">
-                        <Link
-                            href="/docs"
-                            className="text-[11px] text-foreground/30 hover:text-foreground/50 transition-colors"
-                        >
-                            文档
-                        </Link>
-                        <Link
-                            href="/partners"
-                            className="text-[11px] text-foreground/30 hover:text-foreground/50 transition-colors"
-                        >
-                            合作者
-                        </Link>
-                        <a
-                            href="https://github.com/donhauser001/SOURCE"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] text-foreground/30 hover:text-foreground/50 transition-colors"
-                        >
-                            GitHub
-                        </a>
+            {/* ============================================================= */}
+            {/* 8. Footer */}
+            {/* ============================================================= */}
+            <footer className="py-12 px-4 border-t border-foreground/5">
+                <div className="max-w-[1600px] mx-auto">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        {/* 左侧：Logo + 版本 */}
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-bold tracking-[0.1em] text-foreground/60">SOURCE</span>
+                            <span className="text-[11px] text-foreground/30 px-2 py-0.5 rounded-full border border-foreground/10">
+                                v0.6.0 测试版
+                            </span>
+                        </div>
+
+                        {/* 中间：链接 */}
+                        <div className="flex items-center gap-6 text-[11px]">
+                            <Link href="/colors" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                色彩库
+                            </Link>
+                            <Link href="/color-books" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                色彩簿
+                            </Link>
+                            <Link href="/analyze" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                工程分析
+                            </Link>
+                            <Link href="/docs/api" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                API 文档
+                            </Link>
+                            <Link href="/partners" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                共建者
+                            </Link>
+                            <a
+                                href="https://github.com/donhauser001/SOURCE"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-foreground/30 hover:text-foreground/50 transition-colors"
+                            >
+                                GitHub
+                            </a>
+                        </div>
+
+                        {/* 右侧：版权 */}
+                        <div className="text-[11px] text-foreground/20">
+                            © 2026 SOURCE. All rights reserved.
+                        </div>
                     </div>
                 </div>
             </footer>

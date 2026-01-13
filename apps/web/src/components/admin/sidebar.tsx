@@ -151,7 +151,7 @@ const navGroups: NavGroup[] = [
                 icon: Users,
             },
             {
-                title: '合作者',
+                title: '共建者',
                 href: '/admin/partners',
                 icon: Building2,
             },

@@ -1,5 +1,5 @@
 /**
- * 编辑合作者页面
+ * 编辑共建者页面
  */
 
 import { notFound } from 'next/navigation';

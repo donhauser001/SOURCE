@@ -90,7 +90,7 @@ export default function AdminBatchesPage() {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="搜索批次编号、创建人、合作者..."
+                                placeholder="搜索批次编号、创建人、共建者..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-9"
@@ -135,7 +135,7 @@ export default function AdminBatchesPage() {
                                     <tr className="border-b">
                                         <th className="text-left py-3 px-4 font-medium">批次编号</th>
                                         <th className="text-left py-3 px-4 font-medium">类型</th>
-                                        <th className="text-left py-3 px-4 font-medium">合作者</th>
+                                        <th className="text-left py-3 px-4 font-medium">共建者</th>
                                         <th className="text-left py-3 px-4 font-medium">仪器型号</th>
                                         <th className="text-left py-3 px-4 font-medium">色彩数</th>
                                         <th className="text-left py-3 px-4 font-medium">纸张表现</th>

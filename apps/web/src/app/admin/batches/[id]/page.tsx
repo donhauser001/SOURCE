@@ -118,7 +118,7 @@ export default async function BatchDetailPage({ params }: PageProps) {
                     </div>
                     {batch.partner && (
                         <div>
-                            <div className="text-sm text-muted-foreground mb-1">关联合作者</div>
+                            <div className="text-sm text-muted-foreground mb-1">关联共建者</div>
                             <div>
                                 <div className="font-medium">{batch.partner.shortName || batch.partner.name}</div>
                                 <div className="text-sm text-muted-foreground">{batch.partner.partnerId}</div>
