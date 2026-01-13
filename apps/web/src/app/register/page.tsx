@@ -7,7 +7,7 @@
  * 新用户首次使用邮箱时自动创建账户
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -24,7 +24,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export default function RegisterPage() {
+function RegisterPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
@@ -326,5 +326,20 @@ export default function RegisterPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="relative">
+                    <div className="h-16 w-16 rounded-full border-4 border-gray-200" />
+                    <div className="absolute inset-0 h-16 w-16 rounded-full border-4 border-t-gray-900 animate-spin" />
+                </div>
+            </div>
+        }>
+            <RegisterPageInner />
+        </Suspense>
     );
 }

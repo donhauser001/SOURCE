@@ -2,14 +2,12 @@
  * NextAuth.js 配置 (v5)
  *
  * 支持：
- * - 邮箱魔法链接登录
- * - 开发环境凭证登录
+ * - 邮箱密码登录
  */
 
 import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
-import Nodemailer from 'next-auth/providers/nodemailer';
 import { prisma } from './db';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -20,66 +18,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     pages: {
         signIn: '/login',
         error: '/login',
-        verifyRequest: '/login/verify',
     },
     providers: [
-        // 邮箱魔法链接登录（需要配置 EMAIL_SERVER）
-        ...(process.env.EMAIL_SERVER
-            ? [
-                Nodemailer({
-                    server: process.env.EMAIL_SERVER,
-                    from: process.env.EMAIL_FROM || 'SOURCE <noreply@source.ink>',
-                }),
-            ]
-            : []),
-        // 开发环境：凭证登录（仅用于测试）
-        ...(process.env.NODE_ENV === 'development'
-            ? [
-                Credentials({
-                    id: 'dev-credentials',
-                    name: '开发登录',
-                    credentials: {
-                        email: { label: '邮箱', type: 'email' },
-                    },
-                    async authorize(credentials) {
-                        const email = credentials?.email as string;
-                        if (!email) return null;
+        // 邮箱密码登录
+        Credentials({
+            id: 'credentials',
+            name: '邮箱密码登录',
+            credentials: {
+                email: { label: '邮箱', type: 'email' },
+                password: { label: '密码', type: 'password' },
+            },
+            async authorize(credentials) {
+                const email = credentials?.email as string;
+                const password = credentials?.password as string;
+                
+                if (!email || !password) return null;
 
-                        // 管理员邮箱列表（开发环境自动授权）
-                        const adminEmails = ['admin@source.ink', 'dev-admin@source.ink'];
-                        const isAdmin = adminEmails.includes(email);
+                // 查找用户
+                const user = await prisma.user.findUnique({
+                    where: { email },
+                });
 
-                        // 开发环境自动创建/获取用户
-                        let user = await prisma.user.findUnique({
-                            where: { email },
-                        });
+                if (!user) return null;
 
-                        if (!user) {
-                            user = await prisma.user.create({
-                                data: {
-                                    email,
-                                    name: email.split('@')[0],
-                                    role: isAdmin ? 'ADMIN' : 'USER',
-                                },
-                            });
-                        } else if (isAdmin && user.role !== 'ADMIN') {
-                            // 确保管理员邮箱拥有管理员权限
-                            user = await prisma.user.update({
-                                where: { id: user.id },
-                                data: { role: 'ADMIN' },
-                            });
-                        }
+                // 验证密码（从环境变量或数据库验证）
+                // 管理员密码验证
+                const adminPassword = process.env.ADMIN_PASSWORD || 'Anyfree752538';
+                if (user.role === 'ADMIN' && password === adminPassword) {
+                    return {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        image: user.image,
+                    };
+                }
 
-                        return {
-                            id: user.id,
-                            email: user.email,
-                            name: user.name,
-                            image: user.image,
-                        };
-                    },
-                }),
-            ]
-            : []),
+                // 普通用户暂不支持密码登录
+                return null;
+            },
+        }),
     ],
     callbacks: {
         async session({ session, token }) {

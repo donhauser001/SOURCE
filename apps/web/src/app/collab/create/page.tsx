@@ -9,6 +9,7 @@
  * - /collab/create?type=article - 创建文章
  */
 
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Palette, BookOpen, FileText } from 'lucide-react';
@@ -38,7 +39,7 @@ const typeConfig = {
     },
 };
 
-export default function CreateContentPage() {
+function CreateContentPageInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { status } = useSession();
@@ -98,5 +99,17 @@ export default function CreateContentPage() {
                 />
             </div>
         </div>
+    );
+}
+
+export default function CreateContentPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-pulse text-muted-foreground">加载中...</div>
+            </div>
+        }>
+            <CreateContentPageInner />
+        </Suspense>
     );
 }
