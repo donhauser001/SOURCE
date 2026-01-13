@@ -24,6 +24,8 @@ import { systemConfigRouter } from './system-config';
 import { contentCategoryRouter } from './content-category';
 import { contentRouter, contentAdminRouter } from './content';
 import { homeRouter } from './home';
+import { helpRouter } from './help';
+import { ticketRouter } from './ticket';
 
 export const appRouter = createTRPCRouter({
     home: homeRouter,
@@ -46,6 +48,8 @@ export const appRouter = createTRPCRouter({
     contentCategory: contentCategoryRouter,
     content: contentRouter,
     contentAdmin: contentAdminRouter,
+    help: helpRouter,
+    ticket: ticketRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -24,44 +24,49 @@ model User {
   image         String?
 
   // 用户角色（5 级角色体系）
-  role          UserRole  @default(USER)
+  role UserRole @default(USER)
 
   // 权限等级（付费/验证状态）
-  tier          UserTier  @default(FREE)
+  tier UserTier @default(FREE)
 
   // 关联的合作方（如果用户属于某个合作方）
-  partnerId     String?
-  partner       Partner?  @relation(fields: [partnerId], references: [id])
+  partnerId String?
+  partner   Partner? @relation(fields: [partnerId], references: [id])
 
   // NextAuth 关联
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   // 业务关联
-  apiKeys       ApiKey[]
+  apiKeys         ApiKey[]
   analysisReports AnalysisReport[]
-  buyIntents    BuyIntent[]
+  buyIntents      BuyIntent[]
 
   // 颜色参与记录（作为个人）
   colorParticipations ColorParticipation[]
-  
+
   // 用户自建色彩簿
-  colorBooks    ColorBook[] @relation("UserColorBooks")
-  
+  colorBooks ColorBook[] @relation("UserColorBooks")
+
   // 用户作品
-  works         UserWork[]
-  
+  works UserWork[]
+
   // ColLab 内容系统
-  contents      Content[]
+  contents       Content[]
   contentReviews ContentReview[]
 
-  // 账户状态
-  isActive      Boolean   @default(true)
-  disabledAt    DateTime?
-  disabledBy    String?
+  // 支持系统 - 工单
+  tickets         SupportTicket[] @relation("UserTickets")
+  assignedTickets SupportTicket[] @relation("AssignedTickets")
+  ticketReplies   TicketReply[]   @relation("TicketReplies")
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  // 账户状态
+  isActive   Boolean   @default(true)
+  disabledAt DateTime?
+  disabledBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([role])
   @@index([partnerId])
@@ -106,18 +111,18 @@ model VerificationToken {
 
 // 用户角色（权限体系）
 enum UserRole {
-  ADMIN         // 管理员 - 全部权限
-  OPERATOR      // 运营人员 - 数据管理、内容发布
-  AUDITOR       // 审计成员 - 数据审核、质量把控
-  PARTNER       // 合作方用户 - 关联到 Partner，查看相关数据
-  USER          // 普通用户 - 基础访问
+  ADMIN // 管理员 - 全部权限
+  OPERATOR // 运营人员 - 数据管理、内容发布
+  AUDITOR // 审计成员 - 数据审核、质量把控
+  PARTNER // 合作方用户 - 关联到 Partner，查看相关数据
+  USER // 普通用户 - 基础访问
 }
 
 // 用户付费/验证等级
 enum UserTier {
-  FREE          // 免费用户
-  VERIFIED      // 已验证（激活码）
-  PAID          // 付费用户
+  FREE // 免费用户
+  VERIFIED // 已验证（激活码）
+  PAID // 付费用户
 }
 
 // =============================================================================
@@ -125,43 +130,43 @@ enum UserTier {
 // =============================================================================
 
 model Partner {
-  id            String   @id @default(cuid())
-  partnerId     String   @unique  // 共建者编号，如 "PRINTER-BJ-001"
-  name          String            // 共建者名称
-  shortName     String?           // 简称
+  id        String  @id @default(cuid())
+  partnerId String  @unique // 共建者编号，如 "PRINTER-BJ-001"
+  name      String // 共建者名称
+  shortName String? // 简称
 
   // 共建者类型（可多选，用数组）
-  types         PartnerType[]     // 印厂/纸商/油墨商（一个共建者可能多重身份）
+  types PartnerType[] // 印厂/纸商/油墨商（一个共建者可能多重身份）
 
   // 基本信息
-  description   String?           // 简介
-  logoUrl       String?           // Logo
-  websiteUrl    String?           // 官网
-  contactEmail  String?           // 联系邮箱
-  contactPhone  String?           // 联系电话
-  address       String?           // 地址
-  region        String?           // 地区（省/市）
+  description  String? // 简介
+  logoUrl      String? // Logo
+  websiteUrl   String? // 官网
+  contactEmail String? // 联系邮箱
+  contactPhone String? // 联系电话
+  address      String? // 地址
+  region       String? // 地区（省/市）
 
   // 资质信息
-  certifications String[]         // 资质证书列表
-  establishedYear Int?            // 成立年份
+  certifications  String[] // 资质证书列表
+  establishedYear Int? // 成立年份
 
   // 状态
-  status        PartnerStatus @default(PENDING)
-  verifiedAt    DateTime?         // 验证时间
+  status     PartnerStatus @default(PENDING)
+  verifiedAt DateTime? // 验证时间
 
   // 关联
-  users         User[]            // 该合作方的用户
+  users               User[] // 该合作方的用户
   colorParticipations ColorParticipation[]
-  batches       Batch[]           // 执行的批次
-  testReports   RecipeTestReport[] // 执行的测试报告
-  
-  // 供应关联（多对多）
-  suppliedPaperTypes  PaperTypeOption[]  @relation("PaperTypeSuppliers")  // 供应的纸型（对 PAPER_VENDOR 有意义）
-  suppliedInks        InkOption[]        @relation("InkSuppliers")        // 供应的油墨（对 INK_VENDOR 有意义）
+  batches             Batch[] // 执行的批次
+  testReports         RecipeTestReport[] // 执行的测试报告
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // 供应关联（多对多）
+  suppliedPaperTypes PaperTypeOption[] @relation("PaperTypeSuppliers") // 供应的纸型（对 PAPER_VENDOR 有意义）
+  suppliedInks       InkOption[]       @relation("InkSuppliers") // 供应的油墨（对 INK_VENDOR 有意义）
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([partnerId])
   @@index([status])
@@ -169,18 +174,18 @@ model Partner {
 }
 
 enum PartnerType {
-  PRINTER       // 印厂
-  PAPER_VENDOR  // 纸商
-  INK_VENDOR    // 油墨商
-  LAB           // 实验室/检测机构
-  CONSULTANT    // 顾问/专家
+  PRINTER // 印厂
+  PAPER_VENDOR // 纸商
+  INK_VENDOR // 油墨商
+  LAB // 实验室/检测机构
+  CONSULTANT // 顾问/专家
 }
 
 enum PartnerStatus {
-  PENDING       // 待审核
-  ACTIVE        // 正常
-  SUSPENDED     // 暂停合作
-  INACTIVE      // 停止合作
+  PENDING // 待审核
+  ACTIVE // 正常
+  SUSPENDED // 暂停合作
+  INACTIVE // 停止合作
 }
 
 // =============================================================================
@@ -188,47 +193,47 @@ enum PartnerStatus {
 // =============================================================================
 
 model ColorParticipation {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // 参与的颜色
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
   // 参与实体类型
-  entityType    ParticipantEntityType
+  entityType ParticipantEntityType
 
   // 共建者（根据 entityType 关联不同表）
-  partnerId     String?
-  partner       Partner? @relation(fields: [partnerId], references: [id])
+  partnerId String?
+  partner   Partner? @relation(fields: [partnerId], references: [id])
 
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   // 外部实体（机构名称，用于无需入库的临时合作）
   externalEntityName String?
 
   // 在该颜色中承担的角色
-  roleInColor   ParticipationRole
+  roleInColor ParticipationRole
 
   // 参与范围（参与到身份证/配方/批次/研究）
-  scope         ParticipationScope @default(IDENTITY)
+  scope ParticipationScope @default(IDENTITY)
 
   // 状态
-  status        ParticipationStatus @default(ACTIVE)
-  startAt       DateTime @default(now())
-  endAt         DateTime?
+  status  ParticipationStatus @default(ACTIVE)
+  startAt DateTime            @default(now())
+  endAt   DateTime?
 
   // 证据链
-  evidenceType  EvidenceType?
-  evidenceId    String?           // 关联的报告/批次/ColLab ID
-  evidenceUrl   String?           // 外部证据链接
+  evidenceType EvidenceType?
+  evidenceId   String? // 关联的报告/批次/ColLab ID
+  evidenceUrl  String? // 外部证据链接
 
   // 备注
-  note          String?
+  note String?
 
-  createdAt     DateTime @default(now())
-  createdBy     String?           // 操作人
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  createdBy String? // 操作人
+  updatedAt DateTime @updatedAt
 
   @@unique([colorId, entityType, partnerId, roleInColor], name: "unique_partner_participation")
   @@unique([colorId, entityType, userId, roleInColor], name: "unique_user_participation")
@@ -241,44 +246,44 @@ model ColorParticipation {
 
 // 参与实体类型
 enum ParticipantEntityType {
-  PARTNER       // 合作方（印厂/纸商/油墨商）
-  USER          // 个人用户
-  EXTERNAL      // 外部机构（临时，无需入库）
+  PARTNER // 合作方（印厂/纸商/油墨商）
+  USER // 个人用户
+  EXTERNAL // 外部机构（临时，无需入库）
 }
 
 // 在颜色中承担的角色
 enum ParticipationRole {
-  PRINTER           // 印厂 - 印刷打样、生产验证
-  PAPER_SUPPLIER    // 纸张供应商 - 提供纸张、纸张数据
-  INK_SUPPLIER      // 油墨供应商 - 提供油墨、配方建议
-  AUDITOR           // 审计顾问 - 数据审核、质量把控
-  CO_BUILDER        // 共建者 - 研究合作、数据贡献
-  TESTER            // 测试员 - 执行测试、数据采集
-  RESEARCHER        // 研究员 - 理论研究、报告撰写
+  PRINTER // 印厂 - 印刷打样、生产验证
+  PAPER_SUPPLIER // 纸张供应商 - 提供纸张、纸张数据
+  INK_SUPPLIER // 油墨供应商 - 提供油墨、配方建议
+  AUDITOR // 审计顾问 - 数据审核、质量把控
+  CO_BUILDER // 共建者 - 研究合作、数据贡献
+  TESTER // 测试员 - 执行测试、数据采集
+  RESEARCHER // 研究员 - 理论研究、报告撰写
 }
 
 // 参与范围
 enum ParticipationScope {
-  IDENTITY      // 色彩身份证整体
-  RECIPE        // 配方验证
-  BATCH         // 批次追样
-  COLLAB        // 研究合作
+  IDENTITY // 色彩身份证整体
+  RECIPE // 配方验证
+  BATCH // 批次追样
+  COLLAB // 研究合作
 }
 
 // 参与状态
 enum ParticipationStatus {
-  ACTIVE        // 有效
-  INACTIVE      // 暂停
-  REVOKED       // 已撤销
-  EXPIRED       // 已过期
+  ACTIVE // 有效
+  INACTIVE // 暂停
+  REVOKED // 已撤销
+  EXPIRED // 已过期
 }
 
 // 证据类型
 enum EvidenceType {
-  REPORT        // 测试报告
-  BATCH         // 批次记录
-  COLLAB        // ColLab 研究
-  DOCUMENT      // 文档/合同
+  REPORT // 测试报告
+  BATCH // 批次记录
+  COLLAB // ColLab 研究
+  DOCUMENT // 文档/合同
 }
 
 // =============================================================================
@@ -286,44 +291,44 @@ enum EvidenceType {
 // =============================================================================
 
 model Color {
-  id            String   @id @default(cuid())
-  colorId       String   @unique  // 固定编号，如 "CN-Song-04"（不可变）
-  name          String            // 文化名称，如 "烟雨青"
-  slug          String   @unique  // URL 标识
+  id      String @id @default(cuid())
+  colorId String @unique // 固定编号，如 "CN-Song-04"（不可变）
+  name    String // 文化名称，如 "烟雨青"
+  slug    String @unique // URL 标识
 
   // 真源数据 (The True Source) - 全局唯一，禁止多值
-  labL          Float             // 真源 L*
-  labA          Float             // 真源 a*
-  labB          Float             // 真源 b*
-  deltaETolerance Float @default(2.0)  // 允许偏差 ΔE
+  labL            Float // 真源 L*
+  labA            Float // 真源 a*
+  labB            Float // 真源 b*
+  deltaETolerance Float @default(2.0) // 允许偏差 ΔE
 
   // 测量信息
-  measurementDevice    String            // 分光测色仪型号（M）
-  measurementStandard  String            // 测量标准，如 D50/2°（M）
-  measurementCondition String?           // 测量条件说明（R）
-  measuredAt           DateTime          // 测量时间
-  trueSourceNote       String?           // 真源说明（R）
+  measurementDevice    String // 分光测色仪型号（M）
+  measurementStandard  String // 测量标准，如 D50/2°（M）
+  measurementCondition String? // 测量条件说明（R）
+  measuredAt           DateTime // 测量时间
+  trueSourceNote       String? // 真源说明（R）
 
   // 页面元信息
-  version       String   @default("1.0")  // 页面版本（R）
-  lastVerifiedAt DateTime?                // 最近整体验证时间（R）
+  version        String    @default("1.0") // 页面版本（R）
+  lastVerifiedAt DateTime? // 最近整体验证时间（R）
 
   // 审计与溯源
-  auditStatus   AuditStatus @default(PENDING)  // verified / pending
-  auditors      String[]                  // 审计人/机构
-  auditNotes    String?                   // 审计说明
-  lastAuditAt   DateTime?                 // 最近审计时间
+  auditStatus AuditStatus @default(PENDING) // verified / pending
+  auditors    String[] // 审计人/机构
+  auditNotes  String? // 审计说明
+  lastAuditAt DateTime? // 最近审计时间
 
   // 证据链
-  batchId       String?
-  batch         Batch?   @relation(fields: [batchId], references: [id])
-  sourceType    SourceType @default(MEASURE)
+  batchId    String?
+  batch      Batch?     @relation(fields: [batchId], references: [id])
+  sourceType SourceType @default(MEASURE)
 
   // 状态
-  status        ColorStatus @default(EXPERIMENTAL)
-  
+  status ColorStatus @default(EXPERIMENTAL)
+
   // 色系分类（便于筛选）
-  colorFamily   ColorFamily?
+  colorFamily ColorFamily?
 
   // 关联 - 旧模型（向后兼容）
   paperProfiles PaperProfile[]
@@ -335,19 +340,19 @@ model Color {
   risks                ColorRisk[]
 
   // 关联 - 共建者参与记录
-  participations       ColorParticipation[]
-  
-  // 关联 - 色彩簿
-  colorBookEntries     ColorBookEntry[]
-  
-  // 关联 - 用户作品
-  userWorkColors       UserWorkColor[]
-  
-  // 关联 - ColLab 内容
-  contentColors        ContentColor[]
+  participations ColorParticipation[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // 关联 - 色彩簿
+  colorBookEntries ColorBookEntry[]
+
+  // 关联 - 用户作品
+  userWorkColors UserWorkColor[]
+
+  // 关联 - ColLab 内容
+  contentColors ContentColor[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([colorId])
   @@index([slug])
@@ -357,35 +362,35 @@ model Color {
 }
 
 enum ColorStatus {
-  ACTIVE        // 激活（正式使用）
-  DEPRECATED    // 已废弃
-  EXPERIMENTAL  // 实验中
-  DRAFT         // 草稿（向后兼容）
-  VERIFIED      // 已验证（向后兼容，映射到 ACTIVE）
+  ACTIVE // 激活（正式使用）
+  DEPRECATED // 已废弃
+  EXPERIMENTAL // 实验中
+  DRAFT // 草稿（向后兼容）
+  VERIFIED // 已验证（向后兼容，映射到 ACTIVE）
 }
 
 enum SourceType {
-  MEASURE       // 分光仪测量
-  CALCULATED    // 计算推导
-  IMPORTED      // 外部导入
+  MEASURE // 分光仪测量
+  CALCULATED // 计算推导
+  IMPORTED // 外部导入
 }
 
 enum AuditStatus {
-  VERIFIED      // 已验证
-  PENDING       // 待审核
+  VERIFIED // 已验证
+  PENDING // 待审核
 }
 
 enum ColorFamily {
-  RED           // 红色系
-  ORANGE        // 橙色系
-  YELLOW        // 黄色系
-  GREEN         // 绿色系
-  CYAN          // 青色系
-  BLUE          // 蓝色系
-  PURPLE        // 紫色系
-  PINK          // 粉色系
-  BROWN         // 棕色系
-  NEUTRAL       // 黑白灰（中性色）
+  RED // 红色系
+  ORANGE // 橙色系
+  YELLOW // 黄色系
+  GREEN // 绿色系
+  CYAN // 青色系
+  BLUE // 蓝色系
+  PURPLE // 紫色系
+  PINK // 粉色系
+  BROWN // 棕色系
+  NEUTRAL // 黑白灰（中性色）
 }
 
 // =============================================================================
@@ -393,51 +398,51 @@ enum ColorFamily {
 // =============================================================================
 
 model ColorBook {
-  id            String   @id @default(cuid())
-  bookId        String   @unique  // 色彩簿编号
-  name          String            // 名称
-  slug          String   @unique  // URL 标识
-  
+  id     String @id @default(cuid())
+  bookId String @unique // 色彩簿编号
+  name   String // 名称
+  slug   String @unique // URL 标识
+
   // 描述信息
-  description   String?           // 详细描述
-  shortDesc     String?           // 简短描述
-  coverImageUrl String?           // 封面图
-  
+  description   String? // 详细描述
+  shortDesc     String? // 简短描述
+  coverImageUrl String? // 封面图
+
   // 出版信息
-  publisher     String?           // 出版商
-  publishedYear Int?              // 出版年份
-  edition       String?           // 版本
-  isbn          String?           // ISBN
-  
+  publisher     String? // 出版商
+  publishedYear Int? // 出版年份
+  edition       String? // 版本
+  isbn          String? // ISBN
+
   // 分类
-  colorSystem   ColorSystem?      // 色彩系统
-  categoryId    String            // 分类 ID
-  category      ColorBookCategoryOption @relation(fields: [categoryId], references: [id])
-  tags          String[]          // 标签
-  
+  colorSystem ColorSystem? // 色彩系统
+  categoryId  String // 分类 ID
+  category    ColorBookCategoryOption @relation(fields: [categoryId], references: [id])
+  tags        String[] // 标签
+
   // 统计
-  totalColors   Int      @default(0)  // 色彩总数
-  
+  totalColors Int @default(0) // 色彩总数
+
   // 状态
-  status        ColorBookStatus @default(DRAFT)
-  
+  status ColorBookStatus @default(DRAFT)
+
   // 所有者（用户自建色彩簿）
-  ownerId       String?           // 所有者用户 ID（null 表示系统/官方色彩簿）
-  owner         User?     @relation("UserColorBooks", fields: [ownerId], references: [id])
-  isPublic      Boolean   @default(false)  // 是否公开（用户色彩簿默认私有）
-  
+  ownerId  String? // 所有者用户 ID（null 表示系统/官方色彩簿）
+  owner    User?   @relation("UserColorBooks", fields: [ownerId], references: [id])
+  isPublic Boolean @default(false) // 是否公开（用户色彩簿默认私有）
+
   // 关联
-  entries       ColorBookEntry[]
-  
+  entries ColorBookEntry[]
+
   // 引用此色彩簿的作品
-  works         UserWork[]
-  
+  works UserWork[]
+
   // ColLab 内容关联
-  contents      Content[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  contents Content[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([bookId])
   @@index([slug])
   @@index([status])
@@ -446,17 +451,17 @@ model ColorBook {
 }
 
 model ColorBookCategoryOption {
-  id        String      @id @default(cuid())
-  name      String      @unique  // 分类名称
-  order     Int         @default(0)
-  isDefault Boolean     @default(false)
-  
+  id        String  @id @default(cuid())
+  name      String  @unique // 分类名称
+  order     Int     @default(0)
+  isDefault Boolean @default(false)
+
   // 关联
   colorBooks ColorBook[]
-  
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([order])
 }
 
@@ -464,37 +469,37 @@ model ColorBookEntry {
   id          String    @id @default(cuid())
   colorBookId String
   colorBook   ColorBook @relation(fields: [colorBookId], references: [id], onDelete: Cascade)
-  
-  colorId     String
-  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
-  
+
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
   // 附加信息
-  order       Int       @default(0)  // 排序
-  pageNumber  String?                // 页码
-  sectionName String?                // 章节名
-  note        String?                // 备注
-  
-  createdAt   DateTime  @default(now())
-  
+  order       Int     @default(0) // 排序
+  pageNumber  String? // 页码
+  sectionName String? // 章节名
+  note        String? // 备注
+
+  createdAt DateTime @default(now())
+
   @@unique([colorBookId, colorId])
   @@index([colorBookId, order])
   @@index([colorId])
 }
 
 enum ColorSystem {
-  PANTONE       // 潘通
-  RAL           // RAL
-  NCS           // NCS
-  MUNSELL       // 孟塞尔
-  CMYK          // CMYK
-  SOURCE        // SOURCE 原创
-  OTHER         // 其他
+  PANTONE // 潘通
+  RAL // RAL
+  NCS // NCS
+  MUNSELL // 孟塞尔
+  CMYK // CMYK
+  SOURCE // SOURCE 原创
+  OTHER // 其他
 }
 
 enum ColorBookStatus {
-  DRAFT         // 草稿
-  ACTIVE        // 已发布
-  ARCHIVED      // 已归档
+  DRAFT // 草稿
+  ACTIVE // 已发布
+  ARCHIVED // 已归档
 }
 
 // =============================================================================
@@ -502,30 +507,30 @@ enum ColorBookStatus {
 // =============================================================================
 
 model PaperTypeOption {
-  id              String   @id @default(cuid())
-  code            String   @unique  // 英文标识符，如 PREMIUM_MATTE
-  name            String            // 中文名称，如 高阶映画
-  description     String?           // 详细描述
-  
+  id          String  @id @default(cuid())
+  code        String  @unique // 英文标识符，如 PREMIUM_MATTE
+  name        String // 中文名称，如 高阶映画
+  description String? // 详细描述
+
   // 纸张特性参数
-  category        PaperCategory     // 涂布类型：COATED/UNCOATED/SPECIALTY
-  gramWeightMin   Int?              // 最小克重 (g/m²)
-  gramWeightMax   Int?              // 最大克重 (g/m²)
-  surfaceFinish   String?           // 表面处理：光面/哑面/压纹等
-  suitableFor     Json?             // 适用场景 JSON 数组
-  
+  category      PaperCategory // 涂布类型：COATED/UNCOATED/SPECIALTY
+  gramWeightMin Int? // 最小克重 (g/m²)
+  gramWeightMax Int? // 最大克重 (g/m²)
+  surfaceFinish String? // 表面处理：光面/哑面/压纹等
+  suitableFor   Json? // 适用场景 JSON 数组
+
   // 管理字段
-  order           Int      @default(0)  // 排序
-  isActive        Boolean  @default(true) // 软删除标记
-  
+  order    Int     @default(0) // 排序
+  isActive Boolean @default(true) // 软删除标记
+
   // 关联
-  paperProfiles   PaperProfile[]
-  proofingPacks   ProofingPack[]
-  suppliers       Partner[]  @relation("PaperTypeSuppliers")  // 供应该纸型的纸商（多对多）
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  paperProfiles PaperProfile[]
+  proofingPacks ProofingPack[]
+  suppliers     Partner[]      @relation("PaperTypeSuppliers") // 供应该纸型的纸商（多对多）
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([code])
   @@index([isActive])
   @@index([order])
@@ -536,40 +541,40 @@ model PaperTypeOption {
 // =============================================================================
 
 model PaperProfile {
-  id            String   @id @default(cuid())
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
   // 纸型关联（外键）
-  paperTypeId   String
-  paperType     PaperTypeOption @relation(fields: [paperTypeId], references: [id])
+  paperTypeId String
+  paperType   PaperTypeOption @relation(fields: [paperTypeId], references: [id])
 
   // 该纸张上的实测 Lab
-  labL          Float
-  labA          Float
-  labB          Float
+  labL Float
+  labA Float
+  labB Float
 
   // 与真源的色差
-  deltaE        Float?            // 计算得出
+  deltaE Float? // 计算得出
 
   // 材质特性
-  glossiness    Float             // 光泽度 0-100
-  inkAbsorption Float             // 吸墨率 0-100
-  gamutCoverage Float             // 色域覆盖率 0-100
+  glossiness    Float // 光泽度 0-100
+  inkAbsorption Float // 吸墨率 0-100
+  gamutCoverage Float // 色域覆盖率 0-100
 
   // 高清扫描图 URL
-  scanImageUrl  String?
+  scanImageUrl String?
 
   // 推荐等级
-  recommendation Recommendation   // BEST / GOOD / CAUTION / AVOID
-  cautionNote   String?           // 风险说明
+  recommendation Recommendation // BEST / GOOD / CAUTION / AVOID
+  cautionNote    String? // 风险说明
 
   // 证据链
-  batchId       String?
-  batch         Batch?   @relation(fields: [batchId], references: [id])
+  batchId String?
+  batch   Batch?  @relation(fields: [batchId], references: [id])
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([colorId, paperTypeId])
   @@index([paperTypeId])
@@ -577,10 +582,10 @@ model PaperProfile {
 }
 
 enum Recommendation {
-  BEST          // 最佳拍档
-  GOOD          // 表现良好
-  CAUTION       // 需注意
-  AVOID         // 建议慎用
+  BEST // 最佳拍档
+  GOOD // 表现良好
+  CAUTION // 需注意
+  AVOID // 建议慎用
 }
 
 // =============================================================================
@@ -588,32 +593,32 @@ enum Recommendation {
 // =============================================================================
 
 model Paper {
-  id            String   @id @default(cuid())
-  paperId       String   @unique  // 纸张 ID，如 "PAPER-PREMIUM-MATTE"
-  name          String            // 纸张名称
-  paperCategory PaperCategory     // 涂布 / 非涂布 / 特种
+  id            String        @id @default(cuid())
+  paperId       String        @unique // 纸张 ID，如 "PAPER-PREMIUM-MATTE"
+  name          String // 纸张名称
+  paperCategory PaperCategory // 涂布 / 非涂布 / 特种
 
   // 纸张特性
-  gramWeight    Int?              // 克重 (g/m²)
-  manufacturer  String?           // 生产商
-  description   String?           // 描述
+  gramWeight   Int? // 克重 (g/m²)
+  manufacturer String? // 生产商
+  description  String? // 描述
 
   // 关联
   paperRecommendations PaperRecommendation[]
   fitMatrixEntries     FitMatrix[]
   recipeTestReports    RecipeTestReport[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([paperId])
   @@index([paperCategory])
 }
 
 enum PaperCategory {
-  COATED        // 涂布
-  UNCOATED      // 非涂布
-  SPECIALTY     // 特种
+  COATED // 涂布
+  UNCOATED // 非涂布
+  SPECIALTY // 特种
 }
 
 // =============================================================================
@@ -621,21 +626,21 @@ enum PaperCategory {
 // =============================================================================
 
 model PaperRecommendation {
-  id            String   @id @default(cuid())
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
-  paperId       String
-  paper         Paper    @relation(fields: [paperId], references: [id])
+  paperId String
+  paper   Paper  @relation(fields: [paperId], references: [id])
 
   // 推荐类型
-  recommendationType RecommendationType  // 白名单 / 黑名单
+  recommendationType RecommendationType // 白名单 / 黑名单
 
   // 推荐理由/排除原因
-  reason        String
+  reason String
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([colorId, paperId])
   @@index([colorId])
@@ -643,8 +648,8 @@ model PaperRecommendation {
 }
 
 enum RecommendationType {
-  WHITELIST     // 推荐（白名单）
-  BLACKLIST     // 排除（黑名单）
+  WHITELIST // 推荐（白名单）
+  BLACKLIST // 排除（黑名单）
 }
 
 // =============================================================================
@@ -652,45 +657,45 @@ enum RecommendationType {
 // =============================================================================
 
 model Recipe {
-  id            String   @id @default(cuid())
-  recipeId      String   @unique  // 配方编号
-  name          String?           // 内部名称（R）
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  id       String  @id @default(cuid())
+  recipeId String  @unique // 配方编号
+  name     String? // 内部名称（R）
+  colorId  String
+  color    Color   @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
   // 配方状态
-  status        RecipeStatus @default(EXPERIMENTAL)
-  costLevel     CostLevel         // 低 / 中 / 高
+  status    RecipeStatus @default(EXPERIMENTAL)
+  costLevel CostLevel // 低 / 中 / 高
 
   // 适用纸张（Paper ID 列表）
   applicablePapers String[]
 
   // 简要说明
-  notes         String?
+  notes String?
 
   // 关联
-  ingredients   RecipeIngredient[]
-  fitMatrixEntries FitMatrix[]
-  testReports   RecipeTestReport[]
+  ingredients          RecipeIngredient[]
+  fitMatrixEntries     FitMatrix[]
+  testReports          RecipeTestReport[]
   paperRecommendations PaperRecipeRecommendation[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([colorId])
   @@index([status])
 }
 
 enum RecipeStatus {
-  EXPERIMENTAL  // 实验中
-  VERIFIED      // 已验证
-  DEPRECATED    // 已废弃
+  EXPERIMENTAL // 实验中
+  VERIFIED // 已验证
+  DEPRECATED // 已废弃
 }
 
 enum CostLevel {
-  LOW           // 低
-  MEDIUM        // 中
-  HIGH          // 高
+  LOW // 低
+  MEDIUM // 中
+  HIGH // 高
 }
 
 // =============================================================================
@@ -698,37 +703,37 @@ enum CostLevel {
 // =============================================================================
 
 model InkOption {
-  id              String   @id @default(cuid())
-  code            String   @unique  // 英文标识符，如 PANTONE-485-C
-  name            String            // 油墨名称，如 潘通 485C
-  brand           String?           // 品牌，如 Pantone、DIC、TOYO
-  colorSeries     String?           // 颜色系列，如 红色系、蓝色系
-  colorCode       String?           // 色号
-  
+  id          String  @id @default(cuid())
+  code        String  @unique // 英文标识符，如 PANTONE-485-C
+  name        String // 油墨名称，如 潘通 485C
+  brand       String? // 品牌，如 Pantone、DIC、TOYO
+  colorSeries String? // 颜色系列，如 红色系、蓝色系
+  colorCode   String? // 色号
+
   // 油墨类型
-  inkType         InkType           // BASE/SPOT/EXTENDER
-  
+  inkType InkType // BASE/SPOT/EXTENDER
+
   // 物理特性
-  viscosity       Float?            // 粘度 (mPa·s)
-  dryingTime      Int?              // 干燥时间 (分钟)
-  colorStrength   Float?            // 色强度 (%)
-  lightfastness   Int?              // 耐光性等级 1-8
-  
+  viscosity     Float? // 粘度 (mPa·s)
+  dryingTime    Int? // 干燥时间 (分钟)
+  colorStrength Float? // 色强度 (%)
+  lightfastness Int? // 耐光性等级 1-8
+
   // 价格范围（分为单位）
-  priceMin        Int?              // 最低价格
-  priceMax        Int?              // 最高价格
-  
+  priceMin Int? // 最低价格
+  priceMax Int? // 最高价格
+
   // 管理字段
-  order           Int      @default(0)
-  isActive        Boolean  @default(true)
-  
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
   // 关联
-  recipeIngredients RecipeIngredient[]  // 使用该油墨的配方成分
-  suppliers       Partner[]  @relation("InkSuppliers")  // 供应商（多对多）
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  recipeIngredients RecipeIngredient[] // 使用该油墨的配方成分
+  suppliers         Partner[]          @relation("InkSuppliers") // 供应商（多对多）
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([code])
   @@index([inkType])
   @@index([isActive])
@@ -736,9 +741,9 @@ model InkOption {
 }
 
 enum InkType {
-  BASE          // 基础色
-  SPOT          // 专色
-  EXTENDER      // 冲淡剂
+  BASE // 基础色
+  SPOT // 专色
+  EXTENDER // 冲淡剂
 }
 
 // =============================================================================
@@ -746,18 +751,18 @@ enum InkType {
 // =============================================================================
 
 model RecipeIngredient {
-  id            String   @id @default(cuid())
-  recipeId      String
-  recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   // 油墨关联（外键）
-  inkId         String
-  ink           InkOption @relation(fields: [inkId], references: [id])
-  
-  percentage    Float             // 比例（%）
+  inkId String
+  ink   InkOption @relation(fields: [inkId], references: [id])
+
+  percentage Float // 比例（%）
 
   // 排序顺序
-  order         Int      @default(0)
+  order Int @default(0)
 
   @@index([recipeId])
   @@index([inkId])
@@ -768,31 +773,31 @@ model RecipeIngredient {
 // =============================================================================
 
 model FitMatrix {
-  id            String   @id @default(cuid())
-  recipeId      String
-  recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  paperId       String
-  paper         Paper    @relation(fields: [paperId], references: [id])
+  paperId String
+  paper   Paper  @relation(fields: [paperId], references: [id])
 
   // 适配结果
-  fitResult     FitResult         // recommended / usable / not_recommended
+  fitResult FitResult // recommended / usable / not_recommended
 
   // 实测数据
-  deltaEResult  Float?            // 实测 ΔE（R）
-  stabilityScore Int?             // 稳定性评分 1-5（R）
+  deltaEResult   Float? // 实测 ΔE（R）
+  stabilityScore Int? // 稳定性评分 1-5（R）
 
   // 风险标签
-  issueTags     String[]          // 风险标签数组（R）
+  issueTags String[] // 风险标签数组（R）
 
   // 结论
-  conclusionNote String           // 结论说明（M）
+  conclusionNote String // 结论说明（M）
 
   // 支撑报告
-  reportIds     String[]          // 支撑报告 ID（M）
+  reportIds String[] // 支撑报告 ID（M）
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([recipeId, paperId])
   @@index([recipeId])
@@ -801,9 +806,9 @@ model FitMatrix {
 }
 
 enum FitResult {
-  RECOMMENDED       // 推荐
-  USABLE            // 可用
-  NOT_RECOMMENDED   // 不推荐
+  RECOMMENDED // 推荐
+  USABLE // 可用
+  NOT_RECOMMENDED // 不推荐
 }
 
 // =============================================================================
@@ -811,23 +816,23 @@ enum FitResult {
 // =============================================================================
 
 model PaperRecipeRecommendation {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // 纸张 ID（关联到 Paper 或直接存储）
-  paperId       String
+  paperId String
 
   // 推荐配方
-  recipeId      String
-  recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   // 推荐理由（M）
-  reason        String
+  reason String
 
   // 置信度（R）
   confidenceLevel ConfidenceLevel?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([paperId, recipeId])
   @@index([paperId])
@@ -835,9 +840,9 @@ model PaperRecipeRecommendation {
 }
 
 enum ConfidenceLevel {
-  HIGH          // 高
-  MEDIUM        // 中
-  LOW           // 低
+  HIGH // 高
+  MEDIUM // 中
+  LOW // 低
 }
 
 // =============================================================================
@@ -845,40 +850,40 @@ enum ConfidenceLevel {
 // =============================================================================
 
 model RecipeTestReport {
-  id            String   @id @default(cuid())
-  reportId      String   @unique  // 报告编号
+  id       String @id @default(cuid())
+  reportId String @unique // 报告编号
 
   // 关联配方
-  recipeId      String
-  recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   // 测试纸张
-  testedPaperIds String[]         // 测试纸张 ID（关联 Paper）
+  testedPaperIds String[] // 测试纸张 ID（关联 Paper）
 
   // 测试机构/印厂 - 关联合作方
-  partnerId     String?
-  partner       Partner? @relation(fields: [partnerId], references: [id])
-  printerPartner String           // 印厂/实验机构名称（兼容旧数据）
-  pressModel    String?           // 印刷机型号（R）
+  partnerId      String?
+  partner        Partner? @relation(fields: [partnerId], references: [id])
+  printerPartner String // 印厂/实验机构名称（兼容旧数据）
+  pressModel     String? // 印刷机型号（R）
 
   // 测试时间
-  testDate      DateTime          // 测试日期（M）
+  testDate DateTime // 测试日期（M）
 
   // 测量设备
-  measurementDevice String        // 测量仪器（M）
+  measurementDevice String // 测量仪器（M）
 
   // 结论
   conclusionLevel ConclusionLevel // pass / conditional / fail（M）
-  summary       String            // 结论摘要（M）
+  summary         String // 结论摘要（M）
 
   // 外部链接
-  collabLink    String?           // ColLab 链接（R）
+  collabLink String? // ColLab 链接（R）
 
   // 关联纸张（可选）
-  testedPapers  Paper[]
+  testedPapers Paper[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([recipeId])
   @@index([conclusionLevel])
@@ -886,9 +891,9 @@ model RecipeTestReport {
 }
 
 enum ConclusionLevel {
-  PASS          // 通过
-  CONDITIONAL   // 有条件通过
-  FAIL          // 不通过
+  PASS // 通过
+  CONDITIONAL // 有条件通过
+  FAIL // 不通过
 }
 
 // =============================================================================
@@ -896,34 +901,34 @@ enum ConclusionLevel {
 // =============================================================================
 
 model ColorRisk {
-  id            String   @id @default(cuid())
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
   // 风险类型
-  riskType      RiskType          // 色偏 / 发灰 / 绝网 / 不稳定
+  riskType RiskType // 色偏 / 发灰 / 绝网 / 不稳定
 
   // 受影响纸张
-  affectedPaperIds String[]       // 受影响纸张 ID
+  affectedPaperIds String[] // 受影响纸张 ID
 
   // 风险说明
-  description   String            // 风险说明（M）
+  description String // 风险说明（M）
 
   // 规避建议
-  mitigation    String?           // 规避建议（R）
+  mitigation String? // 规避建议（R）
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([colorId])
   @@index([riskType])
 }
 
 enum RiskType {
-  COLOR_SHIFT   // 色偏
-  GRAYING       // 发灰
-  DOT_LOSS      // 绝网
-  UNSTABLE      // 不稳定
+  COLOR_SHIFT // 色偏
+  GRAYING // 发灰
+  DOT_LOSS // 绝网
+  UNSTABLE // 不稳定
 }
 
 // =============================================================================
@@ -931,25 +936,25 @@ enum RiskType {
 // =============================================================================
 
 model Batch {
-  id              String    @id @default(cuid())
-  batchNo         String    @unique        // 批次编号，如"BATCH-2026-001"
-  type            BatchType                // 批次类型
+  id      String    @id @default(cuid())
+  batchNo String    @unique // 批次编号，如"BATCH-2026-001"
+  type    BatchType // 批次类型
 
   // 执行信息 - 关联合作方
   partnerId       String?
   partner         Partner?  @relation(fields: [partnerId], references: [id])
-  instrumentModel String?                  // 测量设备型号
-  calibratedAt    DateTime?                // 设备校准时间
+  instrumentModel String? // 测量设备型号
+  calibratedAt    DateTime? // 设备校准时间
 
   // 元数据
-  notes           String?
+  notes String?
 
   // 关联
-  colors          Color[]
-  paperProfiles   PaperProfile[]
+  colors        Color[]
+  paperProfiles PaperProfile[]
 
-  createdAt       DateTime  @default(now())
-  createdBy       String                   // 操作人
+  createdAt DateTime @default(now())
+  createdBy String // 操作人
 
   @@index([batchNo])
   @@index([type])
@@ -957,10 +962,10 @@ model Batch {
 }
 
 enum BatchType {
-  MEASURE     // 分光仪测量
-  SCAN        // 高清扫描
-  PRINT       // 印刷打样
-  AUDIT       // 审计复核
+  MEASURE // 分光仪测量
+  SCAN // 高清扫描
+  PRINT // 印刷打样
+  AUDIT // 审计复核
 }
 
 // =============================================================================
@@ -968,25 +973,25 @@ enum BatchType {
 // =============================================================================
 
 model ProofingPack {
-  id            String   @id @default(cuid())
-  colorId       String
-  color         Color    @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
 
   // 纸型关联（外键）
-  paperTypeId   String
-  paperType     PaperTypeOption @relation(fields: [paperTypeId], references: [id])
-  
-  price         Int               // 参考价格（分）
-  externalUrl   String?           // 淘宝/外部履约链接
+  paperTypeId String
+  paperType   PaperTypeOption @relation(fields: [paperTypeId], references: [id])
+
+  price       Int // 参考价格（分）
+  externalUrl String? // 淘宝/外部履约链接
 
   // 状态
-  isActive      Boolean  @default(true)
+  isActive Boolean @default(true)
 
   // 关联
-  buyIntents    BuyIntent[]
+  buyIntents BuyIntent[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([colorId, paperTypeId])
   @@index([paperTypeId])
@@ -997,19 +1002,19 @@ model ProofingPack {
 // =============================================================================
 
 model BuyIntent {
-  id              String   @id @default(cuid())
-  
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id])
-  
-  proofingPackId  String
-  proofingPack    ProofingPack @relation(fields: [proofingPackId], references: [id])
-  
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  proofingPackId String
+  proofingPack   ProofingPack @relation(fields: [proofingPackId], references: [id])
+
   // 追踪信息
-  sessionId       String?           // 匿名用户 session
-  referrer        String?           // 来源页面
-  
-  createdAt       DateTime @default(now())
+  sessionId String? // 匿名用户 session
+  referrer  String? // 来源页面
+
+  createdAt DateTime @default(now())
 
   @@index([proofingPackId, createdAt])
   @@index([userId, createdAt])
@@ -1020,39 +1025,39 @@ model BuyIntent {
 // =============================================================================
 
 model ApiKey {
-  id              String    @id @default(cuid())
-  keyHash         String    @unique        // SHA256(原始key)，不存明文
-  keyPrefix       String                   // 前缀用于识别，如 "sk_xxx"
-  name            String                   // 密钥名称
+  id        String @id @default(cuid())
+  keyHash   String @unique // SHA256(原始key)，不存明文
+  keyPrefix String // 前缀用于识别，如 "sk_xxx"
+  name      String // 密钥名称
 
   // 绑定主体
-  ownerUserId     String?
-  ownerUser       User?     @relation(fields: [ownerUserId], references: [id])
+  ownerUserId String?
+  ownerUser   User?   @relation(fields: [ownerUserId], references: [id])
 
   // 权限
-  scopes          String[]                 // ["read:color", "read:recipe"]
-  role            ApiKeyRole @default(READONLY)
+  scopes String[] // ["read:color", "read:recipe"]
+  role   ApiKeyRole @default(READONLY)
 
   // 限流策略
   rateLimitPolicyId String?
   rateLimitPolicy   RateLimitPolicy? @relation(fields: [rateLimitPolicyId], references: [id])
 
   // 生命周期
-  lastUsedAt      DateTime?
-  expiresAt       DateTime?
-  revokedAt       DateTime?
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([keyHash])
   @@index([ownerUserId])
 }
 
 enum ApiKeyRole {
-  READONLY        // 只读
-  PLUGIN_FREE     // 插件免费版
-  PLUGIN_PAID     // 插件付费版
-  ADMIN           // 管理员
+  READONLY // 只读
+  PLUGIN_FREE // 插件免费版
+  PLUGIN_PAID // 插件付费版
+  ADMIN // 管理员
 }
 
 // =============================================================================
@@ -1060,14 +1065,14 @@ enum ApiKeyRole {
 // =============================================================================
 
 model RateLimitPolicy {
-  id                String    @id @default(cuid())
-  name              String    @unique       // 如"标准"、"高级"
-  requestsPerMinute Int       @default(60)
-  requestsPerDay    Int       @default(10000)
+  id                String @id @default(cuid())
+  name              String @unique // 如"标准"、"高级"
+  requestsPerMinute Int    @default(60)
+  requestsPerDay    Int    @default(10000)
 
-  apiKeys           ApiKey[]
+  apiKeys ApiKey[]
 
-  createdAt         DateTime  @default(now())
+  createdAt DateTime @default(now())
 }
 
 // =============================================================================
@@ -1075,22 +1080,22 @@ model RateLimitPolicy {
 // =============================================================================
 
 model CliAuditLog {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // 调用信息
-  apiKeyId        String?
-  command         String                   // 如 "color get"
-  args            Json                     // 参数摘要（脱敏）
+  apiKeyId String?
+  command  String // 如 "color get"
+  args     Json // 参数摘要（脱敏）
 
   // 结果
-  result          String                   // success / error
-  errorCode       String?
-  duration        Int                      // 执行耗时(ms)
+  result    String // success / error
+  errorCode String?
+  duration  Int // 执行耗时(ms)
 
   // 引用
-  citations       String[]                 // ["CN-Song-04", "BATCH-2026-001"]
+  citations String[] // ["CN-Song-04", "BATCH-2026-001"]
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([apiKeyId, createdAt])
   @@index([command, createdAt])
@@ -1101,25 +1106,25 @@ model CliAuditLog {
 // =============================================================================
 
 model AuditNote {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // 审计目标
-  targetType      AuditTargetType
-  targetId        String
+  targetType AuditTargetType
+  targetId   String
 
   // 审计人
-  advisorType     AdvisorType
-  advisorId       String
-  advisorName     String
+  advisorType AdvisorType
+  advisorId   String
+  advisorName String
 
   // 审计内容
-  note            String
-  verdict         AuditVerdict
+  note    String
+  verdict AuditVerdict
 
   // 可见性
-  visibility      Visibility @default(PUBLIC)
+  visibility Visibility @default(PUBLIC)
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([targetType, targetId])
 }
@@ -1132,20 +1137,20 @@ enum AuditTargetType {
 }
 
 enum AdvisorType {
-  INDIVIDUAL    // 个人顾问
-  INSTITUTION   // 机构
+  INDIVIDUAL // 个人顾问
+  INSTITUTION // 机构
 }
 
 enum AuditVerdict {
-  APPROVED      // 通过
-  FLAGGED       // 存疑
-  REJECTED      // 驳回
+  APPROVED // 通过
+  FLAGGED // 存疑
+  REJECTED // 驳回
 }
 
 enum Visibility {
-  PUBLIC        // 公开
-  PAID          // 付费可见
-  INTERNAL      // 内部
+  PUBLIC // 公开
+  PAID // 付费可见
+  INTERNAL // 内部
 }
 
 // =============================================================================
@@ -1153,27 +1158,27 @@ enum Visibility {
 // =============================================================================
 
 model AnalysisReport {
-  id              String    @id @default(cuid())
+  id String @id @default(cuid())
 
   // 所有者
-  userId          String?
-  user            User?     @relation(fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   // 工程摘要（不存源文件）
-  summary         Json      // DocInfo + 颜色统计
-  printIntent     Json      // PrintIntent
+  summary     Json // DocInfo + 颜色统计
+  printIntent Json // PrintIntent
 
   // 分析结果
-  colorAnalysis   Json      // ColorAnalysis[]
-  risks           Json      // RiskItem[]
-  recommendations Json      // PaperRecommendation[]
-  avoidList       Json      // AvoidItem[]
+  colorAnalysis   Json // ColorAnalysis[]
+  risks           Json // RiskItem[]
+  recommendations Json // PaperRecommendation[]
+  avoidList       Json // AvoidItem[]
   citations       String[]
 
   // 生命周期
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime                 // 自动过期（隐私保护）
-  deletedAt       DateTime?                // 用户删除
+  createdAt DateTime  @default(now())
+  expiresAt DateTime // 自动过期（隐私保护）
+  deletedAt DateTime? // 用户删除
 
   @@index([userId, createdAt])
 }
@@ -1183,18 +1188,18 @@ model AnalysisReport {
 // =============================================================================
 
 model ActivationCode {
-  id              String    @id @default(cuid())
-  code            String    @unique        // 激活码
-  
+  id   String @id @default(cuid())
+  code String @unique // 激活码
+
   // 绑定
-  usedById        String?                  // 使用者 User ID
-  usedAt          DateTime?
-  
+  usedById String? // 使用者 User ID
+  usedAt   DateTime?
+
   // 元数据
-  batchLabel      String?                  // 批次标签，如 "首印-2026-01"
-  
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime?                // 过期时间
+  batchLabel String? // 批次标签，如 "首印-2026-01"
+
+  createdAt DateTime  @default(now())
+  expiresAt DateTime? // 过期时间
 
   @@index([code])
 }
@@ -1204,22 +1209,22 @@ model ActivationCode {
 // =============================================================================
 
 model AdminAuditLog {
-  id          String      @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 操作人
-  userId      String
-  userEmail   String                       // 冗余存储，便于查询
-  
+  userId    String
+  userEmail String // 冗余存储，便于查询
+
   // 操作信息
-  action      AdminAction
-  targetType  String                       // color, partner, user, batch, proofingPack, apiKey...
-  targetId    String?                      // 目标 ID（删除时可能为空）
-  
+  action     AdminAction
+  targetType String // color, partner, user, batch, proofingPack, apiKey...
+  targetId   String? // 目标 ID（删除时可能为空）
+
   // 变更详情
-  changes     Json?                        // { before: {...}, after: {...} }
-  metadata    Json?                        // { ip, userAgent, count... }
-  
-  createdAt   DateTime    @default(now())
+  changes  Json? // { before: {...}, after: {...} }
+  metadata Json? // { ip, userAgent, count... }
+
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([targetType, targetId])
@@ -1242,39 +1247,39 @@ enum AdminAction {
 // =============================================================================
 
 model UserWork {
-  id            String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 所有者
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // 作品信息
-  title         String              // 作品标题
-  description   String?   @db.Text  // 作品描述
-  imageUrl      String              // 作品图片 URL
-  
+  title       String // 作品标题
+  description String? @db.Text // 作品描述
+  imageUrl    String // 作品图片 URL
+
   // 关联色彩簿（可选，单个）
-  colorBookId   String?
-  colorBook     ColorBook? @relation(fields: [colorBookId], references: [id], onDelete: SetNull)
-  
+  colorBookId String?
+  colorBook   ColorBook? @relation(fields: [colorBookId], references: [id], onDelete: SetNull)
+
   // 关联颜色（多对多）
-  colors        UserWorkColor[]
-  
+  colors UserWorkColor[]
+
   // 外部链接
-  externalUrl   String?             // 外部链接（如 Behance、Dribbble）
-  
+  externalUrl String? // 外部链接（如 Behance、Dribbble）
+
   // 标签
-  tags          String[]
-  
+  tags String[]
+
   // 可见性
-  isPublic      Boolean   @default(false)
-  
+  isPublic Boolean @default(false)
+
   // 统计
-  viewCount     Int       @default(0)
-  likeCount     Int       @default(0)
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  viewCount Int @default(0)
+  likeCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt])
   @@index([isPublic, createdAt])
@@ -1282,21 +1287,21 @@ model UserWork {
 
 // 作品-颜色关联表
 model UserWorkColor {
-  id          String    @id @default(cuid())
-  
-  workId      String
-  work        UserWork  @relation(fields: [workId], references: [id], onDelete: Cascade)
-  
-  colorId     String
-  color       Color     @relation(fields: [colorId], references: [id], onDelete: Cascade)
-  
+  id String @id @default(cuid())
+
+  workId String
+  work   UserWork @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
   // 颜色在作品中的描述（可选）
-  note        String?
-  
+  note String?
+
   // 排序
-  order       Int       @default(0)
-  
-  createdAt   DateTime  @default(now())
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
 
   @@unique([workId, colorId])
   @@index([workId])
@@ -1308,11 +1313,11 @@ model UserWorkColor {
 // =============================================================================
 
 model SystemConfig {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     Json
-  category  String   // general, rate-limit, storage, email
-  
+  id       String @id @default(cuid())
+  key      String @unique
+  value    Json
+  category String // general, rate-limit, storage, email
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1324,26 +1329,26 @@ model SystemConfig {
 // =============================================================================
 
 model ImportJob {
-  id          String        @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 任务信息
-  type        String                    // color, paper-profile
-  status      ImportJobStatus @default(PENDING)
-  
+  type   String // color, paper-profile
+  status ImportJobStatus @default(PENDING)
+
   // 进度
-  totalCount  Int           @default(0)
-  successCount Int          @default(0)
-  failedCount Int           @default(0)
-  
+  totalCount   Int @default(0)
+  successCount Int @default(0)
+  failedCount  Int @default(0)
+
   // 结果
-  errors      Json?                     // 错误详情数组
-  
+  errors Json? // 错误详情数组
+
   // 操作人
-  userId      String
-  userEmail   String
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  userId    String
+  userEmail String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
 
   @@index([userId, createdAt])
@@ -1351,10 +1356,10 @@ model ImportJob {
 }
 
 enum ImportJobStatus {
-  PENDING     // 等待处理
-  PROCESSING  // 处理中
-  COMPLETED   // 完成
-  FAILED      // 失败
+  PENDING // 等待处理
+  PROCESSING // 处理中
+  COMPLETED // 完成
+  FAILED // 失败
 }
 
 // =============================================================================
@@ -1363,96 +1368,96 @@ enum ImportJobStatus {
 
 // 内容类型
 enum ContentType {
-  WORK      // 作品
-  TUTORIAL  // 教程
-  ARTICLE   // 文章
+  WORK // 作品
+  TUTORIAL // 教程
+  ARTICLE // 文章
 }
 
 // 内容状态
 enum ContentStatus {
-  DRAFT     // 草稿（默认）
-  PENDING   // 待审核
+  DRAFT // 草稿（默认）
+  PENDING // 待审核
   PUBLISHED // 已发布
-  REJECTED  // 已拒绝
-  ARCHIVED  // 已归档
+  REJECTED // 已拒绝
+  ARCHIVED // 已归档
 }
 
 // 推荐等级
 enum FeaturedLevel {
-  NONE        // 普通内容
+  NONE // 普通内容
   EDITOR_PICK // 编辑推荐
-  HOMEPAGE    // 首页推荐（网站首页展示）
-  HERO        // 首焦图推荐（ColLab 顶部轮播）
+  HOMEPAGE // 首页推荐（网站首页展示）
+  HERO // 首焦图推荐（ColLab 顶部轮播）
 }
 
 // 审核操作类型
 enum ReviewAction {
-  APPROVE        // 通过
-  REJECT         // 拒绝
+  APPROVE // 通过
+  REJECT // 拒绝
   REQUEST_CHANGE // 退回修改
-  SET_FEATURED   // 设置推荐
+  SET_FEATURED // 设置推荐
   UNSET_FEATURED // 取消推荐
-  ARCHIVE        // 归档
-  RESTORE        // 恢复
+  ARCHIVE // 归档
+  RESTORE // 恢复
 }
 
 // 统一内容表
 model Content {
-  id              String         @id @default(cuid())
-  contentId       String         @unique  // 唯一编号，如 "CL-W-0001"
-  
+  id        String @id @default(cuid())
+  contentId String @unique // 唯一编号，如 "CL-W-0001"
+
   // 内容类型
-  contentType     ContentType
-  
+  contentType ContentType
+
   // 基本信息
-  title           String
-  summary         String?        @db.Text  // 摘要
-  body            String         @db.Text  // 正文（Markdown/HTML）
-  
+  title   String
+  summary String? @db.Text // 摘要
+  body    String  @db.Text // 正文（Markdown/HTML）
+
   // 媒体
-  coverImageUrl   String                   // 封面图
-  galleryImages   String[]                 // 图片集（作品/教程适用）
-  externalUrl     String?                  // 外部链接
-  
+  coverImageUrl String // 封面图
+  galleryImages String[] // 图片集（作品/教程适用）
+  externalUrl   String? // 外部链接
+
   // 状态与推荐
-  status          ContentStatus  @default(DRAFT)
-  featuredLevel   FeaturedLevel  @default(NONE)
-  
+  status        ContentStatus @default(DRAFT)
+  featuredLevel FeaturedLevel @default(NONE)
+
   // 作者
-  authorId        String
-  author          User           @relation(fields: [authorId], references: [id])
-  
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
   // 分类
-  categoryId      String?
-  category        ContentCategory? @relation(fields: [categoryId], references: [id])
-  
+  categoryId String?
+  category   ContentCategory? @relation(fields: [categoryId], references: [id])
+
   // 标签
-  tags            String[]
-  
+  tags String[]
+
   // 关联 - 颜色
-  colors          ContentColor[]
-  
+  colors ContentColor[]
+
   // 关联 - 色彩簿（作品适用）
-  colorBookId     String?
-  colorBook       ColorBook?     @relation(fields: [colorBookId], references: [id])
-  
+  colorBookId String?
+  colorBook   ColorBook? @relation(fields: [colorBookId], references: [id])
+
   // 统计
-  viewCount       Int            @default(0)
-  likeCount       Int            @default(0)
-  commentCount    Int            @default(0)
-  
+  viewCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
   // 审核信息
-  publishedAt     DateTime?               // 首次发布时间
-  reviewedAt      DateTime?               // 最近审核时间
-  reviewedBy      String?                 // 审核人
-  rejectReason    String?                 // 拒绝原因
-  
+  publishedAt  DateTime? // 首次发布时间
+  reviewedAt   DateTime? // 最近审核时间
+  reviewedBy   String? // 审核人
+  rejectReason String? // 拒绝原因
+
   // 审核记录
-  reviews         ContentReview[]
-  
+  reviews ContentReview[]
+
   // 时间戳
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([contentId])
   @@index([contentType, status])
@@ -1464,30 +1469,30 @@ model Content {
 
 // 多级分类
 model ContentCategory {
-  id              String         @id @default(cuid())
-  name            String                   // 分类名称
-  slug            String         @unique   // URL 标识
-  description     String?                  // 描述
-  icon            String?                  // 图标（Lucide icon name）
-  
+  id          String  @id @default(cuid())
+  name        String // 分类名称
+  slug        String  @unique // URL 标识
+  description String? // 描述
+  icon        String? // 图标（Lucide icon name）
+
   // 层级
-  parentId        String?
-  parent          ContentCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children        ContentCategory[] @relation("CategoryHierarchy")
-  level           Int            @default(0)  // 层级深度（根节点为 0）
-  
+  parentId String?
+  parent   ContentCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ContentCategory[] @relation("CategoryHierarchy")
+  level    Int               @default(0) // 层级深度（根节点为 0）
+
   // 适用的内容类型（可多选）
-  contentTypes    ContentType[]
-  
+  contentTypes ContentType[]
+
   // 管理
-  order           Int            @default(0)
-  isActive        Boolean        @default(true)
-  
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
   // 关联
-  contents        Content[]
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  contents Content[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([parentId])
   @@index([slug])
@@ -1496,18 +1501,18 @@ model ContentCategory {
 
 // 内容-颜色关联
 model ContentColor {
-  id              String         @id @default(cuid())
-  
-  contentId       String
-  content         Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  
-  colorId         String
-  color           Color          @relation(fields: [colorId], references: [id], onDelete: Cascade)
-  
-  note            String?                  // 颜色在内容中的说明
-  order           Int            @default(0)
-  
-  createdAt       DateTime       @default(now())
+  id String @id @default(cuid())
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  colorId String
+  color   Color  @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  note  String? // 颜色在内容中的说明
+  order Int     @default(0)
+
+  createdAt DateTime @default(now())
 
   @@unique([contentId, colorId])
   @@index([contentId])
@@ -1516,28 +1521,310 @@ model ContentColor {
 
 // 审核记录
 model ContentReview {
-  id              String         @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // 内容
-  contentId       String
-  content         Content        @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
   // 审核人
-  reviewerId      String
-  reviewer        User           @relation(fields: [reviewerId], references: [id])
-  
+  reviewerId String
+  reviewer   User   @relation(fields: [reviewerId], references: [id])
+
   // 审核操作
-  action          ReviewAction
-  
+  action ReviewAction
+
   // 审核详情
-  reason          String?                  // 原因（拒绝/退回时必填）
-  note            String?                  // 内部备注
-  
+  reason String? // 原因（拒绝/退回时必填）
+  note   String? // 内部备注
+
   // 审核前状态
-  previousStatus  ContentStatus
-  
-  createdAt       DateTime       @default(now())
+  previousStatus ContentStatus
+
+  createdAt DateTime @default(now())
 
   @@index([contentId])
   @@index([reviewerId, createdAt])
+}
+
+// =============================================================================
+// 支持系统 - 文档板块
+// =============================================================================
+
+// 帮助文档分类（支持层级）
+model HelpCategory {
+  id          String  @id @default(cuid())
+  name        String // 分类名称
+  slug        String  @unique // URL 标识
+  description String? // 描述
+  icon        String? // 图标（Lucide icon name）
+
+  // 层级
+  parentId String?
+  parent   HelpCategory?  @relation("HelpCategoryHierarchy", fields: [parentId], references: [id])
+  children HelpCategory[] @relation("HelpCategoryHierarchy")
+  level    Int            @default(0) // 层级深度（根节点为 0）
+
+  // 管理
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  // 关联
+  articles HelpArticle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive, order])
+}
+
+// 帮助文章
+model HelpArticle {
+  id        String @id @default(cuid())
+  articleId String @unique // 文章编号，如 "HELP-001"
+
+  // 基本信息
+  title   String // 标题
+  slug    String  @unique // URL 标识
+  summary String? @db.Text // 摘要
+  content String  @db.Text // 正文（Markdown）
+
+  // 分类
+  categoryId String
+  category   HelpCategory @relation(fields: [categoryId], references: [id])
+
+  // 标签（便于搜索）
+  tags String[]
+
+  // 状态
+  status HelpArticleStatus @default(DRAFT)
+
+  // 排序与置顶
+  order    Int     @default(0)
+  isPinned Boolean @default(false) // 是否置顶
+
+  // 统计
+  viewCount       Int @default(0)
+  helpfulCount    Int @default(0) // 有帮助
+  notHelpfulCount Int @default(0) // 没帮助
+
+  // 版本信息
+  version     String    @default("1.0")
+  publishedAt DateTime?
+
+  // 作者
+  authorId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([status])
+  @@index([isPinned, order])
+}
+
+enum HelpArticleStatus {
+  DRAFT // 草稿
+  PUBLISHED // 已发布
+  ARCHIVED // 已归档
+}
+
+// 法律/政策文档（单篇，如隐私政策、服务条款）
+model LegalDocument {
+  id String @id @default(cuid())
+
+  // 文档类型
+  type LegalDocumentType @unique // 确保每种类型只有一篇
+
+  // 基本信息
+  title   String // 标题
+  content String @db.Text // 正文（Markdown）
+
+  // 版本
+  version       String    @default("1.0")
+  effectiveDate DateTime? // 生效日期
+
+  // 状态
+  status      LegalDocumentStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  // 历史版本
+  histories LegalDocumentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([status])
+}
+
+// 法律文档历史版本
+model LegalDocumentHistory {
+  id String @id @default(cuid())
+
+  documentId String
+  document   LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  // 版本信息
+  version       String
+  title         String
+  content       String    @db.Text
+  effectiveDate DateTime?
+
+  // 变更说明
+  changeNote String?
+
+  createdAt DateTime @default(now())
+  createdBy String? // 操作人
+
+  @@index([documentId, createdAt])
+}
+
+enum LegalDocumentType {
+  PRIVACY_POLICY // 隐私政策
+  TERMS_OF_SERVICE // 服务条款
+  COOKIE_POLICY // Cookie 政策（可选）
+  REFUND_POLICY // 退款政策（可选）
+}
+
+enum LegalDocumentStatus {
+  DRAFT // 草稿
+  PUBLISHED // 已发布
+}
+
+// =============================================================================
+// 支持系统 - 客服板块
+// =============================================================================
+
+// 工单分类
+model TicketCategory {
+  id          String  @id @default(cuid())
+  name        String // 分类名称
+  slug        String  @unique // URL 标识
+  description String? // 描述
+  icon        String? // 图标
+
+  // 管理
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  // 默认处理人（角色）
+  defaultAssigneeRole UserRole?
+
+  // 关联
+  tickets SupportTicket[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive, order])
+}
+
+// 工单
+model SupportTicket {
+  id       String @id @default(cuid())
+  ticketNo String @unique // 工单编号，如 "TK-202601-0001"
+
+  // 基本信息
+  subject     String // 主题
+  description String @db.Text // 描述
+
+  // 分类
+  categoryId String
+  category   TicketCategory @relation(fields: [categoryId], references: [id])
+
+  // 状态
+  status   TicketStatus   @default(OPEN)
+  priority TicketPriority @default(NORMAL)
+
+  // 提交人
+  userId String
+  user   User   @relation("UserTickets", fields: [userId], references: [id])
+
+  // 处理人
+  assigneeId String?
+  assignee   User?   @relation("AssignedTickets", fields: [assigneeId], references: [id])
+
+  // 关联实体（可选）
+  relatedType TicketRelatedType?
+  relatedId   String? // 关联的 Color/Report/Order ID
+
+  // 附件
+  attachments String[] // 附件 URL 列表
+
+  // 回复
+  replies TicketReply[]
+
+  // 时间追踪
+  firstReplyAt DateTime? // 首次回复时间
+  resolvedAt   DateTime? // 解决时间
+  closedAt     DateTime? // 关闭时间
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticketNo])
+  @@index([userId, status])
+  @@index([assigneeId, status])
+  @@index([categoryId, status])
+  @@index([status, priority])
+  @@index([createdAt])
+}
+
+// 工单回复
+model TicketReply {
+  id String @id @default(cuid())
+
+  ticketId String
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  // 回复人
+  userId String
+  user   User   @relation("TicketReplies", fields: [userId], references: [id])
+
+  // 回复内容
+  content String @db.Text
+
+  // 类型
+  replyType TicketReplyType @default(PUBLIC)
+
+  // 附件
+  attachments String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticketId, createdAt])
+  @@index([userId])
+}
+
+enum TicketStatus {
+  OPEN // 待处理
+  IN_PROGRESS // 处理中
+  PENDING_USER // 等待用户回复
+  RESOLVED // 已解决
+  CLOSED // 已关闭
+}
+
+enum TicketPriority {
+  LOW // 低
+  NORMAL // 普通
+  HIGH // 高
+  URGENT // 紧急
+}
+
+enum TicketRelatedType {
+  COLOR // 关联颜色
+  REPORT // 关联分析报告
+  ORDER // 关联订单
+  CONTENT // 关联内容
+}
+
+enum TicketReplyType {
+  PUBLIC // 公开回复（用户可见）
+  INTERNAL // 内部备注（仅客服可见）
 }

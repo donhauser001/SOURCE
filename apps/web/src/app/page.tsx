@@ -13,7 +13,7 @@
  */
 
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Palette, BookOpen, FileText, Terminal, Search, Users, ShieldCheck, FlaskConical } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, BookOpen, FileText, Search, Users, ShieldCheck, FlaskConical } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { SiteHeader } from '@/components/site-header';
 import { FeaturedColors } from './home/featured-colors';
@@ -224,14 +224,11 @@ export default async function HomePage() {
                                 <div className="flex items-center gap-6 pt-4 text-sm">
                                     <Link href="/docs" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
                                         <FileText className="h-4 w-4" />
-                                        文档
+                                        帮助中心
                                     </Link>
-                                    <Link href="/docs/cli" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
-                                        <Terminal className="h-4 w-4" />
-                                        CLI
-                                    </Link>
-                                    <Link href="/docs/api" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
-                                        <span className="font-mono text-xs">API</span>
+                                    <Link href="/partners" className="text-foreground/40 hover:text-foreground/60 transition-colors flex items-center gap-1.5">
+                                        <Users className="h-4 w-4" />
+                                        共建者
                                     </Link>
                                 </div>
                             </div>
@@ -384,13 +381,13 @@ export default async function HomePage() {
                                     icon: ShieldCheck,
                                     title: '色彩身份证',
                                     desc: '每个色号拥有专属页面，真源 Lab 数据、纸张表现、油墨配方一应俱全',
-                                    href: '/docs/color-identity',
+                                    href: '/colors',
                                 },
                                 {
-                                    icon: Terminal,
-                                    title: 'CLI 接口',
-                                    desc: 'AI 与脚本可调用的结构化命令，审计日志完整可追溯',
-                                    href: '/docs/cli',
+                                    icon: BookOpen,
+                                    title: '色彩簿',
+                                    desc: '按类别整理的色彩合集，方便快速查找和应用',
+                                    href: '/color-books',
                                 },
                                 {
                                     icon: Search,
@@ -461,7 +458,7 @@ export default async function HomePage() {
                                 { value: data.stats.totalColors, label: '色彩数据', suffix: '' },
                                 { value: data.stats.colorBooks, label: '色彩簿', suffix: '' },
                                 { value: data.stats.partners, label: '共建者', suffix: '' },
-                                { value: `${data.stats.cliCommands}+`, label: 'CLI 命令', suffix: '' },
+                                { value: data.stats.contents, label: '内容作品', suffix: '' },
                             ].map((stat) => (
                                 <div key={stat.label} className="text-center">
                                     <div className="text-3xl sm:text-4xl font-light text-foreground/70 tabular-nums">
@@ -502,20 +499,12 @@ export default async function HomePage() {
                             <Link href="/analyze" className="text-foreground/30 hover:text-foreground/50 transition-colors">
                                 工程分析
                             </Link>
-                            <Link href="/docs/api" className="text-foreground/30 hover:text-foreground/50 transition-colors">
-                                API 文档
-                            </Link>
                             <Link href="/partners" className="text-foreground/30 hover:text-foreground/50 transition-colors">
                                 共建者
                             </Link>
-                            <a
-                                href="https://github.com/donhauser001/SOURCE"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-foreground/30 hover:text-foreground/50 transition-colors"
-                            >
-                                GitHub
-                            </a>
+                            <Link href="/docs" className="text-foreground/30 hover:text-foreground/50 transition-colors">
+                                帮助
+                            </Link>
                         </div>
 
                         {/* 右侧：版权 */}

@@ -31,6 +31,10 @@ import {
     FolderTree,
     FileStack,
     Clock,
+    HelpCircle,
+    Ticket,
+    FileQuestion,
+    Shield,
     type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -164,6 +168,41 @@ const navGroups: NavGroup[] = [
                 title: 'API 密钥',
                 href: '/admin/api-keys',
                 icon: KeyRound,
+            },
+        ],
+    },
+    {
+        label: '客服支持',
+        items: [
+            {
+                title: '工单管理',
+                href: '/admin/support/tickets',
+                icon: Ticket,
+            },
+            {
+                title: '工单分类',
+                href: '/admin/support/categories',
+                icon: FolderTree,
+            },
+        ],
+    },
+    {
+        label: '文档管理',
+        items: [
+            {
+                title: '帮助文档',
+                href: '/admin/docs/help',
+                icon: HelpCircle,
+            },
+            {
+                title: '隐私政策',
+                href: '/admin/docs/privacy',
+                icon: Shield,
+            },
+            {
+                title: '服务条款',
+                href: '/admin/docs/terms',
+                icon: FileQuestion,
             },
         ],
     },

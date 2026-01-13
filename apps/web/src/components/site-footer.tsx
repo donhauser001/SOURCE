@@ -25,11 +25,11 @@ const footerNavItems = [
         ],
     },
     {
-        title: '资源',
+        title: '支持',
         links: [
-            { href: '/docs', label: '帮助文档' },
-            { href: '/docs/api', label: 'API 文档' },
-            { href: '/docs/cli', label: 'CLI 工具' },
+            { href: '/docs', label: '帮助中心' },
+            { href: '/support', label: '联系客服' },
+            { href: '/support/new', label: '提交工单' },
         ],
     },
     {
@@ -44,8 +44,8 @@ const footerNavItems = [
         title: '关于',
         links: [
             { href: '/about', label: '关于我们' },
-            { href: '/privacy', label: '隐私政策' },
-            { href: '/terms', label: '服务条款' },
+            { href: '/docs/privacy', label: '隐私政策' },
+            { href: '/docs/terms', label: '服务条款' },
         ],
     },
 ];
@@ -129,10 +129,10 @@ export function SiteFooter() {
                         © {currentYear} SOURCE. All rights reserved.
                     </p>
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                        <Link href="/privacy" className="hover:text-foreground transition-colors">
+                        <Link href="/docs/privacy" className="hover:text-foreground transition-colors">
                             隐私政策
                         </Link>
-                        <Link href="/terms" className="hover:text-foreground transition-colors">
+                        <Link href="/docs/terms" className="hover:text-foreground transition-colors">
                             服务条款
                         </Link>
                         <Link href="/sitemap" className="hover:text-foreground transition-colors">
