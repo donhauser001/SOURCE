@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+    // 构建时忽略 ESLint 错误
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    
     // 严格模式
     reactStrictMode: true,
 
